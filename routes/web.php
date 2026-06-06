@@ -1,12 +1,19 @@
 <?php
 
 use App\Http\Controllers\Games\GameController;
+use App\Http\Controllers\Maps\MapController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
 
 Route::middleware(['auth'])->group(function () {
-    Route::inertia('map-builder', 'MapBuilder')->name('map-builder');
+    Route::get('map-builder', [MapController::class, 'builder'])->name('map-builder');
+    Route::get('maps', [MapController::class, 'index'])->name('maps.index');
+    Route::post('maps', [MapController::class, 'store'])->name('maps.store');
+    Route::get('maps/{map}', [MapController::class, 'show'])->name('maps.show');
+    Route::patch('maps/{map}', [MapController::class, 'update'])->name('maps.update');
+    Route::delete('maps/{map}', [MapController::class, 'destroy'])->name('maps.destroy');
+
     Route::get('lobbies', [GameController::class, 'lobbies'])->name('lobbies.index');
     Route::get('matches/ongoing', [GameController::class, 'ongoing'])->name('matches.ongoing');
     Route::get('matches/past', [GameController::class, 'past'])->name('matches.past');

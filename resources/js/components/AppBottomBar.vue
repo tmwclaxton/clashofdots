@@ -21,7 +21,7 @@ const user = computed(() => page.props.auth.user);
                         >War of Spheres</span
                     >
                     <span v-if="user" class="text-foreground/70"> · </span>
-                    <span v-if="user">{{ user.name }}</span>
+                    <span v-if="user">Built with Irish Love ☘️</span>
                 </p>
             </div>
 

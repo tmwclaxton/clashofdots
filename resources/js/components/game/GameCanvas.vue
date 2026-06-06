@@ -1,45 +1,15 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { ENGINE_FOREST_THRESHOLD, engineCellFillStyle } from '@/lib/terrainRender';
 import { useGameStore } from '@/stores/gameStore';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const store = useGameStore();
 
-const TERRAIN_COLORS: Record<string, string> = {
-    water: '#4a90d9',
-    plains: '#c8d68a',
-    forest: '#3d6b45',
-    hill: '#d4d4d4',
-    mountain: '#5a5a5a',
-};
-
-const THRESHOLD = 0.5;
-const TERRAIN_VALUES = {
-    water: -0.1,
-    plains: 0.1,
-    hill: 0.7,
-    mountain: 0.83,
-};
-
 let dragging = false;
 let panning = false;
 let lastMouse: [number, number] = [0, 0];
 let terrainCanvas: HTMLCanvasElement | null = null;
-
-function terrainName(value: number, forest: number): string {
-    if (forest > THRESHOLD) {
-        return 'forest';
-    }
-
-    const entries = Object.entries(TERRAIN_VALUES).reverse();
-    for (const [name, threshold] of entries) {
-        if (value > threshold) {
-            return name;
-        }
-    }
-
-    return 'plains';
-}
 
 function bakeTerrain() {
     if (!store.terrain || !store.forest || !terrainCanvas) {
@@ -61,7 +31,7 @@ function bakeTerrain() {
             const gy = Math.min(store.terrain[0].length - 1, Math.floor(y / cellSize));
             const tv = store.terrain[gx][gy];
             const fv = store.forest[gx][gy];
-            ctx.fillStyle = TERRAIN_COLORS[terrainName(tv, fv)] ?? '#c8d68a';
+            ctx.fillStyle = engineCellFillStyle(tv, fv);
             ctx.fillRect(x, y, cellSize, cellSize);
         }
     }
@@ -141,7 +111,7 @@ function drawFog(ctx: CanvasRenderingContext2D, vision: number[][]) {
     for (let gy = 0; gy < vision[0].length - 1; gy++) {
         for (let gx = 0; gx < vision.length - 1; gx++) {
             const v = vision[gx][gy];
-            if (v < THRESHOLD) {
+            if (v < ENGINE_FOREST_THRESHOLD) {
                 ctx.fillRect(gx * cellSize, gy * cellSize, cellSize, cellSize);
             }
         }
