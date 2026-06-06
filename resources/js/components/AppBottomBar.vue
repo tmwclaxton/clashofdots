@@ -5,7 +5,6 @@ import { edit as editProfile } from '@/routes/profile';
 
 const page = usePage();
 
-const currentTeam = computed(() => page.props.currentTeam);
 const user = computed(() => page.props.auth.user);
 </script>
 
@@ -25,15 +24,7 @@ const user = computed(() => page.props.auth.user);
                     <span class="font-display font-bold text-foreground"
                         >War of Spheres</span
                     >
-                    <span v-if="currentTeam || user" class="text-foreground/70">
-                        ·
-                    </span>
-                    <span v-if="currentTeam" class="font-semibold">{{
-                        currentTeam.name
-                    }}</span>
-                    <span v-if="currentTeam && user" class="text-foreground/70">
-                        ·
-                    </span>
+                    <span v-if="user" class="text-foreground/70"> · </span>
                     <span v-if="user">{{ user.name }}</span>
                 </p>
             </div>

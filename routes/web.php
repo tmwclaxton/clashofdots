@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Games\GameController;
-use App\Http\Controllers\Teams\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -19,10 +18,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('games/{game}/play', [GameController::class, 'play'])->name('games.play');
     Route::post('games/{game}/orders', [GameController::class, 'submitOrders'])->name('games.orders');
     Route::post('games/{game}/pause', [GameController::class, 'togglePause'])->name('games.pause');
-});
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
 });
 
 require __DIR__.'/settings.php';

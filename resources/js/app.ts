@@ -23,7 +23,6 @@ createInertiaApp({
             case name === 'games/Play':
                 return null;
             case name.startsWith('settings/'):
-            case name.startsWith('teams/'):
                 return [AppLayout, SettingsLayout];
             default:
                 return AppLayout;

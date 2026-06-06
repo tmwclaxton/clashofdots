@@ -8,7 +8,6 @@ import {
     Users,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
-import TeamSwitcher from '@/components/TeamSwitcher.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -88,8 +87,6 @@ const navItems = computed<NavItem[]>(() => [
             </div>
 
             <div class="flex items-center gap-2">
-                <TeamSwitcher in-header />
-
                 <DropdownMenu v-if="auth.user">
                     <DropdownMenuTrigger as-child>
                         <Button
