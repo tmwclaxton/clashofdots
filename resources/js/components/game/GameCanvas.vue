@@ -9,7 +9,7 @@ const TERRAIN_COLORS: Record<string, string> = {
     water: '#4a90d9',
     plains: '#c8d68a',
     forest: '#3d6b45',
-    hill: '#b0b0a8',
+    hill: '#d4d4d4',
     mountain: '#5a5a5a',
 };
 
@@ -91,7 +91,7 @@ function draw() {
     canvas.height = rect.height * devicePixelRatio;
     ctx.scale(devicePixelRatio, devicePixelRatio);
 
-    ctx.fillStyle = '#e8dfc8';
+    ctx.fillStyle = '#c8d68a';
     ctx.fillRect(0, 0, rect.width, rect.height);
 
     ctx.save();

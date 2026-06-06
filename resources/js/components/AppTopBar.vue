@@ -19,7 +19,7 @@ import {
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
-import { mapBuilder } from '@/routes';
+import { home, mapBuilder } from '@/routes';
 import { index as lobbies } from '@/routes/lobbies';
 import { ongoing, past } from '@/routes/matches';
 import type { NavItem } from '@/types';
@@ -29,74 +29,65 @@ const auth = computed(() => page.props.auth);
 const { isCurrentOrParentUrl } = useCurrentUrl();
 
 const navItems = computed<NavItem[]>(() => [
-    {
-        title: 'Map Builder',
-        href: mapBuilder().url,
-        icon: Map,
-    },
-    {
-        title: 'Lobbies',
-        href: lobbies().url,
-        icon: Users,
-    },
-    {
-        title: 'Ongoing',
-        href: ongoing().url,
-        icon: Clock3,
-    },
-    {
-        title: 'Past Matches',
-        href: past().url,
-        icon: History,
-    },
+    { title: 'Map Builder', href: mapBuilder().url, icon: Map },
+    { title: 'Lobbies', href: lobbies().url, icon: Users },
+    { title: 'Ongoing', href: ongoing().url, icon: Clock3 },
+    { title: 'Past Matches', href: past().url, icon: History },
 ]);
 </script>
 
 <template>
-    <header
-        class="sticky top-0 z-40 border-b border-[#1a1814]/10 bg-[#f7f1e3]/95 backdrop-blur-sm"
-    >
+    <header class="wod-bar-top relative">
         <div
-            class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4"
+            class="relative mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-3"
         >
-            <div class="flex items-center gap-6">
-                <Link :href="lobbies().url" class="flex items-center gap-3">
-                    <div
-                        class="flex size-9 items-center justify-center rounded-full border-2 border-[#1a1814]/15 bg-[#e8dfc8] shadow-[2px_2px_0_#1a1814]/10"
-                    >
+            <div class="flex items-center gap-5">
+                <Link :href="home().url" class="flex items-center gap-2.5">
+                    <div class="wod-logo-terrain size-9">
                         <Swords class="size-4" />
                     </div>
                     <div class="hidden sm:block">
-                        <p class="text-sm font-bold tracking-[0.12em] uppercase">
+                        <p class="font-display text-base font-bold leading-tight">
                             War of Spheres
                         </p>
+                        <p class="wod-tagline">Plan first, fight second</p>
                     </div>
                 </Link>
 
+                <div
+                    class="wod-terrain-strip hidden sm:flex"
+                    aria-hidden="true"
+                    title="Terrain palette"
+                >
+                    <span class="wod-swatch bg-wod-red" />
+                    <span class="wod-swatch bg-wod-blue" />
+                    <span class="wod-swatch bg-wod-green-dk" />
+                    <span class="wod-swatch bg-wod-gray-dk" />
+                </div>
+
                 <nav class="hidden items-center gap-1 md:flex">
-                    <Link
+                    <Button
                         v-for="item in navItems"
                         :key="item.title"
-                        :href="item.href"
+                        variant="ghost"
+                        size="sm"
+                        as-child
+                        :class="[
+                            'wod-nav-ghost',
+                            isCurrentOrParentUrl(item.href)
+                                ? 'wod-nav-active'
+                                : '',
+                        ]"
                     >
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            :class="[
-                                'gap-2 text-[#3d362b] hover:bg-[#e8dfc8]',
-                                isCurrentOrParentUrl(item.href)
-                                    ? 'bg-[#e8dfc8] font-bold text-[#1a1814]'
-                                    : '',
-                            ]"
-                        >
+                        <Link :href="item.href">
                             <component :is="item.icon" class="size-4" />
                             {{ item.title }}
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                 </nav>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
                 <TeamSwitcher in-header />
 
                 <DropdownMenu v-if="auth.user">
@@ -104,16 +95,18 @@ const navItems = computed<NavItem[]>(() => [
                         <Button
                             variant="ghost"
                             size="icon"
-                            class="rounded-full border border-[#1a1814]/10"
+                            class="wod-nav-ghost rounded-md"
                         >
-                            <Avatar class="size-8 overflow-hidden rounded-full">
+                            <Avatar
+                                class="size-8 overflow-hidden rounded-md border-2 border-foreground"
+                            >
                                 <AvatarImage
                                     v-if="auth.user.avatar"
                                     :src="auth.user.avatar"
                                     :alt="auth.user.name"
                                 />
                                 <AvatarFallback
-                                    class="rounded-full bg-[#e8dfc8] text-[#1a1814]"
+                                    class="rounded-md bg-card text-xs font-bold"
                                 >
                                     {{ getInitials(auth.user.name) }}
                                 </AvatarFallback>
@@ -128,27 +121,24 @@ const navItems = computed<NavItem[]>(() => [
         </div>
 
         <nav
-            class="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-6 pb-3 md:hidden"
+            class="mx-auto flex max-w-6xl gap-1 overflow-x-auto border-t-2 border-foreground/20 px-6 py-2 md:hidden"
         >
-            <Link
+            <Button
                 v-for="item in navItems"
                 :key="`mobile-${item.title}`"
-                :href="item.href"
+                variant="ghost"
+                size="sm"
+                as-child
+                :class="[
+                    'wod-nav-ghost shrink-0 gap-2',
+                    isCurrentOrParentUrl(item.href) ? 'wod-nav-active' : '',
+                ]"
             >
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    :class="[
-                        'shrink-0 gap-2 text-[#3d362b]',
-                        isCurrentOrParentUrl(item.href)
-                            ? 'bg-[#e8dfc8] font-bold'
-                            : '',
-                    ]"
-                >
+                <Link :href="item.href">
                     <component :is="item.icon" class="size-4" />
                     {{ item.title }}
-                </Button>
-            </Link>
+                </Link>
+            </Button>
         </nav>
     </header>
 </template>

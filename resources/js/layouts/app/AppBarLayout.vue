@@ -8,7 +8,7 @@ import AppTopBar from '@/components/AppTopBar.vue';
 
 <template>
     <AppShell variant="header">
-        <div class="flex min-h-svh flex-col bg-[#e8dfc8] text-[#1a1814]">
+        <div class="wod-page flex min-h-svh flex-col">
             <AppTopBar />
             <AppContent
                 variant="header"

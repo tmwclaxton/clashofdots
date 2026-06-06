@@ -37,22 +37,26 @@ onUnmounted(() => {
 <template>
     <Head title="Battlefield" />
 
-    <div class="flex h-screen flex-col bg-[#e8dfc8] text-[#1a1814]">
+    <div class="flex h-screen flex-col bg-wod-green-lt text-foreground">
         <header
-            class="flex items-center justify-between border-b border-[#1a1814]/10 bg-[#f7f1e3] px-4 py-3"
+            class="wod-bar-top relative flex shrink-0 items-center justify-between px-4 py-2"
         >
             <div>
-                <p class="text-xs uppercase tracking-[0.25em]">War of Spheres</p>
-                <p class="font-mono text-sm">{{ game.code }}</p>
+                <p class="font-display text-xs font-bold text-foreground">
+                    War of Spheres
+                </p>
+                <p class="text-sm font-bold tracking-widest text-foreground">
+                    {{ game.code }}
+                </p>
             </div>
             <div class="flex items-center gap-2">
                 <span
                     v-for="player in game.players"
                     :key="player.slot"
-                    class="flex items-center gap-1 rounded-full border px-2 py-1 text-xs"
+                    class="wod-chip"
                 >
                     <span
-                        class="h-2 w-2 rounded-full"
+                        class="wod-swatch !size-2.5 rounded-full"
                         :style="{ backgroundColor: player.color }"
                     />
                     {{ player.name }}
@@ -66,15 +70,12 @@ onUnmounted(() => {
                 >
                     Clear (C)
                 </Button>
-                <Button
-                    size="sm"
-                    @click="store.submitOrders(game.uuid)"
-                >
+                <Button size="sm" @click="store.submitOrders(game.uuid)">
                     Execute (Space)
                 </Button>
                 <Button
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
                     @click="store.togglePause(game.uuid)"
                 >
                     Pause (P)
@@ -85,14 +86,14 @@ onUnmounted(() => {
             </div>
         </header>
 
-        <div class="relative min-h-0 flex-1">
+        <div class="relative min-h-0 flex-1 border-y-2 border-foreground">
             <GameCanvas />
             <div
                 v-if="store.winnerUserId"
-                class="absolute inset-0 flex items-center justify-center bg-black/40"
+                class="absolute inset-0 flex items-center justify-center bg-foreground/40"
             >
-                <div class="rounded-xl bg-[#f7f1e3] px-8 py-6 text-center shadow-lg">
-                    <p class="text-xl font-semibold">
+                <div class="wod-panel px-8 py-6 text-center">
+                    <p class="font-display text-2xl font-bold">
                         {{
                             store.winnerUserId === page.props.auth.user?.id
                                 ? 'Victory!'
@@ -106,8 +107,9 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <footer class="border-t border-[#1a1814]/10 bg-[#f7f1e3] px-4 py-2 text-xs text-muted-foreground">
-            Left-click drag on your units or cities to plan paths. Right-click drag to pan. Scroll to zoom.
+        <footer class="wod-bar-bottom px-4 py-2 text-xs font-medium">
+            Left-click drag to plan paths · Right-click drag to pan · Scroll
+            to zoom
         </footer>
     </div>
 </template>

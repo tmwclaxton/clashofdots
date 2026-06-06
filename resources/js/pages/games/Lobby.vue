@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
@@ -58,15 +58,16 @@ function joinLobby() {
             description="Create or join a quick match. Up to six commanders per battle."
         />
 
-        <div class="grid gap-6 lg:grid-cols-2">
-            <div
-                class="space-y-4 rounded-xl border border-[#1a1814]/15 bg-[#f7f1e3]/80 p-6"
-            >
-                <h2 class="text-lg font-semibold">Create lobby</h2>
+        <div class="grid gap-4 lg:grid-cols-2">
+            <div class="wod-panel space-y-4 p-5">
+                <div class="flex items-center gap-2">
+                    <div class="wod-swatch bg-wod-red" aria-hidden="true" />
+                    <h2 class="font-bold">Create lobby</h2>
+                </div>
                 <div class="space-y-2">
                     <Label for="max_players">Players</Label>
                     <Select v-model="createForm.max_players">
-                        <SelectTrigger id="max_players">
+                        <SelectTrigger id="max_players" class="w-full">
                             <SelectValue placeholder="Select players" />
                         </SelectTrigger>
                         <SelectContent>
@@ -86,10 +87,11 @@ function joinLobby() {
                 </Button>
             </div>
 
-            <div
-                class="space-y-4 rounded-xl border border-[#1a1814]/15 bg-[#f7f1e3]/80 p-6"
-            >
-                <h2 class="text-lg font-semibold">Join by code</h2>
+            <div class="wod-panel space-y-4 p-5">
+                <div class="flex items-center gap-2">
+                    <div class="wod-swatch bg-wod-blue" aria-hidden="true" />
+                    <h2 class="font-bold">Join by code</h2>
+                </div>
                 <div class="space-y-2">
                     <Label for="code">Lobby code</Label>
                     <Input
@@ -101,7 +103,7 @@ function joinLobby() {
                     />
                 </div>
                 <Button
-                    variant="secondary"
+                    variant="outline"
                     :disabled="joinForm.processing"
                     @click="joinLobby"
                 >
@@ -111,24 +113,27 @@ function joinLobby() {
         </div>
 
         <div class="space-y-3">
-            <h2 class="text-lg font-semibold">Open lobbies</h2>
+            <h2 class="font-bold">Open lobbies</h2>
             <div
                 v-if="lobbies.length === 0"
-                class="rounded-xl border border-dashed border-[#1a1814]/20 bg-[#f7f1e3]/40 p-8 text-center text-[#5c5346]"
+                class="wod-panel-dashed p-8 text-center text-muted-foreground"
             >
                 No open lobbies. Create one to get started.
             </div>
             <div
                 v-for="lobby in lobbies"
                 :key="lobby.uuid"
-                class="flex items-center justify-between rounded-xl border border-[#1a1814]/15 bg-[#f7f1e3]/80 p-4"
+                class="flex items-center justify-between wod-panel p-4"
             >
                 <div>
                     <div class="flex items-center gap-2">
-                        <span class="font-mono text-lg tracking-widest">{{
+                        <span class="font-bold tracking-widest">{{
                             lobby.code
                         }}</span>
-                        <Badge variant="secondary">
+                        <Badge
+                            variant="outline"
+                            class="border-foreground bg-wod-green-lt"
+                        >
                             {{ lobby.playerCount }}/{{ lobby.maxPlayers }}
                         </Badge>
                     </div>

@@ -94,7 +94,7 @@ onUnmounted(() => {
                 variant="ghost"
                 :class="
                     props.inHeader
-                        ? 'h-8 gap-1 px-2'
+                        ? 'wod-nav-ghost h-8 gap-1 px-2'
                         : 'w-full justify-start px-2 has-[>svg]:px-2 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
                 "
             >

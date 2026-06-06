@@ -10,39 +10,41 @@ const user = computed(() => page.props.auth.user);
 </script>
 
 <template>
-    <footer
-        class="mt-auto border-t border-[#1a1814]/10 bg-[#f7f1e3]/80 px-6 py-4 text-sm text-[#5c5346]"
-    >
+    <footer class="wod-bar-bottom px-6">
         <div
-            class="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            class="relative mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center sm:justify-between sm:text-left"
         >
-            <p class="font-bold tracking-[0.1em] text-[#1a1814] uppercase">
-                War of Spheres
-            </p>
-
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span v-if="currentTeam">
-                    Team:
-                    <span class="font-bold text-[#1a1814]">{{
+            <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                <div class="wod-terrain-strip" aria-hidden="true">
+                    <span class="wod-swatch bg-wod-green-dk" />
+                    <span class="wod-swatch bg-wod-green-lt" />
+                    <span class="wod-swatch bg-wod-blue" />
+                    <span class="wod-swatch bg-wod-red" />
+                </div>
+                <p>
+                    <span class="font-display font-bold text-foreground"
+                        >War of Spheres</span
+                    >
+                    <span v-if="currentTeam || user" class="text-foreground/70">
+                        ·
+                    </span>
+                    <span v-if="currentTeam" class="font-semibold">{{
                         currentTeam.name
                     }}</span>
-                </span>
-                <span v-if="user">
-                    Commander:
-                    <span class="font-bold text-[#1a1814]">{{ user.name }}</span>
-                </span>
+                    <span v-if="currentTeam && user" class="text-foreground/70">
+                        ·
+                    </span>
+                    <span v-if="user">{{ user.name }}</span>
+                </p>
             </div>
 
             <div class="flex items-center gap-4">
-                <Link
-                    :href="editProfile().url"
-                    class="hover:text-[#1a1814] hover:underline"
-                >
+                <p class="hidden text-xs font-semibold text-wod-green-dk md:block">
+                    Draw the plan. Win the war.
+                </p>
+                <Link :href="editProfile().url" class="wod-link text-sm">
                     Settings
                 </Link>
-                <span class="text-xs tracking-[0.15em] uppercase">
-                    Plan first, fight second
-                </span>
             </div>
         </div>
     </footer>
