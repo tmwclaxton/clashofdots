@@ -5,7 +5,6 @@ import {
     type LucideIcon,
     Eraser,
     Hand,
-    Link2,
     PaintBucket,
     Paintbrush,
 } from 'lucide-vue-next';
@@ -18,7 +17,6 @@ const tools: { id: MapEditorTool; label: string; icon: LucideIcon }[] = [
     { id: 'brush', label: 'Brush', icon: Paintbrush },
     { id: 'eraser', label: 'Eraser', icon: Eraser },
     { id: 'fill', label: 'Fill', icon: PaintBucket },
-    { id: 'bridge', label: 'Bridge overlay', icon: Link2 },
     { id: 'pan', label: 'Pan', icon: Hand },
 ];
 

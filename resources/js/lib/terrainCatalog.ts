@@ -39,10 +39,6 @@ export const EDITOR_TERRAIN_COLORS: Record<TerrainId, string> = {
     beach: '#f5e6b3',
 };
 
-export const BRIDGE_PLANK_COLOR = '#8b6914';
-
-export const BRIDGE_RAIL_COLOR = '#5c4a0c';
-
 export function isTerrainId(value: string): value is TerrainId {
     return (TERRAIN_IDS as readonly string[]).includes(value);
 }

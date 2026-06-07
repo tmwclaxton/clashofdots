@@ -32,7 +32,7 @@ function bakeTerrain() {
             const tv = store.terrain[gx][gy];
             const fv = store.forest[gx][gy];
             ctx.fillStyle = engineCellFillStyle(tv, fv);
-            ctx.fillRect(x, y, cellSize, cellSize);
+            ctx.fillRect(x, y, cellSize + 1, cellSize + 1);
         }
     }
 }
@@ -69,6 +69,7 @@ function draw() {
     ctx.translate(store.camX, store.camY);
 
     if (terrainCanvas) {
+        ctx.imageSmoothingEnabled = false;
         ctx.drawImage(terrainCanvas, 0, 0);
     }
 

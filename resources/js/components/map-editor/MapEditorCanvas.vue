@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { MAP_EDITOR_MAX_ZOOM, MAP_EDITOR_MIN_ZOOM, type MapEditorInstance } from '@/composables/useMapEditor';
-import { drawBridgeOverlay, editorBlendedTerrainFillStyle } from '@/lib/terrainRender';
+import { editorBlendedTerrainFillStyle } from '@/lib/terrainRender';
 
 const props = defineProps<{
     editor: MapEditorInstance;
@@ -97,7 +97,6 @@ function draw(): void {
 
     const cs = props.editor.cellSize;
     const cells = props.editor.cells.value;
-    const bridges = props.editor.bridges.value;
     const ww = props.editor.worldWidth.value;
     const wh = props.editor.worldHeight.value;
     const nRows = props.editor.gridRows.value;
@@ -119,10 +118,8 @@ function draw(): void {
             const px = gx * cs;
             const py = gy * cs;
             ctx.fillStyle = editorBlendedTerrainFillStyle(cells, gx, gy);
-            ctx.fillRect(px, py, cs, cs);
-            if (bridges[gx][gy]) {
-                drawBridgeOverlay(ctx, px, py, cs);
-            }
+            // Overlap by 1px so scaled/zoomed tiles do not leave workspace gaps between cells.
+            ctx.fillRect(px, py, cs + 1, cs + 1);
         }
     }
 
@@ -159,7 +156,7 @@ function onPointerDown(e: PointerEvent): void {
 
     const [gx, gy] = grid;
 
-    if (props.editor.activeTool.value === 'fill' || props.editor.activeTool.value === 'bridge') {
+    if (props.editor.activeTool.value === 'fill') {
         props.editor.clickTool(gx, gy);
         scheduleDraw();
 
@@ -218,11 +215,28 @@ function onPointerUp(e: PointerEvent): void {
 
 function onWheel(e: WheelEvent): void {
     e.preventDefault();
+    const canvas = canvasRef.value;
+    if (!canvas) {
+        return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const oldZoom = props.editor.zoom.value;
     const factor = e.deltaY > 0 ? 0.92 : 1.08;
-    props.editor.zoom.value = Math.min(
+    const newZoom = Math.min(
         MAP_EDITOR_MAX_ZOOM,
-        Math.max(MAP_EDITOR_MIN_ZOOM, props.editor.zoom.value * factor),
+        Math.max(MAP_EDITOR_MIN_ZOOM, oldZoom * factor),
     );
+
+    if (newZoom === oldZoom) {
+        return;
+    }
+
+    props.editor.zoom.value = newZoom;
+    props.editor.camX.value += sx * (1 / newZoom - 1 / oldZoom);
+    props.editor.camY.value += sy * (1 / newZoom - 1 / oldZoom);
     scheduleDraw();
 }
 

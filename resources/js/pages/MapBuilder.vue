@@ -1,24 +1,19 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import AppModal from '@/components/AppModal.vue';
 import MapEditorCanvas from '@/components/map-editor/MapEditorCanvas.vue';
 import MapEditorToolbar from '@/components/map-editor/MapEditorToolbar.vue';
+import MapGenerateDialog from '@/components/map-editor/MapGenerateDialog.vue';
 import MapListPanel from '@/components/map-editor/MapListPanel.vue';
 import type { MapSummary } from '@/components/map-editor/MapListPanel.vue';
 import MapTerrainPalette from '@/components/map-editor/MapTerrainPalette.vue';
 import type { TerrainTypeRow } from '@/components/map-editor/MapTerrainPalette.vue';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import type { MapDataPayload } from '@/composables/useMapEditor';
 import { useMapEditor } from '@/composables/useMapEditor';
+import type { MapGenerationType } from '@/lib/generateRandomMap';
 import {
     DEFAULT_MAP_CELL_COLS,
     DEFAULT_MAP_CELL_ROWS,
@@ -38,9 +33,10 @@ const props = defineProps<{
 
 const editor = useMapEditor(props.defaults);
 const zoomPercent = computed(() => Math.round(editor.zoom.value * 100));
+const editorDirty = computed(() => editor.dirty.value);
 const saving = ref(false);
 const saveError = ref<string | null>(null);
-const generateSeed = ref('');
+const generateDialogOpen = ref(false);
 const newMapDialogOpen = ref(false);
 const newMapRows = ref(DEFAULT_MAP_CELL_ROWS);
 const newMapCols = ref(DEFAULT_MAP_CELL_COLS);
@@ -81,38 +77,16 @@ function submitNewMapDialog(): void {
 
         return;
     }
-    if (
-        editor.dirty.value
-        && !window.confirm('Discard unsaved changes and create this new empty map?')
-    ) {
-        return;
-    }
     editor.newMapWithSize(rows, cols);
     newMapDialogOpen.value = false;
 }
 
-function parseSeedInput(raw: string): number | undefined {
-    const t = raw.trim();
-    if (t === '') {
-        return undefined;
-    }
-    const n = Number.parseInt(t, 10);
-    if (!Number.isFinite(n)) {
-        return undefined;
-    }
-
-    return n;
+function openGenerateDialog(): void {
+    generateDialogOpen.value = true;
 }
 
-function onGenerateMap(): void {
-    if (
-        editor.dirty.value
-        && !window.confirm('Discard unsaved changes and generate a new random map?')
-    ) {
-        return;
-    }
-    const seed = parseSeedInput(generateSeed.value);
-    editor.generateAndApplyMap(seed);
+function onGenerateMap(payload: { seed?: number; type: MapGenerationType }): void {
+    editor.generateAndApplyMap(payload.seed, payload.type);
     if (editor.mapName.value === 'Untitled map') {
         editor.mapName.value = 'Generated map';
     }
@@ -181,23 +155,13 @@ onUnmounted(() => {
             >
                 Fit view
             </Button>
-            <label class="sr-only" for="map-builder-seed">Random seed (optional)</label>
-            <Input
-                id="map-builder-seed"
-                v-model="generateSeed"
-                class="h-9 w-24 max-w-full border-2 border-foreground font-mono text-xs"
-                inputmode="numeric"
-                placeholder="Seed"
-                title="Optional integer seed for reproducible terrain; leave empty for random"
-                autocomplete="off"
-            />
             <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 class="h-8 gap-1 px-2 text-xs"
                 title="Replace the map with procedurally generated terrain"
-                @click="onGenerateMap"
+                @click="openGenerateDialog"
             >
                 <Sparkles class="size-3.5" />
                 Generate
@@ -265,17 +229,25 @@ onUnmounted(() => {
 
         <MapTerrainPalette :editor="editor" :terrain-types="terrainTypes" />
 
-        <Dialog v-model:open="newMapDialogOpen">
-            <DialogContent class="border-2 border-foreground sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle class="font-display">New map size</DialogTitle>
-                    <DialogDescription>
-                        Width and height are vertex counts (cells). Allowed ranges:
-                        {{ MAP_GRID_MIN_CELL_ROWS }}–{{ MAP_GRID_MAX_CELL_ROWS }} rows and
-                        {{ MAP_GRID_MIN_CELL_COLS }}–{{ MAP_GRID_MAX_CELL_COLS }} columns.
-                    </DialogDescription>
-                </DialogHeader>
-                <div class="flex flex-wrap items-end gap-3" @keydown.stop>
+        <MapGenerateDialog
+            v-model:open="generateDialogOpen"
+            :dirty="editorDirty"
+            @generate="onGenerateMap"
+        />
+
+        <AppModal
+            v-model:open="newMapDialogOpen"
+            title="New map size"
+            :description="`Width and height are vertex counts (cells). Allowed ranges: ${MAP_GRID_MIN_CELL_ROWS}–${MAP_GRID_MAX_CELL_ROWS} rows and ${MAP_GRID_MIN_CELL_COLS}–${MAP_GRID_MAX_CELL_COLS} columns.`"
+        >
+            <div class="space-y-3" @keydown.stop>
+                <p
+                    v-if="editorDirty"
+                    class="rounded-md border border-amber-300/80 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100"
+                >
+                    You have unsaved changes. Creating a new map will discard them.
+                </p>
+                <div class="flex flex-wrap items-end gap-3">
                     <div class="flex flex-col gap-1">
                         <label class="text-xs font-semibold" for="new-map-rows">Rows</label>
                         <input
@@ -303,13 +275,13 @@ onUnmounted(() => {
                     </div>
                 </div>
                 <p v-if="newMapFormError" class="text-sm text-destructive">{{ newMapFormError }}</p>
-                <DialogFooter class="gap-2 sm:justify-end">
-                    <Button type="button" variant="outline" @click="newMapDialogOpen = false">
-                        Cancel
-                    </Button>
-                    <Button type="button" @click="submitNewMapDialog">Create empty map</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+            <template #footer>
+                <Button type="button" variant="outline" @click="newMapDialogOpen = false">
+                    Cancel
+                </Button>
+                <Button type="button" @click="submitNewMapDialog">Create empty map</Button>
+            </template>
+        </AppModal>
     </div>
 </template>

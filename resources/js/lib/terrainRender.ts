@@ -1,6 +1,4 @@
 import {
-    BRIDGE_PLANK_COLOR,
-    BRIDGE_RAIL_COLOR,
     EDITOR_TERRAIN_COLORS,
     TERRAIN_IDS,
     type TerrainId,
@@ -141,50 +139,4 @@ export function editorBlendedTerrainFillStyle(
         (1 - t) * center[1] + t * ag,
         (1 - t) * center[2] + t * ab,
     );
-}
-
-export function drawBridgeOverlay(
-    ctx: CanvasRenderingContext2D,
-    px: number,
-    py: number,
-    cellSize: number,
-): void {
-    const margin = cellSize * 0.12;
-    const top = py + cellSize * 0.32;
-    const h = cellSize * 0.36;
-    const w = cellSize - 2 * margin;
-
-    ctx.fillStyle = BRIDGE_PLANK_COLOR;
-    ctx.strokeStyle = BRIDGE_RAIL_COLOR;
-    ctx.lineWidth = Math.max(1, cellSize * 0.06);
-    const rx = px + margin;
-    const ry = top;
-    const rr = cellSize * 0.08;
-    ctx.beginPath();
-    if (typeof ctx.roundRect === 'function') {
-        ctx.roundRect(rx, ry, w, h, rr);
-    } else {
-        const r = Math.min(rr, w / 2, h / 2);
-        ctx.moveTo(rx + r, ry);
-        ctx.lineTo(rx + w - r, ry);
-        ctx.quadraticCurveTo(rx + w, ry, rx + w, ry + r);
-        ctx.lineTo(rx + w, ry + h - r);
-        ctx.quadraticCurveTo(rx + w, ry + h, rx + w - r, ry + h);
-        ctx.lineTo(rx + r, ry + h);
-        ctx.quadraticCurveTo(rx, ry + h, rx, ry + h - r);
-        ctx.lineTo(rx, ry + r);
-        ctx.quadraticCurveTo(rx, ry, rx + r, ry);
-        ctx.closePath();
-    }
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.strokeStyle = BRIDGE_RAIL_COLOR;
-    ctx.lineWidth = Math.max(1, cellSize * 0.04);
-    ctx.beginPath();
-    ctx.moveTo(px + margin + w * 0.2, top + h * 0.35);
-    ctx.lineTo(px + margin + w * 0.8, top + h * 0.35);
-    ctx.moveTo(px + margin + w * 0.2, top + h * 0.7);
-    ctx.lineTo(px + margin + w * 0.8, top + h * 0.7);
-    ctx.stroke();
 }

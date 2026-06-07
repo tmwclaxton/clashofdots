@@ -1,16 +1,20 @@
 import { router } from '@inertiajs/vue3';
 import { computed, ref, shallowRef } from 'vue';
-import { generateRandomMap, type GeneratedMapData } from '@/lib/generateRandomMap';
+import {
+    generateRandomMap,
+    type GeneratedMapData,
+    type MapGenerationType,
+} from '@/lib/generateRandomMap';
 import {
     MAP_EDITOR_CELL_PX,
     emptyMapPayload,
     isAllowedMapGridSize,
     validateMapGridData,
 } from '@/lib/mapEditorGrid';
-import { WATER_TERRAINS, type TerrainId } from '@/lib/terrainCatalog';
+import type { TerrainId } from '@/lib/terrainCatalog';
 import { destroy as destroyMap, show, store, update } from '@/routes/maps';
 
-export type MapEditorTool = 'brush' | 'eraser' | 'fill' | 'bridge' | 'pan';
+export type MapEditorTool = 'brush' | 'eraser' | 'fill' | 'pan';
 
 export type MapDataPayload = {
     version: number;
@@ -24,12 +28,8 @@ function cloneCells(cells: string[][]): string[][] {
     return cells.map((row) => [...row]);
 }
 
-function cloneBridges(bridges: boolean[][]): boolean[][] {
-    return bridges.map((row) => [...row]);
-}
-
-function isWaterCell(terrain: string): boolean {
-    return WATER_TERRAINS.has(terrain as TerrainId);
+function emptyBridges(cellRows: number, cellCols: number): boolean[][] {
+    return Array.from({ length: cellRows }, () => Array.from({ length: cellCols }, () => false));
 }
 
 const MAX_UNDO = 50;
@@ -80,7 +80,6 @@ async function jsonFetch(
 
 export function useMapEditor(initialDefaults: MapDataPayload) {
     const cells = ref<string[][]>(cloneCells(initialDefaults.cells));
-    const bridges = ref<boolean[][]>(cloneBridges(initialDefaults.bridges));
     const mapName = ref('Untitled map');
     const currentUuid = shallowRef<string | null>(null);
     const dirty = ref(false);
@@ -92,11 +91,11 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     const camY = ref(0);
     /** Bumped when the map document changes so the canvas can re-fit the view. */
     const mapViewNonce = ref(0);
-    /** Bumped when terrain or bridges change so the editor can repaint without deep-watching cells. */
+    /** Bumped when terrain changes so the editor can repaint without deep-watching cells. */
     const terrainEpoch = ref(0);
 
-    const undoStack = ref<{ cells: string[][]; bridges: boolean[][] }[]>([]);
-    const redoStack = ref<{ cells: string[][]; bridges: boolean[][] }[]>([]);
+    const undoStack = ref<{ cells: string[][] }[]>([]);
+    const redoStack = ref<{ cells: string[][] }[]>([]);
 
     const strokeOpen = ref(false);
 
@@ -131,7 +130,6 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     function snapshot(): void {
         undoStack.value.push({
             cells: cloneCells(cells.value),
-            bridges: cloneBridges(bridges.value),
         });
         if (undoStack.value.length > MAX_UNDO) {
             undoStack.value.shift();
@@ -146,10 +144,8 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         }
         redoStack.value.push({
             cells: cloneCells(cells.value),
-            bridges: cloneBridges(bridges.value),
         });
         cells.value = prev.cells;
-        bridges.value = prev.bridges;
         dirty.value = true;
         bumpTerrainRender();
     }
@@ -161,10 +157,8 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         }
         undoStack.value.push({
             cells: cloneCells(cells.value),
-            bridges: cloneBridges(bridges.value),
         });
         cells.value = next.cells;
-        bridges.value = next.bridges;
         dirty.value = true;
         bumpTerrainRender();
     }
@@ -188,35 +182,17 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     function stampBrushOnly(gx: number, gy: number): void {
         stampDisc(gx, gy, (x, y) => {
             cells.value[x][y] = selectedTerrain.value;
-            if (!isWaterCell(cells.value[x][y])) {
-                bridges.value[x][y] = false;
-            }
         });
     }
 
     function stampEraserOnly(gx: number, gy: number): void {
         stampDisc(gx, gy, (x, y) => {
             cells.value[x][y] = 'plains';
-            bridges.value[x][y] = false;
         });
     }
 
-    function applyBridgeCell(gx: number, gy: number): void {
-        if (!isWaterCell(cells.value[gx][gy])) {
-            return;
-        }
-        snapshot();
-        bridges.value[gx][gy] = !bridges.value[gx][gy];
-        dirty.value = true;
-        bumpTerrainRender();
-    }
-
     function beginStroke(): void {
-        if (
-            activeTool.value === 'fill'
-            || activeTool.value === 'pan'
-            || activeTool.value === 'bridge'
-        ) {
+        if (activeTool.value === 'fill' || activeTool.value === 'pan') {
             return;
         }
         snapshot();
@@ -265,9 +241,6 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
             }
             visited.add(key);
             cells.value[x][y] = selectedTerrain.value;
-            if (!isWaterCell(cells.value[x][y])) {
-                bridges.value[x][y] = false;
-            }
             queue.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
         }
         dirty.value = true;
@@ -277,17 +250,11 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     function clickTool(gx: number, gy: number): void {
         if (activeTool.value === 'fill') {
             applyFill(gx, gy);
-
-            return;
-        }
-        if (activeTool.value === 'bridge') {
-            applyBridgeCell(gx, gy);
         }
     }
 
     function newMap(): void {
         cells.value = cloneCells(initialDefaults.cells);
-        bridges.value = cloneBridges(initialDefaults.bridges);
         mapName.value = 'Untitled map';
         currentUuid.value = null;
         dirty.value = false;
@@ -303,7 +270,6 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         }
         const payload = emptyMapPayload(cellRows, cellCols);
         cells.value = cloneCells(payload.cells);
-        bridges.value = cloneBridges(payload.bridges);
         mapName.value = 'Untitled map';
         currentUuid.value = null;
         dirty.value = false;
@@ -325,7 +291,6 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
             return;
         }
         cells.value = cloneCells(payload.cells);
-        bridges.value = cloneBridges(payload.bridges);
         mapName.value = name;
         currentUuid.value = uuid;
         dirty.value = false;
@@ -355,7 +320,7 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
             cellRows: rows,
             cellCols: cols,
             cells: cloneCells(cells.value),
-            bridges: cloneBridges(bridges.value),
+            bridges: emptyBridges(rows, cols),
         };
     }
 
@@ -423,14 +388,20 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         }
         snapshot();
         cells.value = cloneCells(payload.cells);
-        bridges.value = cloneBridges(payload.bridges);
         dirty.value = true;
         bumpTerrainRender();
         requestMapViewFit();
     }
 
-    function generateAndApplyMap(seed?: number): void {
-        applyGeneratedMap(generateRandomMap(seed, gridRows.value, gridCols.value));
+    function generateAndApplyMap(seed?: number, type?: MapGenerationType): void {
+        applyGeneratedMap(
+            generateRandomMap({
+                seed,
+                type,
+                cellRows: gridRows.value,
+                cellCols: gridCols.value,
+            }),
+        );
     }
 
     function bumpBrush(delta: number): void {
@@ -446,7 +417,6 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
 
     return {
         cells,
-        bridges,
         mapName,
         currentUuid,
         dirty,

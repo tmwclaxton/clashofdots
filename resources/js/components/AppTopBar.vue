@@ -39,7 +39,7 @@ const navItems = computed<NavItem[]>(() => [
 <template>
     <header class="wod-bar-top relative">
         <div
-            class="relative mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-3"
+            class="relative flex w-full flex-wrap items-center justify-between gap-4 px-6 py-3"
         >
             <div class="flex items-center gap-5">
                 <Link :href="home().url" class="flex items-center gap-2.5">
@@ -110,7 +110,7 @@ const navItems = computed<NavItem[]>(() => [
         </div>
 
         <nav
-            class="mx-auto flex max-w-6xl gap-1 overflow-x-auto border-t-2 border-foreground/20 px-6 py-2 md:hidden"
+            class="flex w-full gap-1 overflow-x-auto border-t-2 border-foreground/20 px-6 py-2 md:hidden"
         >
             <Button
                 v-for="item in navItems"
