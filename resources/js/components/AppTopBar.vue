@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     BookOpen,
     Clock3,
+    Github,
     Globe2,
     History,
     Map,
@@ -22,6 +23,7 @@ import {
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
+import { GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { home, mapBuilder, wiki } from '@/routes';
 import { index as lobbies } from '@/routes/lobbies';
 import { explore as mapsExplore } from '@/routes/maps';
@@ -86,6 +88,21 @@ const navItems = computed<NavItem[]>(() => [
 
             <div class="flex items-center gap-2">
                 <ThemeToggle />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    as-child
+                    class="wod-nav-ghost rounded-md"
+                >
+                    <a
+                        :href="GITHUB_REPOSITORY_URL"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="View source on GitHub"
+                    >
+                        <Github class="size-4" />
+                    </a>
+                </Button>
                 <DropdownMenu v-if="auth.user">
                     <DropdownMenuTrigger as-child>
                         <Button

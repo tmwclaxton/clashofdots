@@ -8,18 +8,13 @@ RUN apt-get update \
         curl \
         default-libmysqlclient-dev \
         libicu-dev \
+        libpq-dev \
         libsqlite3-dev \
         libzip-dev \
         unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install \
-    bcmath \
-    intl \
-    opcache \
-    pdo_mysql \
-    pdo_sqlite \
-    zip
+RUN docker-php-ext-install bcmath pdo_mysql pdo_sqlite intl zip pdo_pgsql
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -86,15 +81,10 @@ RUN apt-get update && apt-get upgrade -y \
         gnupg gosu curl ca-certificates zip unzip git supervisor libcap2-bin \
         default-libmysqlclient-dev \
         libicu-dev \
+        libpq-dev \
         libsqlite3-dev \
         libzip-dev \
-    && docker-php-ext-install \
-        bcmath \
-        intl \
-        opcache \
-        pdo_mysql \
-        pdo_sqlite \
-        zip \
+    && docker-php-ext-install bcmath pdo_mysql pdo_sqlite intl zip pdo_pgsql \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && rm -rf /tmp/pear \
@@ -103,11 +93,13 @@ RUN apt-get update && apt-get upgrade -y \
     && apt-get purge -y \
         default-libmysqlclient-dev \
         libicu-dev \
+        libpq-dev \
         libsqlite3-dev \
         libzip-dev \
     && apt-get install -y --no-install-recommends \
         libicu72 \
         libmariadb3 \
+        libpq5 \
         libsqlite3-0 \
         libzip4 \
     && apt-get autoremove -y \

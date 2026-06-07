@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { Swords } from 'lucide-vue-next';
+import { Github, Swords } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle.vue';
+import { GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { login, wiki } from '@/routes';
 import { index as lobbiesIndex } from '@/routes/lobbies';
 
@@ -85,6 +86,16 @@ const steps = [
                     </div>
                     <nav class="flex items-center gap-2">
                         <ThemeToggle />
+                        <Button variant="ghost" as-child>
+                            <a
+                                :href="GITHUB_REPOSITORY_URL"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <Github class="size-4" />
+                                <span class="hidden sm:inline">GitHub</span>
+                            </a>
+                        </Button>
                         <Link :href="wiki().url">
                             <Button variant="ghost">Wiki</Button>
                         </Link>
@@ -101,6 +112,15 @@ const steps = [
             <section class="relative flex flex-1 flex-col justify-center">
                 <div class="mx-auto w-full max-w-6xl px-6 py-10">
                     <div class="max-w-3xl">
+                        <a
+                            :href="GITHUB_REPOSITORY_URL"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="mb-4 inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-card/80 px-3 py-1 text-sm font-semibold text-foreground transition-colors hover:bg-card"
+                        >
+                            <Github class="size-4" />
+                            Open source on GitHub
+                        </a>
                         <h1
                             class="font-display text-5xl leading-[1.05] font-bold md:text-6xl"
                         >
@@ -216,6 +236,13 @@ const steps = [
 
         <footer class="wod-bar-bottom px-6 text-center">
             <p class="font-display font-bold text-foreground">
+                <a
+                    :href="GITHUB_REPOSITORY_URL"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="wod-link"
+                >Open source on GitHub</a>
+                <span class="text-muted-foreground"> · </span>
                 Built with Irish Love ☘️
             </p>
         </footer>

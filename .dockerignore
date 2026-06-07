@@ -1,0 +1,15 @@
+# Keep the image's `composer install --no-dev` / `npm ci` trees; do not replace with the host copy.
+/vendor
+/node_modules
+.git
+.gitignore
+.phpunit.result.cache
+.env
+.env.*
+!.env.example
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*.php
+!bootstrap/cache/.gitignore

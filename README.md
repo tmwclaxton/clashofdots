@@ -13,6 +13,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/tmwclaxton/warofspheres"><img src="https://img.shields.io/badge/GitHub-source-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" /></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/Laravel-13-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 13" /></a>
   <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue-3-42b883?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3" /></a>
   <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia-3-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia 3" /></a>
@@ -29,9 +30,99 @@
 
 ---
 
-## Terrain gallery
+## Game Wiki
 
-Procedural **Map Builder** generation styles (deterministic previews, same seed). Regenerate anytime with `npm run wiki:map-previews`.
+The in-app **Game Wiki** (`/wiki`) is the live reference for balance and map rules. Every number on the page is served from **`App\Game\GameSpecs`** on the backend—the same source the engine and Map Builder draw from, not hand-maintained copy in Vue.
+
+| Section | What it covers |
+|--------|----------------|
+| **Combat units** | Infantry vs tank—health, recruit cost, upkeep, defense, and role summaries |
+| **Settlements & economy** | Capitals and outposts (income, supply caps, healing), plus economy notes on income, upkeep, supply, recruitment, and encirclement |
+| **Terrain types** | All 12 editor terrains with color swatches, infantry/tank speed & attack stats, and tactical notes |
+| **Map generation styles** | Mixed, Islands, Desert, and Mountains—traits, descriptions, and deterministic preview renders |
+
+Open the wiki from the landing page header, the app top bar, or directly at `/wiki` once the app is running. The Map Builder card at the top links straight into authoring.
+
+Wiki map previews live under `public/images/wiki/` and can be regenerated with `npm run wiki:map-previews`.
+
+### Terrain palette
+
+Twelve brush types paint the vertex grid in the Map Builder and appear on the wiki terrain table. Swatches match the in-game editor colors.
+
+<table>
+  <tr>
+    <td align="center" width="25%">
+      <img alt="Plains" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23c8d68a' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Plains</strong><br />
+      <sub>Open grassland</sub>
+    </td>
+    <td align="center" width="25%">
+      <img alt="Meadow" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23b8d4a0' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Meadow</strong><br />
+      <sub>Soft rolling grass</sub>
+    </td>
+    <td align="center" width="25%">
+      <img alt="Forest" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%233d6b45' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Forest</strong><br />
+      <sub>Light woodland</sub>
+    </td>
+    <td align="center" width="25%">
+      <img alt="Dense forest" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%231e4a28' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Dense forest</strong><br />
+      <sub>Thick woodland</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img alt="Hill" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23d4d4d4' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Hill</strong><br />
+      <sub>High ground</sub>
+    </td>
+    <td align="center">
+      <img alt="Mountain" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%235a5a5a' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Mountain</strong><br />
+      <sub>Impassable</sub>
+    </td>
+    <td align="center">
+      <img alt="Desert" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23e6c87a' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Desert</strong><br />
+      <sub>Tank-friendly dunes</sub>
+    </td>
+    <td align="center">
+      <img alt="Beach" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23f5e6b3' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Beach</strong><br />
+      <sub>Coastal sand</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img alt="Water" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%234a90d9' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Water</strong><br />
+      <sub>Shallow · damage over time</sub>
+    </td>
+    <td align="center">
+      <img alt="Deep water" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%232d5a8c' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Deep water</strong><br />
+      <sub>Ocean · heavy penalties</sub>
+    </td>
+    <td align="center">
+      <img alt="River" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%235ba3e8' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>River</strong><br />
+      <sub>Narrow chokepoints</sub>
+    </td>
+    <td align="center">
+      <img alt="Swamp" width="56" height="56" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%236b8f7a' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E" /><br />
+      <strong>Swamp</strong><br />
+      <sub>Boggy wetland</sub>
+    </td>
+  </tr>
+</table>
+
+Infantry generally keeps speed in forests and hills; tanks excel on plains, desert, and beach but bog down in woodland and water. Full speed, attack, and defense multipliers for every tile are on the wiki terrain table.
+
+### Map generation previews
+
+Procedural **Map Builder** styles (deterministic previews, same seed). These match the **Map generation styles** section on the wiki.
 
 <table>
   <tr>
@@ -95,7 +186,7 @@ flowchart TB
 ```
 
 - **Lobbies & matches** - create/join games, host flow, match history  
-- **Wiki** - in-app specs and rules (`/wiki`)  
+- **Wiki** - live unit, terrain, economy, and map-generation specs at `/wiki` (backed by `GameSpecs`)  
 - **Map Builder** - vertex terrain grid, markers, undo/redo, random generate, autosave  
 - **Explore** - published maps, likes/dislikes, fork to your library, lobby from a map  
 - **Icons** - [Lucide](https://lucide.dev) (tree-shaken per view) + [Font Awesome 7](https://fontawesome.com) (global solid/regular/brands)
@@ -125,8 +216,8 @@ flowchart TB
 ### Install
 
 ```bash
-git clone <your-fork-or-remote-url> war-of-spheres
-cd war-of-spheres
+git clone https://github.com/tmwclaxton/warofspheres.git
+cd warofspheres
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -157,6 +248,52 @@ php artisan serve
 ```
 
 Use `composer run dev` if your project defines a concurrent dev script.
+
+---
+
+## Production deploy
+
+CI builds the **`Dockerfile`**, pushes **`ghcr.io/<lowercase github.repository>:latest`**, then SSHs to your host, copies `compose.prod.yaml`, and runs **`docker compose pull && up -d`** and **`php artisan migrate --force`**. SSH uses **Cloudflare Access** (`cloudflared access ssh`) when `CF_ACCESS_CLIENT_*` secrets are set.
+
+### Flow
+
+1. **Triggers:** push to `main` or **Actions → Production Deploy → Run workflow**.
+2. **Build:** checkout → login to GHCR → `docker build` → `docker push`.
+3. **Deploy:** `cloudflared` → SSH key + config (including `ProxyCommand` when using Access) → render image into compose → `scp` → remote `docker login`, `compose pull`, `up -d`, `migrate`, prune.
+
+### GitHub repository **Variables** (Settings → Secrets and variables → Actions → Variables)
+
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `DEPLOY_HOST` | `ssh.example.com` | SSH target hostname. |
+| `DEPLOY_USER` | `deploy` | SSH user. |
+| `DEPLOY_DIR` | `/opt/warofspheres` | Remote directory containing `.env` and `compose.prod.yaml`. |
+
+### GitHub repository **Secrets**
+
+| Secret | Purpose |
+|--------|---------|
+| `DEPLOY_SSH_PRIVATE_KEY` | Private key for the deploy user (must match `DEPLOY_USER` / `DEPLOY_HOST`). |
+| `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` | Optional: Cloudflare Access service token for `cloudflared access ssh`. Omit only if you use plain SSH without Access. |
+| `GHCR_TOKEN` | PAT with `read:packages` so the server can **`docker login ghcr.io`** and pull the app image. |
+
+Workflow: [`.github/workflows/prod_deploy.yml`](.github/workflows/prod_deploy.yml).
+
+### One-time server prep
+
+```bash
+ssh YOUR_USER@YOUR_HOST
+sudo mkdir -p /opt/warofspheres    # use the same path as DEPLOY_DIR
+sudo chown YOUR_USER:YOUR_USER /opt/warofspheres
+cd /opt/warofspheres
+cp /path/to/.env.example .env     # edit: APP_URL, DB_*, WorkOS, Redis, Reverb, etc.
+```
+
+Production `.env` should use **`DB_CONNECTION=pgsql`**, **`DB_HOST=pgsql`**, **`REDIS_HOST=redis`** to match `compose.prod.yaml`. The app is exposed on the host as **`8091` → container `80`**; change the port mapping in `compose.prod.yaml` if it conflicts with other stacks.
+
+### After deploy
+
+Point DNS or a reverse proxy at the host port you mapped (default **8091**), or add Reverb/queue services to `compose.prod.yaml` when you need them.
 
 ---
 

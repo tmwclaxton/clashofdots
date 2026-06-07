@@ -1,0 +1,117 @@
+name: Production Deploy
+
+# Push main (or manual) → build image → GHCR → SSH (optionally via Cloudflare Access / cloudflared)
+# → docker compose pull/up → migrate. Configure DEPLOY_* via repository Variables.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+  DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+  DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+  COMPOSE_PROJECT: warofspheres
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: GHCR image ref (repository must be lowercase for GHCR)
+        run: |
+          echo "IMAGE_REF=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):latest" >> "$GITHUB_ENV"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          export DOCKER_BUILDKIT=1
+          docker pull "$IMAGE_REF" || true
+          docker build \
+            --file Dockerfile \
+            --cache-from "$IMAGE_REF" \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --build-arg WWWGROUP=$(id -g) \
+            --build-arg WWWUSER=$UID \
+            --tag "$IMAGE_REF" .
+
+      - name: Push Docker image to GHCR
+        run: docker push "$IMAGE_REF"
+
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require deploy repository variables
+        run: |
+          missing=0
+          if [ -z "${{ vars.DEPLOY_HOST }}" ]; then echo "::error::Set repository Variable DEPLOY_HOST (SSH hostname)"; missing=1; fi
+          if [ -z "${{ vars.DEPLOY_USER }}" ]; then echo "::error::Set repository Variable DEPLOY_USER (SSH user)"; missing=1; fi
+          if [ -z "${{ vars.DEPLOY_DIR }}" ]; then echo "::error::Set repository Variable DEPLOY_DIR (remote path, e.g. /opt/warofspheres)"; missing=1; fi
+          exit "$missing"
+
+      - name: GHCR image ref
+        run: |
+          echo "IMAGE_REF=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):latest" >> "$GITHUB_ENV"
+
+      - name: Install cloudflared
+        run: |
+          curl -fsSL --output /tmp/cloudflared.deb \
+            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i /tmp/cloudflared.deb
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          cat >> ~/.ssh/config << EOF
+          Host ${{ env.DEPLOY_HOST }}
+            User ${{ env.DEPLOY_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking no
+            ProxyCommand cloudflared access ssh --hostname %h
+          EOF
+
+      - name: Render and copy compose file
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          sed "s|__GHCR_IMAGE__|${IMAGE_REF}|g" compose.prod.yaml > compose.prod.rendered.yaml
+          scp compose.prod.rendered.yaml ${{ env.DEPLOY_HOST }}:${{ env.DEPLOY_DIR }}/compose.prod.yaml
+
+      - name: Deploy on server
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          ssh ${{ env.DEPLOY_HOST }} "
+            set -e
+            echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+            cd ${{ env.DEPLOY_DIR }}
+            docker compose -p ${{ env.COMPOSE_PROJECT }} -f compose.prod.yaml --env-file .env pull
+            docker compose -p ${{ env.COMPOSE_PROJECT }} -f compose.prod.yaml --env-file .env up -d
+            docker compose -p ${{ env.COMPOSE_PROJECT }} -f compose.prod.yaml --env-file .env exec -T app php artisan migrate --force
+            docker image prune -af
+            docker builder prune -af
+          "
