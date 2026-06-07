@@ -1,7 +1,27 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import { Coins, Map, Mountain, Swords } from 'lucide-vue-next';
+import { Head, Link } from '@inertiajs/vue3';
+import type { LucideIcon } from 'lucide-vue-next';
+import {
+    BookOpen,
+    Circle,
+    Coins,
+    Flag,
+    Info,
+    Landmark,
+    Layers,
+    Map,
+    Package,
+    Radar,
+    RectangleHorizontal,
+    Sparkles,
+    Swords,
+    UserPlus,
+    Wallet,
+} from 'lucide-vue-next';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
+import { Button } from '@/components/ui/button';
+import { mapBuilder } from '@/routes';
 
 type TroopStat = {
     id: string;
@@ -46,11 +66,13 @@ type MapGenerationStat = {
     label: string;
     description: string;
     traits: string[];
+    preview: string;
 };
 
 type EconomyNote = {
     title: string;
     body: string;
+    icon: string;
 };
 
 defineProps<{
@@ -60,6 +82,28 @@ defineProps<{
     mapGeneration: MapGenerationStat[];
     economyNotes: EconomyNote[];
 }>();
+
+const economyIconMap: Record<string, LucideIcon> = {
+    coins: Coins,
+    wallet: Wallet,
+    package: Package,
+    'user-plus': UserPlus,
+    radar: Radar,
+};
+
+function economyIcon(slug: string): LucideIcon {
+    return economyIconMap[slug] ?? Info;
+}
+
+function troopGlyph(troopId: string): LucideIcon {
+    return troopId === 'tank' ? RectangleHorizontal : Circle;
+}
+
+function settlementGlyph(settlementId: string): LucideIcon {
+    return settlementId === 'capital' ? Landmark : Flag;
+}
+
+const mapBuilderHref = computed(() => mapBuilder().url);
 
 function formatStat(value: number, digits = 2): string {
     return value.toFixed(digits).replace(/\.?0+$/, '');
@@ -106,8 +150,29 @@ function speedClass(speed: number, impassable: boolean): string {
     <div class="flex flex-col gap-10 pb-4">
         <Heading
             title="Game Wiki"
-            description="Unit stats, terrain effects, economy rules, and map generation — tuned from War of Dots community data and adapted for War of Spheres."
+            description="Unit stats, terrain effects, economy rules, and procedural maps — tuned from War of Dots community data and adapted for War of Spheres."
         />
+
+        <div
+            class="flex flex-col gap-3 rounded-lg border-2 border-foreground bg-card/80 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+        >
+            <div class="flex items-start gap-3">
+                <div class="wod-logo-terrain size-10 shrink-0">
+                    <BookOpen class="size-5" />
+                </div>
+                <div>
+                    <p class="font-display text-sm font-bold text-foreground">Map Builder</p>
+                    <p class="mt-1 max-w-prose text-sm leading-relaxed text-muted-foreground">
+                        Author terrain, place capitals and troops, and roll new maps with the same
+                        generation styles documented below. Brush, eraser, and fill work on the
+                        vertex grid; marker tools snap to valid tiles.
+                    </p>
+                </div>
+            </div>
+            <Button as-child variant="outline" class="shrink-0 self-start sm:self-center">
+                <Link :href="mapBuilderHref">Open map builder</Link>
+            </Button>
+        </div>
 
         <section class="wod-panel p-6">
             <div class="flex items-start gap-3">
@@ -131,9 +196,17 @@ function speedClass(speed: number, impassable: boolean): string {
                     class="wod-panel-soft p-5"
                 >
                     <div class="flex items-center justify-between gap-3">
-                        <h3 class="font-display text-lg font-bold">
-                            {{ troop.label }}
-                        </h3>
+                        <div class="flex min-w-0 items-center gap-2">
+                            <component
+                                :is="troopGlyph(troop.id)"
+                                class="size-5 shrink-0 text-muted-foreground"
+                                stroke-width="2"
+                                aria-hidden="true"
+                            />
+                            <h3 class="font-display text-lg font-bold">
+                                {{ troop.label }}
+                            </h3>
+                        </div>
                         <span class="wod-chip">{{ troop.role }}</span>
                     </div>
                     <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -177,8 +250,15 @@ function speedClass(speed: number, impassable: boolean): string {
                         Settlements & economy
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Yellow settlements fund your war machine. Capitals are
-                        richer and harder to replace — never abandon one lightly.
+                        Capitals and outposts (flags) pay your army. Icons match the map editor:
+                        <span class="whitespace-nowrap"
+                            ><Landmark class="inline size-3.5 align-text-bottom" stroke-width="2" />
+                            capital</span
+                        >,
+                        <span class="whitespace-nowrap"
+                            ><Flag class="inline size-3.5 align-text-bottom" stroke-width="2" />
+                            outpost</span
+                        >.
                     </p>
                 </div>
             </div>
@@ -190,9 +270,17 @@ function speedClass(speed: number, impassable: boolean): string {
                     class="wod-panel-soft p-5"
                 >
                     <div class="flex items-center justify-between gap-3">
-                        <h3 class="font-display text-lg font-bold">
-                            {{ settlement.label }}
-                        </h3>
+                        <div class="flex min-w-0 items-center gap-2">
+                            <component
+                                :is="settlementGlyph(settlement.id)"
+                                class="size-5 shrink-0 text-muted-foreground"
+                                stroke-width="2"
+                                aria-hidden="true"
+                            />
+                            <h3 class="font-display text-lg font-bold">
+                                {{ settlement.label }}
+                            </h3>
+                        </div>
                         <span class="wod-chip text-[0.65rem]">
                             {{ settlement.marker }}
                         </span>
@@ -228,12 +316,24 @@ function speedClass(speed: number, impassable: boolean): string {
                 <li
                     v-for="note in economyNotes"
                     :key="note.title"
-                    class="rounded-md border-2 border-foreground/15 bg-muted/30 px-4 py-3 text-sm"
+                    class="flex gap-3 rounded-md border-2 border-foreground/15 bg-muted/30 px-4 py-3 text-sm"
                 >
-                    <p class="font-display font-bold">{{ note.title }}</p>
-                    <p class="mt-1 leading-relaxed text-muted-foreground">
-                        {{ note.body }}
-                    </p>
+                    <div
+                        class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border border-foreground/20 bg-card text-foreground"
+                    >
+                        <component
+                            :is="economyIcon(note.icon)"
+                            class="size-4"
+                            stroke-width="2"
+                            aria-hidden="true"
+                        />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="font-display font-bold">{{ note.title }}</p>
+                        <p class="mt-1 leading-relaxed text-muted-foreground">
+                            {{ note.body }}
+                        </p>
+                    </div>
                 </li>
             </ul>
         </section>
@@ -241,14 +341,15 @@ function speedClass(speed: number, impassable: boolean): string {
         <section class="wod-panel p-6">
             <div class="flex items-start gap-3">
                 <div class="wod-logo-terrain size-10 shrink-0">
-                    <Mountain class="size-5" />
+                    <Layers class="size-5" />
                 </div>
                 <div>
                     <h2 class="font-display text-xl font-bold">Terrain types</h2>
                     <p class="mt-1 text-sm text-muted-foreground">
                         Speed and attack use the War of Dots scale (plains infantry
                         speed&nbsp;=&nbsp;0.5, attack&nbsp;=&nbsp;0.08). The pixel
-                        under a unit’s center determines which terrain applies.
+                        under a unit’s center determines which terrain applies. Mountains are
+                        impassable; water tiles deal damage over time.
                     </p>
                 </div>
             </div>
@@ -369,40 +470,58 @@ function speedClass(speed: number, impassable: boolean): string {
         <section class="wod-panel p-6">
             <div class="flex items-start gap-3">
                 <div class="wod-logo-terrain size-10 shrink-0">
-                    <Map class="size-5" />
+                    <Sparkles class="size-5" />
                 </div>
                 <div>
                     <h2 class="font-display text-xl font-bold">
                         Map generation styles
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Available in the Map Builder when generating a new map.
-                        Each style uses the same team and seed options.
+                        Choose a style in the Map Builder’s generate dialog (same team count and
+                        optional seed as in-game). Previews below are 48×56-cell samples (seed
+                        4&nbsp;242&nbsp;42) rendered with the editor terrain palette — not full
+                        battlefield dimensions.
                     </p>
                 </div>
             </div>
 
-            <div class="mt-6 grid gap-4 sm:grid-cols-2">
+            <div class="mt-6 grid gap-6 sm:grid-cols-2">
                 <article
                     v-for="style in mapGeneration"
                     :key="style.id"
-                    class="wod-panel-soft p-5"
+                    class="overflow-hidden rounded-lg border-2 border-foreground bg-card shadow-sm"
                 >
-                    <h3 class="font-display text-lg font-bold">
-                        {{ style.label }}
-                    </h3>
-                    <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        {{ style.description }}
-                    </p>
-                    <ul class="mt-3 flex flex-wrap gap-2">
-                        <li
-                            v-for="trait in style.traits"
-                            :key="trait"
-                            class="wod-chip"
-                        >
-                            {{ trait }}
-                        </li>
-                    </ul>
+                    <figure class="border-b-2 border-foreground bg-[var(--wod-editor-void)]">
+                        <img
+                            :src="style.preview"
+                            :alt="`Terrain preview for ${style.label} map generation`"
+                            class="mx-auto block h-auto w-full max-h-56 object-contain"
+                            width="224"
+                            height="192"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                    </figure>
+                    <div class="p-5">
+                        <div class="flex items-center gap-2">
+                            <Map class="size-4 shrink-0 text-muted-foreground" stroke-width="2" />
+                            <h3 class="font-display text-lg font-bold">
+                                {{ style.label }}
+                            </h3>
+                        </div>
+                        <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                            {{ style.description }}
+                        </p>
+                        <ul class="mt-3 flex flex-wrap gap-2">
+                            <li
+                                v-for="trait in style.traits"
+                                :key="trait"
+                                class="wod-chip"
+                            >
+                                {{ trait }}
+                            </li>
+                        </ul>
+                    </div>
                 </article>
             </div>
         </section>

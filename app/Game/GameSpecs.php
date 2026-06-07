@@ -170,7 +170,13 @@ final class GameSpecs
     }
 
     /**
-     * @return list<array{id: string, label: string, description: string, traits: list<string>}>
+     * @return list<array{
+     *     id: string,
+     *     label: string,
+     *     description: string,
+     *     traits: list<string>,
+     *     preview: string
+     * }>
      */
     public static function mapGenerationTypes(): array
     {
@@ -180,24 +186,28 @@ final class GameSpecs
                 'label' => 'Mixed',
                 'description' => 'Balanced continents with forests, deserts, hills, and carved river networks.',
                 'traits' => ['Rivers enabled', 'Varied biomes', 'Good default for competitive play'],
+                'preview' => '/images/wiki/map-generation-mix.svg',
             ],
             [
                 'id' => 'islands',
                 'label' => 'Islands',
                 'description' => 'Two to four large islands in open ocean, with beaches, shallow coastal water, and deep sea beyond.',
                 'traits' => ['Archipelago layout', 'Naval chokepoints', 'Troop placement favors coasts'],
+                'preview' => '/images/wiki/map-generation-islands.svg',
             ],
             [
                 'id' => 'desert',
                 'label' => 'Desert',
                 'description' => 'Vast arid dunes punctuated by lush oasis rings around scattered water.',
                 'traits' => ['Tank-friendly terrain', 'No rivers', 'High-value oasis clusters'],
+                'preview' => '/images/wiki/map-generation-desert.svg',
             ],
             [
                 'id' => 'mountains',
                 'label' => 'Mountains',
                 'description' => 'Rugged highlands with valleys linked by carved mountain passes.',
                 'traits' => ['Elevated chokepoints', 'Pass carving', 'Fewer open flanking routes'],
+                'preview' => '/images/wiki/map-generation-mountains.svg',
             ],
         ];
     }
@@ -205,7 +215,8 @@ final class GameSpecs
     /**
      * @return list<array{
      *     title: string,
-     *     body: string
+     *     body: string,
+     *     icon: string
      * }>
      */
     public static function economyNotes(): array
@@ -213,22 +224,27 @@ final class GameSpecs
         return [
             [
                 'title' => 'Income',
+                'icon' => 'coins',
                 'body' => 'Outposts generate 5 funds per second; capitals generate 8. Income stacks across every settlement you hold.',
             ],
             [
                 'title' => 'Upkeep',
+                'icon' => 'wallet',
                 'body' => 'Every field unit costs 1 fund per second. Units garrisoned on a settlement cost nothing — parking troops on cities makes money.',
             ],
             [
                 'title' => 'Supply',
+                'icon' => 'package',
                 'body' => 'Each outpost supplies up to 5 units; each capital supplies up to 8. Exceed your supply cap and the newest unsupported units slowly die.',
             ],
             [
                 'title' => 'Recruitment',
+                'icon' => 'user-plus',
                 'body' => 'Infantry cost 200 funds; tanks cost 400. Upkeep is identical regardless of unit health — a wounded infantry costs the same as a fresh tank.',
             ],
             [
                 'title' => 'Encirclement',
+                'icon' => 'radar',
                 'body' => 'Cut off from friendly settlements, a pocket army depends only on cities inside the encirclement. Isolate enemy groups to starve them without fighting.',
             ],
         ];
@@ -240,7 +256,7 @@ final class GameSpecs
      *     settlements: list<array<string, mixed>>,
      *     terrain: list<array<string, mixed>>,
      *     mapGeneration: list<array<string, mixed>>,
-     *     economyNotes: list<array<string, string>>
+     *     economyNotes: list<array{title: string, body: string, icon: string}>
      * }
      */
     public static function forWiki(): array
