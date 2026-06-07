@@ -39,8 +39,10 @@ services:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    # Postgres 18+ images expect a single mount at /var/lib/postgresql (not .../data).
+    # See https://github.com/docker-library/postgres/issues/37
     volumes:
-      - warofspheres-pgsql:/var/lib/postgresql/data
+      - warofspheres-pgsql:/var/lib/postgresql
     networks:
       - warofspheres
     healthcheck:

@@ -130,6 +130,4 @@ jobs:
             docker compose -p '${{ env.COMPOSE_PROJECT }}' -f compose.prod.yaml --env-file .env pull
             docker compose -p '${{ env.COMPOSE_PROJECT }}' -f compose.prod.yaml --env-file .env up -d
             docker compose -p '${{ env.COMPOSE_PROJECT }}' -f compose.prod.yaml --env-file .env exec -T app php artisan migrate --force
-            docker image prune -af || true
-            docker builder prune -af || true
           "

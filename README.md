@@ -253,13 +253,23 @@ Use `composer run dev` if your project defines a concurrent dev script.
 
 ## Production deploy
 
-CI builds the **`Dockerfile`**, pushes **`ghcr.io/<lowercase github.repository>:latest`**, then SSHs to your host, copies `compose.prod.yaml`, and runs **`docker compose pull && up -d`** and **`php artisan migrate --force`**. SSH uses **Cloudflare Access** (`cloudflared access ssh`) when `CF_ACCESS_CLIENT_*` secrets are set.
+CI builds the **`Dockerfile`**, pushes **`ghcr.io/<lowercase github.repository>:latest`**, then SSHs to your host, uploads **`compose.prod.yaml`** into `DEPLOY_DIR`, and runs **`docker compose pull`**, **`up -d`**, and **`php artisan migrate --force`**. SSH uses **Cloudflare Access** (`cloudflared access ssh`) when `CF_ACCESS_CLIENT_*` secrets are set.
+
+### Shared host: only warofspheres
+
+The workflow and compose file are scoped to **project name `warofspheres`** and **`DEPLOY_DIR`** only. It does **not** run host-wide `docker prune` or other commands that would affect other stacks.
+
+When operating manually on a server that runs multiple apps:
+
+- Work only under your **`DEPLOY_DIR`** (e.g. `/opt/warofspheres`).
+- Always pass **`-p warofspheres`** and **`-f compose.prod.yaml`** (and **`--env-file .env`**) so Docker Compose never touches another project’s containers or volumes.
+- Do not run **`docker volume prune`**, **`docker image prune -a`**, or **`docker system prune`** unless you intend to clean **the whole host**; prefer removing only compose-managed resources for this stack after **`docker compose -p warofspheres … down`**, and only volumes whose names you recognize as belonging to this project.
 
 ### Flow
 
 1. **Triggers:** push to `main` or **Actions → Production Deploy → Run workflow**.
 2. **Build:** checkout → login to GHCR → `docker build` → `docker push`.
-3. **Deploy:** `cloudflared` → SSH key + config (including `ProxyCommand` when using Access) → render image into compose → `scp` → remote `docker login`, `compose pull`, `up -d`, `migrate`, prune.
+3. **Deploy:** `cloudflared` → SSH key + config (including `ProxyCommand` when using Access) → upload `compose.prod.yaml` → remote `docker login`, `compose pull`, `up -d`, `migrate`.
 
 ### Deploy target: **Secrets** or **Variables**
 
