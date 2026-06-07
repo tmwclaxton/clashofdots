@@ -1,14 +1,15 @@
 <p align="center">
-  <img src="public/apple-touch-icon.png" alt="War of Dots" width="120" height="120" />
+  <img src="public/apple-touch-icon.png" alt="War of Spheres" width="120" height="120" />
 </p>
 
-<h1 align="center">War of Dots</h1>
+<h1 align="center">War of Spheres</h1>
 
 <p align="center">
   <strong>Plan like a diagram. Fight like an RTS.</strong><br />
-  A server-authoritative multiplayer strategy game inspired by
-  <a href="https://warofdots.net/">War of Dots</a> — tactical canvas, procedural battlefields,
-  and a <strong>Map Builder</strong> you can publish to the community.
+  <strong>War of Spheres</strong> is a server-authoritative multiplayer strategy game — tactical canvas,
+  procedural battlefields, and a <strong>Map Builder</strong> you can publish to the community. Gameplay
+  is inspired by the classic browser RTS
+  <a href="https://warofdots.net/">War of Dots</a>.
 </p>
 
 <p align="center">
@@ -124,8 +125,8 @@ flowchart TB
 ### Install
 
 ```bash
-git clone <your-fork-or-remote-url> warofdots
-cd warofdots
+git clone <your-fork-or-remote-url> war-of-spheres
+cd war-of-spheres
 composer install
 cp .env.example .env
 php artisan key:generate

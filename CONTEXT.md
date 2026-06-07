@@ -5,6 +5,7 @@ This document captures the original brief and references used when starting the 
 ## Origin
 
 - Scaffolded from [tmwclaxton/baseProject](https://github.com/tmwclaxton/baseProject) (Laravel Vue starter kit).
+- Public product name: **War of Spheres** (repository directory may still be `warofdots` locally).
 - Local path: `LaravelProjects/warofdots`.
 - Git history from the base project was removed intentionally — this repo is a fresh application built on that scaffolding, not a fork.
 

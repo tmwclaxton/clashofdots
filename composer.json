@@ -2,10 +2,14 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/vue-starter-kit",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "War of Spheres — multiplayer RTS (Laravel, Inertia, Vue).",
     "keywords": [
+        "war-of-spheres",
         "laravel",
-        "framework"
+        "inertia",
+        "vue",
+        "rts",
+        "game"
     ],
     "license": "PolyForm-Noncommercial-1.0.0",
     "require": {
