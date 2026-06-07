@@ -37,15 +37,15 @@ function selectTerrain(id: string): void {
 
 <template>
     <div
-        class="wod-panel flex min-h-0 w-full min-w-0 flex-col gap-1.5 overflow-hidden rounded-lg border-2 border-foreground p-2 sm:p-2.5"
+        class="wod-panel flex h-full min-h-0 w-full min-w-0 flex-col gap-1.5 rounded-lg border-2 border-foreground p-1.5 sm:p-2"
     >
         <p
-            class="font-display text-[11px] font-bold uppercase tracking-wide text-foreground sm:text-xs"
+            class="font-display shrink-0 text-[10px] font-bold uppercase tracking-wide text-foreground sm:text-[11px]"
         >
             Terrain
         </p>
         <div
-            class="flex max-w-full min-w-0 flex-wrap content-start gap-1.5"
+            class="flex min-h-0 w-full min-w-0 flex-1 flex-wrap content-start items-start gap-1.5"
         >
             <button
                 v-for="t in terrainTypes"

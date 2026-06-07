@@ -451,9 +451,6 @@ onUnmounted(() => {
                     <option v-for="t in teamCountOptions" :key="t" :value="t">{{ t }}</option>
                 </select>
             </div>
-            <span class="hidden text-xs text-muted-foreground sm:inline">
-                [ / ] brush size · right-drag pan
-            </span>
             <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
                 <Button
                     type="button"
@@ -491,7 +488,7 @@ onUnmounted(() => {
         </div>
 
         <div
-            class="flex min-h-0 flex-1 gap-2 overflow-hidden min-h-[clamp(18rem,52svh,56rem)]"
+            class="flex min-h-0 flex-1 gap-2 overflow-hidden min-h-[clamp(16rem,44svh,50rem)]"
         >
             <MapListPanel
                 :editor="editor"
@@ -505,7 +502,7 @@ onUnmounted(() => {
         </div>
 
         <div
-            class="flex w-full min-w-0 shrink-0 flex-row items-stretch gap-2 border-t border-foreground/15 pt-1.5"
+            class="flex w-full min-w-0 shrink-0 flex-row items-stretch gap-2 border-t border-foreground/15 py-1.5 min-h-[8.5rem]"
         >
             <MapTerrainPalette
                 :editor="editor"
@@ -532,26 +529,49 @@ onUnmounted(() => {
             v-model:open="teamMarkerDialogOpen"
             title="Use a marker tool"
             :description="teamMarkerDialogDescription"
+            content-class="sm:max-w-xl"
         >
+            <div class="grid grid-cols-2 gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="h-auto min-h-11 w-full justify-center gap-2 py-2"
+                    @click="applyTeamMarkerTool('flag')"
+                >
+                    <Flag class="size-4 shrink-0" stroke-width="2" />
+                    Flag
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="h-auto min-h-11 w-full justify-center gap-2 py-2"
+                    @click="applyTeamMarkerTool('capital')"
+                >
+                    <Landmark class="size-4 shrink-0" stroke-width="2" />
+                    Capital
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="h-auto min-h-11 w-full justify-center gap-2 py-2"
+                    @click="applyTeamMarkerTool('infantry')"
+                >
+                    <Circle class="size-4 shrink-0" stroke-width="2" />
+                    Infantry
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="h-auto min-h-11 w-full justify-center gap-2 py-2"
+                    @click="applyTeamMarkerTool('tank')"
+                >
+                    <RectangleHorizontal class="size-4 shrink-0" stroke-width="2" />
+                    Tank
+                </Button>
+            </div>
             <template #footer>
                 <Button type="button" variant="destructive" @click="closeTeamMarkerDialog">
                     Cancel
-                </Button>
-                <Button type="button" variant="outline" @click="applyTeamMarkerTool('flag')">
-                    <Flag class="size-4" stroke-width="2" />
-                    Flag
-                </Button>
-                <Button type="button" variant="outline" @click="applyTeamMarkerTool('capital')">
-                    <Landmark class="size-4" stroke-width="2" />
-                    Capital
-                </Button>
-                <Button type="button" variant="outline" @click="applyTeamMarkerTool('infantry')">
-                    <Circle class="size-4" stroke-width="2" />
-                    Infantry
-                </Button>
-                <Button type="button" variant="outline" @click="applyTeamMarkerTool('tank')">
-                    <RectangleHorizontal class="size-4" stroke-width="2" />
-                    Tank
                 </Button>
             </template>
         </AppModal>

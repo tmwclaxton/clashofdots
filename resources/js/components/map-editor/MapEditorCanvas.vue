@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-mutating-props -- editor exposes mutable refs shared by map builder */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import MapEditorBrushSizeOverlay from '@/components/map-editor/MapEditorBrushSizeOverlay.vue';
 import { useIsDark } from '@/composables/useIsDark';
 import { MAP_EDITOR_MAX_ZOOM, MAP_EDITOR_MIN_ZOOM } from '@/composables/useMapEditor';
 import type { MapEditorInstance } from '@/composables/useMapEditor';
@@ -525,6 +526,7 @@ watch(isDark, () => scheduleDraw());
             @pointercancel="onPointerUp"
             @wheel="onWheel"
         />
+        <MapEditorBrushSizeOverlay :editor="editor" />
         <div
             v-if="tileScale"
             class="pointer-events-none absolute bottom-3 left-3 rounded-md border-2 border-foreground bg-card/95 px-2.5 py-2 shadow-sm backdrop-blur-sm"
