@@ -38,18 +38,18 @@ The following frontend libraries are installed and configured in this project:
 
 ### Font Awesome (Icons)
 - All three icon sets are loaded: `fas` (solid), `far` (regular), `fab` (brands)
-- Registered as a global component — use `<font-awesome-icon>` anywhere without importing
+- Registered as a global component - use `<font-awesome-icon>` anywhere without importing
 - Usage: `<font-awesome-icon :icon="['fas', 'user']" />` or `<font-awesome-icon :icon="['fab', 'github']" />`
 - Do NOT import FontAwesomeIcon per-component; it is already globally registered
 
 ### Lucide (Icons)
-- Available via `lucide-vue-next` — import individual icons per-component (tree-shakeable)
+- Available via `lucide-vue-next` - import individual icons per-component (tree-shakeable)
 - Usage: `import { House, Settings } from 'lucide-vue-next'` then `<House />` in template
 - Browse all icons at https://lucide.dev/icons
 
 ## Skills Activation
 
-This project has domain-specific skills available in `**/skills/**`. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
+This project has domain-specific skills available in `**/skills/**`. You MUST activate the relevant skill whenever you work in that domain-don't wait until you're stuck.
 
 ## Conventions
 

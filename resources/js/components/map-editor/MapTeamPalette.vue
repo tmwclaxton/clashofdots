@@ -181,7 +181,7 @@ function removeTeamForSlot(teamIndex: number): void {
                     <button
                         type="button"
                         class="flex min-w-0 flex-1 items-center gap-0.5 rounded-sm py-px pr-4 text-left capitalize transition-colors hover:bg-muted/30"
-                        :title="`${t.colorRow.label} — team ${t.teamIndex + 1}. Select for marker placement.`"
+                        :title="`${t.colorRow.label} - team ${t.teamIndex + 1}. Select for marker placement.`"
                         @click="onTeamButtonClick(t.teamIndex)"
                     >
                         <span

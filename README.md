@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Plan like a diagram. Fight like an RTS.</strong><br />
-  <strong>War of Spheres</strong> is a server-authoritative multiplayer strategy game — tactical canvas,
+  <strong>War of Spheres</strong> is a server-authoritative multiplayer strategy game - tactical canvas,
   procedural battlefields, and a <strong>Map Builder</strong> you can publish to the community. Gameplay
   is inspired by the classic browser RTS
   <a href="https://warofdots.net/">War of Dots</a>.
@@ -62,8 +62,8 @@ Procedural **Map Builder** generation styles (deterministic previews, same seed)
 
 | Pillar | What you get |
 |--------|----------------|
-| **Visual language** | Flat, diagrammatic battlefields — readable at a glance, inspired by *Historia Civilis*–style maps |
-| **Planning loop** | Draw movement and attack paths, commit orders, then resolve — simplified grand-strategy cadence |
+| **Visual language** | Flat, diagrammatic battlefields - readable at a glance, inspired by *Historia Civilis*–style maps |
+| **Planning loop** | Draw movement and attack paths, commit orders, then resolve - simplified grand-strategy cadence |
 | **Fair play** | Game logic on the **Laravel** backend; the Vue canvas is a view, not the source of truth |
 | **Community maps** | **Explore** published designs, fork copies into your builder, start lobbies with attribution |
 
@@ -94,11 +94,11 @@ flowchart TB
   Reverb --> Canvas
 ```
 
-- **Lobbies & matches** — create/join games, host flow, match history  
-- **Wiki** — in-app specs and rules (`/wiki`)  
-- **Map Builder** — vertex terrain grid, markers, undo/redo, random generate, autosave  
-- **Explore** — published maps, likes/dislikes, fork to your library, lobby from a map  
-- **Icons** — [Lucide](https://lucide.dev) (tree-shaken per view) + [Font Awesome 7](https://fontawesome.com) (global solid/regular/brands)
+- **Lobbies & matches** - create/join games, host flow, match history  
+- **Wiki** - in-app specs and rules (`/wiki`)  
+- **Map Builder** - vertex terrain grid, markers, undo/redo, random generate, autosave  
+- **Explore** - published maps, likes/dislikes, fork to your library, lobby from a map  
+- **Icons** - [Lucide](https://lucide.dev) (tree-shaken per view) + [Font Awesome 7](https://fontawesome.com) (global solid/regular/brands)
 
 ---
 

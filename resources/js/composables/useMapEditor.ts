@@ -207,7 +207,7 @@ function mapSaveHttpStatusMessage(status: number): string {
     }
 
     if (status === 404) {
-        return 'That map was not found. It may have been deleted — try picking another map from the list.';
+        return 'That map was not found. It may have been deleted - try picking another map from the list.';
     }
 
     if (status === 419) {
@@ -604,7 +604,7 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
                 gy,
             )
         ) {
-            notifyPlacementBlocked('Too close to deep water or a river — move further from the coast.');
+            notifyPlacementBlocked('Too close to deep water or a river - move further from the coast.');
 
             return;
         }
@@ -696,7 +696,7 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
                 gy,
             )
         ) {
-            notifyPlacementBlocked('Too close to deep water or a river — move further from the coast.');
+            notifyPlacementBlocked('Too close to deep water or a river - move further from the coast.');
 
             return;
         }

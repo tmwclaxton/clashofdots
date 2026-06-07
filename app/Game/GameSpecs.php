@@ -87,7 +87,7 @@ final class GameSpecs
 
     /**
      * Terrain speed and attack use War of Dots scale (plains infantry speed = 0.5, attack = 0.08).
-     * Defense is a multiplier — both unit types share 1.0 (no inherent defense bonus).
+     * Defense is a multiplier - both unit types share 1.0 (no inherent defense bonus).
      *
      * @return array<string, array{
      *     infantry: array{speed: float, attack: float, defense: float},
@@ -158,13 +158,13 @@ final class GameSpecs
             'meadow' => 'Soft rolling grass. Behaves like plains with a slight tank speed edge.',
             'forest' => 'Light woodland. Infantry unaffected; tanks slow and lose their damage advantage.',
             'dense_forest' => 'Thick woodland. Infantry penalty is mild; tanks are severely hampered.',
-            'hill' => 'High ground. Tanks move slowly but keep full damage — strong on hilltops above forest.',
+            'hill' => 'High ground. Tanks move slowly but keep full damage - strong on hilltops above forest.',
             'mountain' => 'Impassable peaks. Units cannot cross; no combat occurs here.',
             'water' => 'Shallow lakes. Slows all units, weakens attacks, and deals damage over time.',
-            'deep_water' => 'Open ocean. Worse penalties than shallow water — cross only in desperation.',
+            'deep_water' => 'Open ocean. Worse penalties than shallow water - cross only in desperation.',
             'river' => 'Narrow waterways. Same risks as water; a defended river stops most pushes cold.',
             'swamp' => 'Boggy wetland. Mud-like penalties slow everyone and reduce damage output.',
-            'desert' => 'Sandy dunes. Tanks move as fast as infantry — the best heavy-unit terrain.',
+            'desert' => 'Sandy dunes. Tanks move as fast as infantry - the best heavy-unit terrain.',
             'beach' => 'Coastal sand. Minor slowdown; still favorable for tanks approaching landings.',
         ];
     }
@@ -230,7 +230,7 @@ final class GameSpecs
             [
                 'title' => 'Upkeep',
                 'icon' => 'wallet',
-                'body' => 'Every field unit costs 1 fund per second. Units garrisoned on a settlement cost nothing — parking troops on cities makes money.',
+                'body' => 'Every field unit costs 1 fund per second. Units garrisoned on a settlement cost nothing - parking troops on cities makes money.',
             ],
             [
                 'title' => 'Supply',
@@ -240,7 +240,7 @@ final class GameSpecs
             [
                 'title' => 'Recruitment',
                 'icon' => 'user-plus',
-                'body' => 'Infantry cost 200 funds; tanks cost 400. Upkeep is identical regardless of unit health — a wounded infantry costs the same as a fresh tank.',
+                'body' => 'Infantry cost 200 funds; tanks cost 400. Upkeep is identical regardless of unit health - a wounded infantry costs the same as a fresh tank.',
             ],
             [
                 'title' => 'Encirclement',

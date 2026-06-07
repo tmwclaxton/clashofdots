@@ -548,7 +548,7 @@ function ensureMountainAccessibility(
     }
 }
 
-/** Moisture hotspots for oases — soft falloff so greenery can ring each pool. */
+/** Moisture hotspots for oases - soft falloff so greenery can ring each pool. */
 function oasisStrength(gx: number, gy: number, scale: number, ox: number, oy: number): number {
     const wx = (gx + 0.5) * scale * 2.8 + ox;
     const wy = (gy + 0.5) * scale * 2.8 + oy;

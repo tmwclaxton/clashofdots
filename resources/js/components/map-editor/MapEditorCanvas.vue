@@ -11,7 +11,7 @@ import { editorBlendedTerrainFillStyle } from '@/lib/terrainRender';
 const props = defineProps<{
     editor: MapEditorInstance;
     teamColors: { slot: number; hex: string; label: string }[];
-    /** When true, only pan / zoom — no terrain or marker edits. */
+    /** When true, only pan / zoom - no terrain or marker edits. */
     readOnly?: boolean;
 }>();
 

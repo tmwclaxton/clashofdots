@@ -290,7 +290,7 @@ const teamMarkerDialogLabel = computed(() => {
 
 const teamMarkerDialogDescription = computed(
     () =>
-        `Capitals, flags, and troop spawns are placed with the marker tools in the toolbar. You chose ${teamMarkerDialogLabel.value} — pick a tool below, then click land on the map.`,
+        `Capitals, flags, and troop spawns are placed with the marker tools in the toolbar. You chose ${teamMarkerDialogLabel.value} - pick a tool below, then click land on the map.`,
 );
 
 function onTeamNeedMarkerTool(slot: number): void {

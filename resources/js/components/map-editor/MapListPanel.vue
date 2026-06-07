@@ -86,7 +86,7 @@ async function confirmRemoveMap(): Promise<void> {
 
 function formatUpdated(iso: string | null): string {
     if (!iso) {
-        return '—';
+        return '-';
     }
 
     try {
@@ -114,7 +114,7 @@ function formatUpdated(iso: string | null): string {
         <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
         <ul class="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-0.5 text-sm">
             <li v-if="maps.length === 0" class="px-1 py-2 text-xs text-muted-foreground">
-                No saved maps yet. Paint terrain — maps autosave while you work.
+                No saved maps yet. Paint terrain - maps autosave while you work.
             </li>
             <li v-for="m in maps" :key="m.uuid">
                 <div

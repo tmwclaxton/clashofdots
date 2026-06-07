@@ -1,5 +1,5 @@
 /**
- * Map editor terrain ids — keep in sync with App\Maps\TerrainCatalog.
+ * Map editor terrain ids - keep in sync with App\Maps\TerrainCatalog.
  */
 export const TERRAIN_IDS = [
     'plains',

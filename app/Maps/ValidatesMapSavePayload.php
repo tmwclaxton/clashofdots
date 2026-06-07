@@ -101,7 +101,7 @@ final class ValidatesMapSavePayload
             if (! array_key_exists('markers', $data)) {
                 $validator->errors()->add(
                     'data.markers',
-                    'Capitals & troops (markers) must be sent with the map — use an empty array if none are placed yet.',
+                    'Capitals & troops (markers) must be sent with the map - use an empty array if none are placed yet.',
                 );
 
                 return;

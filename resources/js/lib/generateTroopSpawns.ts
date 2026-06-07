@@ -26,7 +26,7 @@ export const BASE_GENERATED_TANKS_PER_TEAM = 4;
 
 export type TroopSpawnGenerationOptions = {
     /**
-     * Archipelago / island profile: shorter fronts — use a shallower inland band and
+     * Archipelago / island profile: shorter fronts - use a shallower inland band and
      * targets tied to measured border length.
      */
     islandLike?: boolean;
@@ -76,7 +76,7 @@ function isStrictInterTeamBorder(
 }
 
 /**
- * True when ortho-adjacent to water / river (shoreline) or to another team's land — used on
+ * True when ortho-adjacent to water / river (shoreline) or to another team's land - used on
  * island maps where Voronoi "strict" borders are empty because factions only meet across sea.
  */
 function isShoreOrContestNeighbor(
@@ -139,7 +139,7 @@ function isTroopFrontCell(
 }
 
 /**
- * Unoccupied placeable cells ortho-adjacent to a team's capital or flags — real BFS seeds
+ * Unoccupied placeable cells ortho-adjacent to a team's capital or flags - real BFS seeds
  * (marker cells themselves sit in `occupied` and must not be passed as seeds).
  */
 function collectAdjacentAnchorSeedsForTeam(

@@ -171,7 +171,7 @@ function copyToBuilder(m: ExploreMapCard): void {
             </h1>
             <p class="mt-2 max-w-2xl text-sm text-muted-foreground">
                 Published designs from the community. Copy one to edit your own version, or start a
-                lobby (the match still uses procedural terrain for now — your chosen map is linked for
+                lobby (the match still uses procedural terrain for now - your chosen map is linked for
                 attribution and future play modes).
             </p>
         </div>

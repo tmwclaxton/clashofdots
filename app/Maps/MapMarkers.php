@@ -443,7 +443,7 @@ final class MapMarkers
 
     /**
      * Structural checks only for persisting map drafts (no spacing, water buffer, capital/flag
-     * counts, or connectivity rules — those apply when placing markers in the editor or when
+     * counts, or connectivity rules - those apply when placing markers in the editor or when
      * generating maps).
      *
      * @param  array<string, mixed>  $data  Full map data (version 2)

@@ -111,7 +111,7 @@ function formatStat(value: number, digits = 2): string {
 
 function attackRatio(infantry: number, tank: number): string {
     if (infantry === 0 && tank === 0) {
-        return '—';
+        return '-';
     }
 
     if (infantry === 0) {
@@ -150,7 +150,7 @@ function speedClass(speed: number, impassable: boolean): string {
     <div class="flex flex-col gap-10 pb-4">
         <Heading
             title="Game Wiki"
-            description="Unit stats, terrain effects, economy rules, and procedural maps — tuned from War of Dots community data and adapted for War of Spheres."
+            description="Unit stats, terrain effects, economy rules, and procedural maps - tuned from War of Dots community data and adapted for War of Spheres."
         />
 
         <div
@@ -183,7 +183,7 @@ function speedClass(speed: number, impassable: boolean): string {
                     <h2 class="font-display text-xl font-bold">Combat units</h2>
                     <p class="mt-1 text-sm text-muted-foreground">
                         Two unit types share the same upkeep but trade speed for
-                        durability. Defense is flat — there is no bonus for holding
+                        durability. Defense is flat - there is no bonus for holding
                         ground.
                     </p>
                 </div>
@@ -479,7 +479,7 @@ function speedClass(speed: number, impassable: boolean): string {
                     <p class="mt-1 text-sm text-muted-foreground">
                         Choose a style in the Map Builder’s generate dialog (same team count and
                         optional seed as in-game). Previews below are 48×56-cell samples (seed
-                        4&nbsp;242&nbsp;42) rendered with the editor terrain palette — not full
+                        4&nbsp;242&nbsp;42) rendered with the editor terrain palette - not full
                         battlefield dimensions.
                     </p>
                 </div>

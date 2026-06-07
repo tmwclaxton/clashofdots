@@ -528,7 +528,7 @@ function widenCapitalsForTroopLegroom(
  * editor (land only: not water / deep_water / river; capitals and flags also keep Chebyshev
  * clearance from hydraulic water so large glyphs do not read as overlapping water).
  *
- * Team count: by default, scan Manhattan spacing thresholds on one shuffled land list — prefer
+ * Team count: by default, scan Manhattan spacing thresholds on one shuffled land list - prefer
  * more teams when the map has room; tie-break toward wider spacing. Capital *positions* are then
  * chosen by farthest-point sampling so teams spread across placeable land instead of following
  * visit order. When {@link requestedTeamCount} is a valid integer in range, that count is used

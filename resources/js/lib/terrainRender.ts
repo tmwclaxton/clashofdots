@@ -14,7 +14,7 @@ function hexToRgbTuple(hex: string): readonly [number, number, number] {
     return [Number.parseInt(m[1], 16), Number.parseInt(m[2], 16), Number.parseInt(m[3], 16)] as const;
 }
 
-/** Editor terrain RGB — built once from {@link EDITOR_TERRAIN_COLORS} for fast canvas fills. */
+/** Editor terrain RGB - built once from {@link EDITOR_TERRAIN_COLORS} for fast canvas fills. */
 export const EDITOR_TERRAIN_RGB: Record<TerrainId, readonly [number, number, number]> = Object.fromEntries(
     TERRAIN_IDS.map((id) => [id, hexToRgbTuple(EDITOR_TERRAIN_COLORS[id])] as const),
 ) as Record<TerrainId, readonly [number, number, number]>;
