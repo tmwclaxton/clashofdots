@@ -388,9 +388,7 @@ onUnmounted(() => {
     <Head title="Map Builder" />
 
     <div class="flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-        <div
-            class="flex flex-wrap items-center gap-2 rounded-lg border-2 border-foreground bg-wod-paper px-3 py-2 shadow-sm"
-        >
+        <div class="flex flex-wrap items-center gap-2 wod-surface px-3 py-2">
             <label class="sr-only" for="map-builder-name">Map name</label>
             <Input
                 id="map-builder-name"
@@ -446,7 +444,7 @@ onUnmounted(() => {
                 </label>
                 <select
                     id="map-builder-teams"
-                    class="wod-field h-8 rounded-md border-2 border-foreground px-2 font-mono text-xs text-foreground"
+                    class="wod-field h-8 w-auto min-w-[3.5rem] px-2 font-mono text-xs"
                     :value="headerTeamCount"
                     @change="onTeamCountChange"
                 >
@@ -509,7 +507,11 @@ onUnmounted(() => {
         <div
             class="flex w-full min-w-0 shrink-0 flex-row items-stretch gap-2 border-t border-foreground/15 pt-1.5"
         >
-            <MapTerrainPalette :editor="editor" :terrain-types="terrainTypes" class="shrink-0" />
+            <MapTerrainPalette
+                :editor="editor"
+                :terrain-types="terrainTypes"
+                class="min-h-0 min-w-0 flex-1 basis-0"
+            />
             <MapTeamPalette
                 :editor="editor"
                 :team-colors="teamColors"

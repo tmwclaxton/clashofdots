@@ -2,6 +2,7 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { onMounted, onUnmounted } from 'vue';
 import GameCanvas from '@/components/game/GameCanvas.vue';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 import { Button } from '@/components/ui/button';
 import { index as lobbies } from '@/routes/lobbies';
 import { useGameStore } from '@/stores/gameStore';
@@ -37,7 +38,7 @@ onUnmounted(() => {
 <template>
     <Head title="Battlefield" />
 
-    <div class="flex h-screen flex-col bg-wod-green-lt text-foreground">
+    <div class="flex h-screen flex-col bg-background text-foreground">
         <header
             class="wod-bar-top relative flex shrink-0 items-center justify-between px-4 py-2"
         >
@@ -63,6 +64,7 @@ onUnmounted(() => {
                 </span>
             </div>
             <div class="flex items-center gap-2">
+                <ThemeToggle />
                 <Button
                     size="sm"
                     variant="outline"

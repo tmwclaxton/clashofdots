@@ -18,15 +18,15 @@
 
     --font-mono: ui-monospace, monospace;
 
-    --color-wod-black: #1a1a1a;
-    --color-wod-red: #e53935;
-    --color-wod-blue: #4a90d9;
-    --color-wod-green-lt: #c8d68a;
-    --color-wod-green-dk: #3d6b45;
-    --color-wod-gray-lt: #d4d4d4;
-    --color-wod-gray-dk: #5a5a5a;
-    --color-wod-cream: #f7f1e3;
-    --color-wod-paper: #e8dfc8;
+    --color-wod-black: var(--wod-black);
+    --color-wod-red: var(--wod-red);
+    --color-wod-blue: var(--wod-blue);
+    --color-wod-green-lt: var(--wod-green-lt);
+    --color-wod-green-dk: var(--wod-green-dk);
+    --color-wod-gray-lt: var(--wod-gray-lt);
+    --color-wod-gray-dk: var(--wod-gray-dk);
+    --color-wod-cream: var(--wod-cream);
+    --color-wod-paper: var(--wod-paper);
     --color-wod-faction-red: #ff0000;
     --color-wod-faction-blue: #0000ff;
     --color-wod-faction-orange: #ff9600;
@@ -83,6 +83,22 @@
 }
 
 :root {
+    --wod-black: #1a1a1a;
+    --wod-red: #e53935;
+    --wod-blue: #4a90d9;
+    --wod-green-lt: #c8d68a;
+    --wod-green-dk: #3d6b45;
+    --wod-gray-lt: #d4d4d4;
+    --wod-gray-dk: #5a5a5a;
+    --wod-cream: #f7f1e3;
+    --wod-paper: #e8dfc8;
+
+    --wod-shadow: #1a1a1a;
+    --wod-canvas-ink: #1a1a1a;
+    --wod-canvas-field: #c8d68a;
+    --wod-editor-void: #a8ad9a;
+    --wod-editor-workspace: #c9cfba;
+
     --background: #f7f1e3;
     --foreground: #1a1a1a;
     --card: #ffffff;
@@ -120,6 +136,20 @@
 }
 
 .dark {
+    --wod-green-lt: #4a6340;
+    --wod-green-dk: #9bc4a3;
+    --wod-paper: #2a2a2a;
+    --wod-cream: #1a1a1a;
+    --wod-gray-lt: #5a5a5a;
+    --wod-gray-dk: #b8b8b8;
+    --wod-blue: #7eb8f0;
+
+    --wod-shadow: #f7f1e3;
+    --wod-canvas-ink: #f7f1e3;
+    --wod-canvas-field: #2a3520;
+    --wod-editor-void: #3a3f36;
+    --wod-editor-workspace: #2f3528;
+
     --background: #1a1a1a;
     --foreground: #f7f1e3;
     --card: #2a2a2a;
@@ -157,6 +187,11 @@
 
     html {
         @apply font-sans;
+        color-scheme: light;
+    }
+
+    html.dark {
+        color-scheme: dark;
     }
 
     body {
@@ -177,6 +212,23 @@
             #f7f1e3 12rem,
             #f7f1e3 100%
         );
+    }
+
+    .dark .wod-page {
+        background-image: linear-gradient(
+            180deg,
+            #243020 0%,
+            #1a1a1a 12rem,
+            #1a1a1a 100%
+        );
+    }
+
+    .wod-page-map-builder {
+        background-image: none;
+    }
+
+    .wod-surface {
+        @apply rounded-lg border-2 border-foreground bg-card shadow-sm;
     }
 
     .wod-bar {
@@ -200,7 +252,7 @@
         opacity: 0.07;
         background-image: radial-gradient(
             circle,
-            var(--color-wod-green-dk) 1px,
+            var(--wod-green-dk) 1px,
             transparent 1px
         );
         background-size: 14px 14px;
@@ -214,8 +266,17 @@
         bottom: 2px;
         left: 0;
         height: 3px;
-        background: var(--color-wod-green-dk);
+        background: var(--wod-green-dk);
         pointer-events: none;
+    }
+
+    .dark .wod-bar-top {
+        background-image: linear-gradient(
+            180deg,
+            #3a4f32 0%,
+            #2f4228 60%,
+            #243520 100%
+        );
     }
 
     .wod-bar-bottom {
@@ -236,7 +297,7 @@
         right: 0;
         left: 0;
         height: 3px;
-        background: var(--color-wod-green-dk);
+        background: var(--wod-green-dk);
         pointer-events: none;
     }
 
@@ -247,11 +308,21 @@
         opacity: 0.06;
         background-image: radial-gradient(
             circle,
-            var(--color-wod-green-dk) 1px,
+            var(--wod-green-dk) 1px,
             transparent 1px
         );
         background-size: 14px 14px;
         pointer-events: none;
+    }
+
+    .dark .wod-bar-bottom {
+        background-color: #2f4228;
+        background-image: linear-gradient(
+            0deg,
+            #243520 0%,
+            #2f4228 50%,
+            #3a4f32 100%
+        );
     }
 
     .wod-panel {
@@ -279,11 +350,13 @@
     }
 
     .wod-logo {
-        @apply flex items-center justify-center rounded-lg border-2 border-foreground bg-card text-foreground shadow-[2px_2px_0_#1a1a1a];
+        @apply flex items-center justify-center rounded-lg border-2 border-foreground bg-card text-foreground;
+        box-shadow: 2px 2px 0 var(--wod-shadow);
     }
 
     .wod-logo-terrain {
-        @apply flex items-center justify-center rounded-lg border-2 border-foreground bg-wod-green-dk text-wod-green-lt shadow-[2px_2px_0_#1a1a1a];
+        @apply flex items-center justify-center rounded-lg border-2 border-foreground bg-wod-green-dk text-wod-green-lt;
+        box-shadow: 2px 2px 0 var(--wod-shadow);
     }
 
     .wod-faction-strip {
@@ -295,7 +368,8 @@
     }
 
     .wod-nav-active {
-        @apply border-2 border-foreground bg-card font-semibold text-foreground shadow-[2px_2px_0_#1a1a1a];
+        @apply border-2 border-foreground bg-card font-semibold text-foreground;
+        box-shadow: 2px 2px 0 var(--wod-shadow);
     }
 
     .wod-nav-active:hover {
@@ -315,6 +389,11 @@
     }
 
     .wod-field {
-        @apply h-9 w-full rounded-md border-2 border-foreground bg-card px-3 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-foreground/30;
+        @apply h-9 w-full rounded-md border-2 border-foreground bg-card px-3 py-1 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-foreground/30;
+    }
+
+    .wod-field option {
+        background-color: var(--card);
+        color: var(--foreground);
     }
 }

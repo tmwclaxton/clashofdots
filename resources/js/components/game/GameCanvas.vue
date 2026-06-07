@@ -1,15 +1,29 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { useIsDark } from '@/composables/useIsDark';
 import { ENGINE_FOREST_THRESHOLD, engineCellFillStyle } from '@/lib/terrainRender';
 import { useGameStore } from '@/stores/gameStore';
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const store = useGameStore();
+const { isDark } = useIsDark();
 
 let dragging = false;
 let panning = false;
 let lastMouse: [number, number] = [0, 0];
 let terrainCanvas: HTMLCanvasElement | null = null;
+
+function canvasInk(): string {
+    return getComputedStyle(document.documentElement)
+        .getPropertyValue('--wod-canvas-ink')
+        .trim() || (isDark.value ? '#f7f1e3' : '#1a1a1a');
+}
+
+function canvasField(): string {
+    return getComputedStyle(document.documentElement)
+        .getPropertyValue('--wod-canvas-field')
+        .trim() || (isDark.value ? '#2a3520' : '#c8d68a');
+}
 
 function bakeTerrain() {
     if (!store.terrain || !store.forest || !terrainCanvas) {
@@ -61,7 +75,7 @@ function draw() {
     canvas.height = rect.height * devicePixelRatio;
     ctx.scale(devicePixelRatio, devicePixelRatio);
 
-    ctx.fillStyle = '#c8d68a';
+    ctx.fillStyle = canvasField();
     ctx.fillRect(0, 0, rect.width, rect.height);
 
     ctx.save();
@@ -148,7 +162,7 @@ function drawCity(ctx: CanvasRenderingContext2D, position: [number, number], col
     }
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = '#1a1a1a';
+    ctx.strokeStyle = canvasInk();
     ctx.lineWidth = 1;
     ctx.stroke();
 }
@@ -159,12 +173,12 @@ function drawTroop(ctx: CanvasRenderingContext2D, position: [number, number], co
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#1a1a1a';
+    ctx.strokeStyle = canvasInk();
     ctx.lineWidth = 1;
     ctx.stroke();
 
     if (health < 100) {
-        ctx.fillStyle = '#1a1a1a';
+        ctx.fillStyle = canvasInk();
         ctx.fillRect(x - 8, y - 12, 16, 3);
         ctx.fillStyle = '#27ae60';
         ctx.fillRect(x - 8, y - 12, (16 * health) / 100, 3);
@@ -176,7 +190,7 @@ function drawArrowPath(ctx: CanvasRenderingContext2D, points: [number, number][]
         return;
     }
 
-    ctx.strokeStyle = '#1a1a1a';
+    ctx.strokeStyle = canvasInk();
     ctx.lineWidth = 2;
     ctx.setLineDash(dashed ? [6, 4] : []);
 
@@ -330,6 +344,10 @@ watch(
     },
     { deep: true },
 );
+
+watch(isDark, () => {
+    draw();
+});
 </script>
 
 <template>

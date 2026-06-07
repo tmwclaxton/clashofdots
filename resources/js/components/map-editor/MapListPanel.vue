@@ -100,9 +100,7 @@ function formatUpdated(iso: string | null): string {
 </script>
 
 <template>
-    <div
-        class="flex max-h-full min-h-0 w-56 shrink-0 flex-col gap-2 rounded-lg border-2 border-foreground bg-wod-paper p-2 shadow-sm"
-    >
+    <div class="flex max-h-full min-h-0 w-56 shrink-0 flex-col gap-2 wod-surface p-2">
         <div class="flex items-center justify-between gap-1">
             <p class="font-display text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Maps

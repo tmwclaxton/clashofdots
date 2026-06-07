@@ -17,6 +17,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import FactionSwatches from '@/components/FactionSwatches.vue';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
@@ -81,6 +82,7 @@ const navItems = computed<NavItem[]>(() => [
             </div>
 
             <div class="flex items-center gap-2">
+                <ThemeToggle />
                 <DropdownMenu v-if="auth.user">
                     <DropdownMenuTrigger as-child>
                         <Button

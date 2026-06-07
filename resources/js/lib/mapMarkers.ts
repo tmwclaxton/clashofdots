@@ -67,6 +67,33 @@ function pathHexagonPointy(ctx: CanvasRenderingContext2D, cx: number, cy: number
 }
 
 /**
+ * Dark outer glow so troop markers read on pale terrain (capitals/flags use {@link strokeMarkerHalo}).
+ */
+function strokeTroopMarkerBackdrop(
+    ctx: CanvasRenderingContext2D,
+    tracePath: () => void,
+    cellPx: number,
+    scale: number,
+): void {
+    const blur = Math.max(3, cellPx * 0.2 * scale);
+
+    ctx.save();
+    tracePath();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = blur;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.lineWidth = Math.max(2.5, cellPx * 0.1 * scale);
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.restore();
+}
+
+/** Single thick black rim for infantry / tank glyphs (vs white + thin black on capitals & flags). */
+function troopMarkerOutlineWidth(cellPx: number, scale: number): number {
+    return Math.max(3, cellPx * 0.078 * scale);
+}
+
+/**
  * Soft outer glow + bright rim so markers read clearly on busy terrain.
  */
 function strokeMarkerHalo(
@@ -220,10 +247,15 @@ export function drawInfantryMarker(
     const cy = gy * cellPx + cellPx / 2;
     const r = cellPx * 0.22 * s;
 
-    strokeMarkerHalo(ctx, () => {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    }, cellPx, s);
+    strokeTroopMarkerBackdrop(
+        ctx,
+        () => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        },
+        cellPx,
+        s,
+    );
 
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -232,14 +264,9 @@ export function drawInfantryMarker(
 
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
-    ctx.lineWidth = Math.max(1.5, cellPx * 0.045 * s);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(12, 12, 16, 0.94)';
-    ctx.lineWidth = Math.max(1, cellPx * 0.028 * s);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.92)';
+    ctx.lineWidth = troopMarkerOutlineWidth(cellPx, s);
+    ctx.lineJoin = 'round';
     ctx.stroke();
 }
 
@@ -254,34 +281,35 @@ export function drawTankMarker(
     const cx = gx * cellPx + cellPx / 2;
     const cy = gy * cellPx + cellPx / 2;
     const r = cellPx * 0.24 * s;
+    const outlineW = troopMarkerOutlineWidth(cellPx, s);
 
-    strokeMarkerHalo(ctx, () => {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    }, cellPx, s);
+    strokeTroopMarkerBackdrop(
+        ctx,
+        () => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        },
+        cellPx,
+        s,
+    );
 
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fillStyle = colorHex;
     ctx.fill();
 
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
-    ctx.lineWidth = Math.max(1.5, cellPx * 0.045 * s);
-    ctx.stroke();
-
     const rw = r * 0.85;
     const rh = r * 0.38;
     ctx.fillStyle = 'rgba(255, 252, 235, 0.92)';
     ctx.fillRect(cx - rw / 2, cy - rh / 2, rw, rh);
-    ctx.strokeStyle = 'rgba(12, 12, 16, 0.94)';
-    ctx.lineWidth = Math.max(1, cellPx * 0.022 * s);
+
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.92)';
+    ctx.lineWidth = outlineW * 0.85;
+    ctx.lineJoin = 'round';
     ctx.strokeRect(cx - rw / 2, cy - rh / 2, rw, rh);
 
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(12, 12, 16, 0.94)';
-    ctx.lineWidth = Math.max(1, cellPx * 0.028 * s);
+    ctx.lineWidth = outlineW;
     ctx.stroke();
 }

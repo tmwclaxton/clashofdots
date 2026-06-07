@@ -2,6 +2,7 @@
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { Swords } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 import { login, wiki } from '@/routes';
 import { index as lobbiesIndex } from '@/routes/lobbies';
 
@@ -82,7 +83,8 @@ const steps = [
                             <p class="wod-tagline">Plan first, fight second</p>
                         </div>
                     </div>
-                    <nav class="flex gap-2">
+                    <nav class="flex items-center gap-2">
+                        <ThemeToggle />
                         <Link :href="wiki().url">
                             <Button variant="ghost">Wiki</Button>
                         </Link>

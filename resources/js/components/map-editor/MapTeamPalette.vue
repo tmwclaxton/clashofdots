@@ -145,7 +145,7 @@ function removeTeamForSlot(teamIndex: number): void {
 
 <template>
     <div
-        class="wod-panel flex min-h-0 min-w-0 flex-col gap-1 rounded-lg border-2 border-foreground p-2"
+        class="wod-panel flex min-h-0 w-full min-w-0 flex-col gap-1 rounded-lg border-2 border-foreground p-2"
     >
         <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
             <p class="font-display text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -162,9 +162,7 @@ function removeTeamForSlot(teamIndex: number): void {
                 Click a swatch to arm that team, then use marker tools on the map.
             </p>
         </div>
-        <div
-            class="grid min-h-0 w-full min-w-0 grid-cols-3 content-start gap-1.5 pb-0.5"
-        >
+        <div class="grid min-h-0 w-full min-w-0 grid-cols-3 content-start gap-1.5 pb-0.5">
             <div
                 v-for="t in visibleTeamRows"
                 :key="`team-slot-${t.teamIndex}`"
@@ -196,7 +194,7 @@ function removeTeamForSlot(teamIndex: number): void {
                     <button
                         v-if="canRemoveTeam"
                         type="button"
-                        class="absolute top-0 right-0 inline-flex size-6 items-center justify-center rounded border border-foreground/30 bg-wod-paper text-foreground shadow-sm transition-colors hover:border-destructive hover:bg-destructive hover:text-white"
+                        class="absolute top-0 right-0 inline-flex size-6 items-center justify-center rounded border border-foreground/30 bg-card text-foreground shadow-sm transition-colors hover:border-destructive hover:bg-destructive hover:text-white"
                         :title="`Remove ${t.colorRow.label} team`"
                         :aria-label="`Remove ${t.colorRow.label} team`"
                         @click.stop.prevent="removeTeamForSlot(t.teamIndex)"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-mutating-props -- editor exposes mutable refs shared by map builder */
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useIsDark } from '@/composables/useIsDark';
 import { MAP_EDITOR_MAX_ZOOM, MAP_EDITOR_MIN_ZOOM } from '@/composables/useMapEditor';
 import type { MapEditorInstance } from '@/composables/useMapEditor';
 import { drawCapitalMarker, drawFlagMarker, drawInfantryMarker, drawTankMarker } from '@/lib/mapMarkers';
@@ -23,6 +24,7 @@ function hexForTeam(team: number): string {
 }
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
+const { isDark } = useIsDark();
 let painting = false;
 let panning = false;
 let lastMouse: [number, number] = [0, 0];
@@ -33,14 +35,27 @@ let renderRaf = 0;
 let renderPending = false;
 
 /** Canvas / void outside the playable grid (letterbox). */
-const VIEWPORT_VOID = '#a8ad9a';
-/** Workspace behind the grid (infinite-canvas feel). */
-const WORKSPACE_FILL = '#c9cfba';
+function viewportVoid(): string {
+    return getComputedStyle(document.documentElement)
+        .getPropertyValue('--wod-editor-void')
+        .trim() || (isDark.value ? '#3a3f36' : '#a8ad9a');
+}
 
-/**
- * Semi-transparent overlay on playable cells only so markers read brighter than terrain.
- */
+/** Workspace behind the grid (infinite-canvas feel). */
+function workspaceFill(): string {
+    return getComputedStyle(document.documentElement)
+        .getPropertyValue('--wod-editor-workspace')
+        .trim() || (isDark.value ? '#2f3528' : '#c9cfba');
+}
+
+/** Semi-transparent overlay on playable cells only so markers read brighter than terrain. */
 const MAP_TERRAIN_DIM_ALPHA = 0.08;
+
+function terrainDimFill(): string {
+    return isDark.value
+        ? 'rgba(0, 0, 0, 0.22)'
+        : `rgba(0, 0, 0, ${MAP_TERRAIN_DIM_ALPHA})`;
+}
 
 /**
  * Exponential wheel zoom: factor = exp(-deltaPx * sensitivity).
@@ -223,7 +238,7 @@ function draw(): void {
     const nRows = props.editor.gridRows.value;
     const nCols = props.editor.gridCols.value;
 
-    ctx.fillStyle = VIEWPORT_VOID;
+    ctx.fillStyle = viewportVoid();
     ctx.fillRect(0, 0, rect.width, rect.height);
 
     ctx.save();
@@ -231,7 +246,7 @@ function draw(): void {
     ctx.translate(props.editor.camX.value, props.editor.camY.value);
 
     const margin = Math.max(ww, wh) * 1.25;
-    ctx.fillStyle = WORKSPACE_FILL;
+    ctx.fillStyle = workspaceFill();
     ctx.fillRect(-margin, -margin, ww + 2 * margin, wh + 2 * margin);
 
     for (let gy = 0; gy < nCols; gy++) {
@@ -244,7 +259,7 @@ function draw(): void {
         }
     }
 
-    ctx.fillStyle = `rgba(0, 0, 0, ${MAP_TERRAIN_DIM_ALPHA})`;
+    ctx.fillStyle = terrainDimFill();
     ctx.fillRect(0, 0, ww, wh);
 
     for (const m of props.editor.markers.value) {
@@ -486,6 +501,8 @@ watch(
     ],
     () => scheduleDraw(),
 );
+
+watch(isDark, () => scheduleDraw());
 </script>
 
 <template>
@@ -494,13 +511,13 @@ watch(
             v-if="placementHint"
             role="status"
             aria-live="polite"
-            class="pointer-events-none absolute top-3 left-1/2 z-10 max-w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 rounded-md border-2 border-foreground/40 bg-[#a8ad9a] px-4 py-2 text-center text-xs font-medium leading-snug text-foreground shadow-sm"
+            class="pointer-events-none absolute top-3 left-1/2 z-10 max-w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 rounded-md border-2 border-foreground/40 bg-[var(--wod-editor-void)] px-4 py-2 text-center text-xs font-medium leading-snug text-foreground shadow-sm"
         >
             {{ placementHint }}
         </div>
         <canvas
             ref="canvasRef"
-            class="h-full min-h-0 w-full min-w-0 cursor-crosshair touch-none rounded-lg border-2 border-foreground bg-wod-paper"
+            class="h-full min-h-0 w-full min-w-0 cursor-crosshair touch-none rounded-lg border-2 border-foreground bg-[var(--wod-editor-void)]"
             @contextmenu.prevent
             @pointerdown="onPointerDown"
             @pointermove="onPointerMove"
@@ -510,7 +527,7 @@ watch(
         />
         <div
             v-if="tileScale"
-            class="pointer-events-none absolute bottom-3 left-3 rounded-md border-2 border-foreground bg-wod-paper/95 px-2.5 py-2 shadow-sm"
+            class="pointer-events-none absolute bottom-3 left-3 rounded-md border-2 border-foreground bg-card/95 px-2.5 py-2 shadow-sm backdrop-blur-sm"
         >
             <div
                 class="relative h-1.5 rounded-sm bg-foreground/15"

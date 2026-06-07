@@ -37,13 +37,15 @@ function selectTerrain(id: string): void {
 
 <template>
     <div
-        class="wod-panel flex min-w-0 shrink-0 flex-col gap-2 rounded-lg border-2 border-foreground p-2.5 sm:p-3"
+        class="wod-panel flex min-h-0 w-full min-w-0 flex-col gap-1.5 overflow-hidden rounded-lg border-2 border-foreground p-2 sm:p-2.5"
     >
-        <p class="font-display text-xs font-bold uppercase tracking-wide text-foreground sm:text-sm">
+        <p
+            class="font-display text-[11px] font-bold uppercase tracking-wide text-foreground sm:text-xs"
+        >
             Terrain
         </p>
         <div
-            class="flex max-w-full min-w-0 flex-nowrap gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5"
+            class="flex max-w-full min-w-0 flex-wrap content-start gap-1.5"
         >
             <button
                 v-for="t in terrainTypes"
@@ -51,7 +53,7 @@ function selectTerrain(id: string): void {
                 type="button"
                 :class="
                     cn(
-                        'flex min-w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-md border-2 px-1.5 py-2 text-xs font-semibold leading-snug text-foreground transition-shadow sm:min-w-[5.5rem] sm:gap-1.5 sm:px-2 sm:py-2.5 sm:text-sm',
+                        'flex min-w-[3.35rem] shrink-0 flex-col items-center gap-0.5 rounded-md border-2 px-1 py-1 text-[10px] font-semibold leading-tight text-foreground transition-shadow sm:min-w-[3.75rem] sm:gap-0.5 sm:px-1 sm:py-1.5 sm:text-xs',
                         editor.selectedTerrain.value === t.id
                             ? 'border-foreground ring-2 ring-foreground/25'
                             : 'border-transparent hover:border-muted-foreground/50',
@@ -61,11 +63,11 @@ function selectTerrain(id: string): void {
                 @click="selectTerrain(t.id)"
             >
                 <span
-                    class="size-8 shrink-0 rounded-md border-2 border-foreground/35 shadow-sm sm:size-9"
+                    class="size-5 shrink-0 rounded border border-foreground/35 shadow-sm sm:size-6"
                     :style="{ backgroundColor: t.color }"
                     aria-hidden="true"
                 />
-                <span class="max-w-[7rem] text-center text-pretty leading-snug">{{ t.label }}</span>
+                <span class="max-w-[5.5rem] text-center text-pretty leading-tight">{{ t.label }}</span>
             </button>
         </div>
     </div>

@@ -21,7 +21,7 @@ const contentClass = computed(() =>
         <div
             :class="
                 page.component === 'MapBuilder'
-                    ? 'wod-page flex h-svh max-h-svh min-h-0 flex-col overflow-hidden'
+                    ? 'wod-page wod-page-map-builder flex h-svh max-h-svh min-h-0 flex-col overflow-hidden'
                     : 'wod-page flex min-h-svh flex-col'
             "
         >

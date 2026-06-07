@@ -62,7 +62,7 @@ function selectBrushSize(size: MapEditorBrushSize): void {
 
 <template>
     <div
-        class="flex w-14 shrink-0 flex-col gap-1 rounded-lg border-2 border-foreground bg-wod-paper p-1 shadow-sm"
+        class="flex w-14 shrink-0 flex-col gap-1 wod-surface p-1"
         role="toolbar"
         aria-label="Map tools"
     >
