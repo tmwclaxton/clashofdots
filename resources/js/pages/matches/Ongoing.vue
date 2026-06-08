@@ -95,8 +95,8 @@ const props = withDefaults(
                         </span>
                     </div>
                 </div>
-                <Link :href="play(match.uuid).url">
-                    <Button>Return to battle</Button>
+                <Link :href="play(match.uuid).url" class="w-full sm:w-auto">
+                    <Button class="w-full sm:w-auto">Return to battle</Button>
                 </Link>
             </article>
         </div>
@@ -125,8 +125,8 @@ const props = withDefaults(
                         Host: {{ match.hostName }}
                     </p>
                 </div>
-                <Link :href="spectate(match.uuid).url">
-                    <Button variant="outline">Watch</Button>
+                <Link :href="spectate(match.uuid).url" class="w-full sm:w-auto">
+                    <Button variant="outline" class="w-full sm:w-auto">Watch</Button>
                 </Link>
             </article>
         </div>

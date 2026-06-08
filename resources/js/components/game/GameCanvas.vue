@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useIsDark } from '@/composables/useIsDark';
-import { ENGINE_FOREST_THRESHOLD, engineCellFillStyle } from '@/lib/terrainRender';
+import {
+    editorBlendedTerrainFillStyle,
+    editorTerrainDimOverlayFill,
+    ENGINE_FOREST_THRESHOLD,
+    engineCellFillStyle,
+} from '@/lib/terrainRender';
 import { useGameStore } from '@/stores/gameStore';
 
 const props = withDefaults(
@@ -32,12 +37,27 @@ function canvasField(): string {
         .trim() || (isDark.value ? '#2a3520' : '#c8d68a');
 }
 
+function terrainCellsMatchGrid(cells: string[][], terrain: number[][]): boolean {
+    if (cells.length === 0 || terrain.length === 0) {
+        return false;
+    }
+
+    const t0 = terrain[0];
+
+    if (!t0?.length) {
+        return false;
+    }
+
+    return cells.length === terrain.length && cells[0]?.length === t0.length;
+}
+
 function bakeTerrain() {
     if (!store.terrain || !store.forest || !terrainCanvas) {
         return;
     }
 
     const ctx = terrainCanvas.getContext('2d');
+
     if (!ctx) {
         return;
     }
@@ -46,20 +66,31 @@ function bakeTerrain() {
     terrainCanvas.width = width;
     terrainCanvas.height = height;
 
+    const cells = store.terrainCells;
+    const useEditorStyle =
+        cells !== null && terrainCellsMatchGrid(cells, store.terrain);
+
     for (let y = 0; y < height; y += cellSize) {
         for (let x = 0; x < width; x += cellSize) {
             const gx = Math.min(store.terrain.length - 1, Math.floor(x / cellSize));
             const gy = Math.min(store.terrain[0].length - 1, Math.floor(y / cellSize));
-            const tv = store.terrain[gx][gy];
-            const fv = store.forest[gx][gy];
-            ctx.fillStyle = engineCellFillStyle(tv, fv);
+
+            if (useEditorStyle && cells) {
+                ctx.fillStyle = editorBlendedTerrainFillStyle(cells, gx, gy);
+            } else {
+                const tv = store.terrain[gx][gy];
+                const fv = store.forest[gx][gy];
+                ctx.fillStyle = engineCellFillStyle(tv, fv);
+            }
+
             ctx.fillRect(x, y, cellSize + 1, cellSize + 1);
         }
     }
-}
 
-function worldToScreen(x: number, y: number): [number, number] {
-    return [(x + store.camX) * store.zoom, (y + store.camY) * store.zoom];
+    if (useEditorStyle) {
+        ctx.fillStyle = editorTerrainDimOverlayFill(isDark.value);
+        ctx.fillRect(0, 0, width, height);
+    }
 }
 
 function screenToWorld(x: number, y: number): [number, number] {
@@ -68,11 +99,13 @@ function screenToWorld(x: number, y: number): [number, number] {
 
 function draw() {
     const canvas = canvasRef.value;
+
     if (!canvas) {
         return;
     }
 
     const ctx = canvas.getContext('2d');
+
     if (!ctx) {
         return;
     }
@@ -133,6 +166,7 @@ function drawFog(ctx: CanvasRenderingContext2D, vision: number[][]) {
     for (let gy = 0; gy < vision[0].length - 1; gy++) {
         for (let gx = 0; gx < vision.length - 1; gx++) {
             const v = vision[gx][gy];
+
             if (v < ENGINE_FOREST_THRESHOLD) {
                 ctx.fillRect(gx * cellSize, gy * cellSize, cellSize, cellSize);
             }
@@ -157,16 +191,19 @@ function drawCity(ctx: CanvasRenderingContext2D, position: [number, number], col
     const [x, y] = position;
     ctx.fillStyle = color ? rgb(color) : '#f1c40f';
     ctx.beginPath();
+
     for (let i = 0; i < 5; i++) {
         const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
         const px = x + Math.cos(angle) * 8;
         const py = y + Math.sin(angle) * 8;
+
         if (i === 0) {
             ctx.moveTo(px, py);
         } else {
             ctx.lineTo(px, py);
         }
     }
+
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = canvasInk();
@@ -203,9 +240,11 @@ function drawArrowPath(ctx: CanvasRenderingContext2D, points: [number, number][]
 
     ctx.beginPath();
     ctx.moveTo(points[0][0], points[0][1]);
+
     for (let i = 1; i < points.length; i++) {
         ctx.lineTo(points[i][0], points[i][1]);
     }
+
     ctx.stroke();
     ctx.setLineDash([]);
 
@@ -226,6 +265,7 @@ function rgb(color: number[]): string {
 
 function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'city' } | null {
     const state = store.latestState;
+
     if (!state) {
         return null;
     }
@@ -234,8 +274,10 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
         if (troop.ownerSlot !== store.slot) {
             continue;
         }
+
         const dx = troop.position[0] - world[0];
         const dy = troop.position[1] - world[1];
+
         if (Math.hypot(dx, dy) < 12) {
             return { id: troop.id, kind: 'troop' };
         }
@@ -245,8 +287,10 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
         if (city.ownerSlot !== store.slot) {
             continue;
         }
+
         const dx = city.position[0] - world[0];
         const dy = city.position[1] - world[1];
+
         if (Math.hypot(dx, dy) < 14) {
             return { id: city.id, kind: 'city' };
         }
@@ -257,6 +301,7 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
 
 function onMouseDown(e: MouseEvent) {
     const canvas = canvasRef.value;
+
     if (!canvas) {
         return;
     }
@@ -268,6 +313,7 @@ function onMouseDown(e: MouseEvent) {
 
     if (e.button === 2) {
         panning = true;
+
         return;
     }
 
@@ -277,6 +323,7 @@ function onMouseDown(e: MouseEvent) {
 
     const world = screenToWorld(sx, sy);
     const entity = findEntity(world);
+
     if (entity) {
         dragging = true;
         store.beginPath(entity.id, entity.kind, world);
@@ -285,6 +332,7 @@ function onMouseDown(e: MouseEvent) {
 
 function onMouseMove(e: MouseEvent) {
     const canvas = canvasRef.value;
+
     if (!canvas) {
         return;
     }
@@ -298,6 +346,7 @@ function onMouseMove(e: MouseEvent) {
         store.camY += (sy - lastMouse[1]) / store.zoom;
         lastMouse = [sx, sy];
         draw();
+
         return;
     }
 
@@ -313,6 +362,7 @@ function onMouseUp() {
         dragging = false;
         draw();
     }
+
     panning = false;
 }
 
@@ -332,10 +382,12 @@ function onKeyDown(e: KeyboardEvent) {
         e.preventDefault();
         store.submitOrders(store.gameUuid);
     }
+
     if (e.key.toLowerCase() === 'c') {
         store.clearDrafts();
         draw();
     }
+
     if (e.key.toLowerCase() === 'p') {
         store.togglePause(store.gameUuid);
     }
@@ -352,7 +404,7 @@ onUnmounted(() => {
 });
 
 watch(
-    () => [store.terrain, store.forest, store.latestState, store.draftPaths, store.activeDraft],
+    () => [store.terrain, store.forest, store.terrainCells, store.latestState, store.draftPaths, store.activeDraft],
     () => {
         bakeTerrain();
         draw();

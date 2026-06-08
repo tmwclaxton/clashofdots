@@ -32,6 +32,7 @@ RUN apt-get update && apt-get upgrade -y \
         libgd3 \
         php8.5-cli \
         php8.5-dev \
+        php8.5-pcntl \
         php8.5-pgsql \
         php8.5-sqlite3 \
         php8.5-gd \

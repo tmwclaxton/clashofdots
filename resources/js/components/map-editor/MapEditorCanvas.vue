@@ -6,7 +6,7 @@ import { useIsDark } from '@/composables/useIsDark';
 import { MAP_EDITOR_MAX_ZOOM, MAP_EDITOR_MIN_ZOOM } from '@/composables/useMapEditor';
 import type { MapEditorInstance } from '@/composables/useMapEditor';
 import { drawCapitalMarker, drawFlagMarker, drawInfantryMarker, drawTankMarker } from '@/lib/mapMarkers';
-import { editorBlendedTerrainFillStyle } from '@/lib/terrainRender';
+import { EDITOR_TERRAIN_DIM_ALPHA_LIGHT, editorBlendedTerrainFillStyle } from '@/lib/terrainRender';
 
 const props = defineProps<{
     editor: MapEditorInstance;
@@ -52,12 +52,10 @@ function workspaceFill(): string {
 }
 
 /** Semi-transparent overlay on playable cells only so markers read brighter than terrain. */
-const MAP_TERRAIN_DIM_ALPHA = 0.08;
-
 function terrainDimFill(): string {
     return isDark.value
         ? 'rgba(0, 0, 0, 0.22)'
-        : `rgba(0, 0, 0, ${MAP_TERRAIN_DIM_ALPHA})`;
+        : `rgba(0, 0, 0, ${EDITOR_TERRAIN_DIM_ALPHA_LIGHT})`;
 }
 
 /**

@@ -22,6 +22,16 @@ final class GameConstants
 
     public const int MIN_PLAYERS = 2;
 
+    /** Wall-clock age after which an open lobby is closed without starting. */
+    public const int LOBBY_MAX_AGE_SECONDS = 3600;
+
+    /** If every commander has had no activity for this long, the match ends with no winner. */
+    public const int MATCH_ALL_PLAYERS_INACTIVE_SECONDS = 120;
+
+    public const string ABORTED_LOBBY_TIMEOUT = 'lobby_timeout';
+
+    public const string ABORTED_MATCH_INACTIVITY = 'match_inactivity';
+
     /** @var array<string, float> */
     public const array TERRAIN_VALUES = [
         'water' => -0.1,

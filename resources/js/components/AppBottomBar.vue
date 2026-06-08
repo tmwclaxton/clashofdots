@@ -11,7 +11,7 @@ const user = computed(() => page.props.auth.user);
 </script>
 
 <template>
-    <footer class="wod-bar-bottom font-display px-6">
+    <footer class="wod-bar-bottom font-display px-4 sm:px-6">
         <div
             class="relative flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center sm:justify-between sm:text-left"
         >

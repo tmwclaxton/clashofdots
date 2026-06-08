@@ -43,7 +43,7 @@ defineProps<{
         </div>
 
         <div v-else class="overflow-x-auto wod-panel">
-            <table class="w-full min-w-[36rem] text-left text-sm">
+            <table class="w-full min-w-[32rem] text-left text-sm">
                 <thead class="border-b-2 border-foreground bg-muted/40">
                     <tr>
                         <th class="px-4 py-3 font-bold">#</th>

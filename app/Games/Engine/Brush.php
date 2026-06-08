@@ -25,10 +25,13 @@ final class Brush
             return;
         }
 
+        $maxRowIdx = max(0, count($marchingSquares->grid) - 1);
+        $maxColIdx = max(0, count($marchingSquares->grid[0] ?? []) - 1);
+
         $colStart = max(0, (int) (($my - $r) / $cs));
-        $colEnd = min(GameConstants::COLS, (int) (($my + $r) / $cs) + 1);
+        $colEnd = min($maxColIdx, (int) (($my + $r) / $cs) + 1);
         $rowStart = max(0, (int) (($mx - $r) / $cs));
-        $rowEnd = min(GameConstants::ROWS, (int) (($mx + $r) / $cs) + 1);
+        $rowEnd = min($maxRowIdx, (int) (($mx + $r) / $cs) + 1);
 
         $invR = 1.0 / $r;
         $strength = $this->strength;

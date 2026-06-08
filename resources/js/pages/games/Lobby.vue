@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage, usePoll } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
@@ -42,6 +42,8 @@ const props = defineProps<{
     publishedMaps: PublishedMap[];
 }>();
 
+usePoll(2000, { only: ['lobbies'] });
+
 const page = usePage();
 
 const createForm = useForm({
@@ -75,7 +77,10 @@ function joinLobby() {
             description="Pick a published map — lobby size matches the map’s team count. Everyone must join before the host can start."
         />
 
-        <div class="grid gap-4 lg:grid-cols-2">
+        <div
+            class="grid gap-4"
+            :class="page.props.auth.user ? 'lg:grid-cols-2' : ''"
+        >
             <div v-if="page.props.auth.user" class="wod-panel space-y-4 p-5">
                 <div class="flex items-center gap-2">
                     <div class="wod-swatch bg-wod-red" aria-hidden="true" />
@@ -164,7 +169,25 @@ function joinLobby() {
         </div>
 
         <div class="space-y-3">
-            <h2 class="font-bold">Open lobbies</h2>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <div class="wod-swatch bg-wod-green-lt" aria-hidden="true" />
+                    <h2 class="font-bold">Open lobbies</h2>
+                </div>
+                <div class="wod-chip" role="status">
+                    <span class="relative flex size-2 shrink-0" aria-hidden="true">
+                        <span
+                            class="absolute inline-flex size-full animate-ping rounded-full bg-wod-green-dk opacity-50"
+                        />
+                        <span
+                            class="relative inline-flex size-2 rounded-full border border-foreground bg-wod-green-dk"
+                        />
+                    </span>
+                    <span class="text-xs font-semibold uppercase tracking-wide text-wod-green-dk">
+                        Live
+                    </span>
+                </div>
+            </div>
             <div
                 v-if="lobbies.length === 0"
                 class="wod-panel-dashed p-8 text-center text-muted-foreground"
@@ -174,9 +197,9 @@ function joinLobby() {
             <div
                 v-for="lobby in lobbies"
                 :key="lobby.uuid"
-                class="flex items-center justify-between wod-panel p-4"
+                class="flex flex-col gap-3 wod-panel p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-                <div>
+                <div class="min-w-0">
                     <div class="flex items-center gap-2">
                         <span class="font-bold tracking-widest">{{
                             lobby.code
@@ -192,8 +215,8 @@ function joinLobby() {
                         Host: {{ lobby.hostName }}
                     </p>
                 </div>
-                <Link :href="show(lobby.uuid).url">
-                    <Button variant="outline">View</Button>
+                <Link :href="show(lobby.uuid).url" class="w-full sm:w-auto">
+                    <Button variant="outline" class="w-full sm:w-auto">View</Button>
                 </Link>
             </div>
         </div>

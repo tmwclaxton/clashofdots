@@ -7,6 +7,7 @@ import {
     Landmark,
     Loader2,
     Lock,
+    Monitor,
     RectangleHorizontal,
     Redo2,
     Save,
@@ -14,6 +15,7 @@ import {
     Undo2,
     Upload,
 } from 'lucide-vue-next';
+import { useMediaQuery } from '@vueuse/core';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppModal from '@/components/AppModal.vue';
 import MapEditorCanvas from '@/components/map-editor/MapEditorCanvas.vue';
@@ -69,6 +71,7 @@ const teamCountOptions = [2, 3, 4, 5, 6] as const;
 const editor = useMapEditor(props.defaults);
 const toast = useToastStore();
 const page = usePage();
+const isLargeScreen = useMediaQuery('(min-width: 1024px)');
 
 const proceduralMapGenerationCount = ref(0);
 const mapGenerationPending = ref(false);
@@ -635,7 +638,31 @@ onUnmounted(() => {
 <template>
     <Head title="Map Builder" />
 
-    <div class="flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+    <div
+        v-if="!isLargeScreen"
+        class="mx-auto flex w-full max-w-md flex-col items-center gap-4 py-8 text-center sm:py-12"
+    >
+        <div class="wod-panel flex w-full flex-col items-center gap-4 p-6 sm:p-8">
+            <div
+                class="flex size-14 items-center justify-center rounded-lg border-2 border-foreground bg-muted/40"
+                aria-hidden="true"
+            >
+                <Monitor class="size-7 text-muted-foreground" />
+            </div>
+            <div class="space-y-2">
+                <h2 class="font-display text-xl font-bold">Use a larger screen</h2>
+                <p class="text-sm leading-relaxed text-muted-foreground">
+                    The map builder needs a wide canvas, toolbars, and palettes. Open this page
+                    on a tablet in landscape or a desktop computer.
+                </p>
+            </div>
+            <Button as-child variant="outline" class="w-full sm:w-auto">
+                <Link :href="mapsExplore().url">Browse maps on Explore</Link>
+            </Button>
+        </div>
+    </div>
+
+    <div v-else class="flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden">
         <div class="flex flex-wrap items-center gap-2 wod-surface px-3 py-2">
             <label class="sr-only" for="map-builder-name">Map name</label>
             <Input

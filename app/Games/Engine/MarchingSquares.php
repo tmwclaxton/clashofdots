@@ -17,11 +17,14 @@ final class MarchingSquares
     /**
      * @return list<list<float>>
      */
-    public static function emptyGrid(): array
+    public static function emptyGrid(?int $maxXInclusive = null, ?int $maxYInclusive = null): array
     {
+        $maxX = $maxXInclusive ?? GameConstants::ROWS;
+        $maxY = $maxYInclusive ?? GameConstants::COLS;
+
         $grid = [];
-        for ($x = 0; $x <= GameConstants::ROWS; $x++) {
-            $grid[$x] = array_fill(0, GameConstants::COLS + 1, 0.0);
+        for ($x = 0; $x <= $maxX; $x++) {
+            $grid[$x] = array_fill(0, $maxY + 1, 0.0);
         }
 
         return $grid;
@@ -37,10 +40,13 @@ final class MarchingSquares
 
     public function getGridValue(float $x, float $y): float
     {
+        $maxX = max(0, count($this->grid) - 1);
+        $maxY = max(0, count($this->grid[0] ?? []) - 1);
+
         $x1 = (int) $x;
         $y1 = (int) $y;
-        $x2 = min($x1 + 1, GameConstants::ROWS);
-        $y2 = min($y1 + 1, GameConstants::COLS);
+        $x2 = min($x1 + 1, $maxX);
+        $y2 = min($y1 + 1, $maxY);
 
         $dx = $x - $x1;
         $dy = $y - $y1;

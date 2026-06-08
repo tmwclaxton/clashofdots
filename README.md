@@ -213,7 +213,7 @@ flowchart TB
 
 ### Prerequisites
 
-- PHP **8.3+**, [Composer](https://getcomposer.org/)
+- PHP **8.3+** with extensions used by this app (including **pcntl** if you run `php artisan reverb:start` on the host), [Composer](https://getcomposer.org/)
 - Node **22+** and npm  
 - [PostgreSQL](https://www.postgresql.org/) (primary app database; configure `DB_*` in `.env`)
 - [Redis](https://redis.io/) (live match state; required for lobbies and matches)
@@ -229,7 +229,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Configure `.env` (PostgreSQL `DB_*`, `WORKOS_*`, `REDIS_*`, and `REVERB_*` / `VITE_REVERB_*` for WebSockets). Matches need **Redis** plus **Reverb** and the **game tick** worker so the battlefield simulates and broadcasts state. Automated **PHPUnit** runs use **in-memory SQLite** (`phpunit.xml`) so tests do not require a live Postgres server unless you change that.
+Configure `.env` (PostgreSQL `DB_*`, `WORKOS_*`, `REDIS_*`, and `REVERB_*` / `VITE_REVERB_*` for WebSockets). Matches need **Redis** plus **Reverb** and the **game tick** worker so the battlefield simulates and broadcasts state. **Sail:** set `REVERB_HOST=reverb` (and keep `REVERB_PORT=8080`) so the `laravel.test` container can reach the `reverb` service; the browser still uses `VITE_REVERB_HOST`/`PORT` (often `localhost` and `8080` with the port published in `compose.yaml`). Automated **PHPUnit** runs use **in-memory SQLite** (`phpunit.xml`) so tests do not require a live Postgres server unless you change that.
 
 **Guests:** you can open **Lobbies**, join with a code, and fight without signing in. The app stores a stable guest UUID in the Laravel session (`wod_guest_key`) so the same browser can use **Ongoing** to return after a disconnect. Creating a lobby and **Past matches** still require login.
 
@@ -242,7 +242,7 @@ Configure `.env` (PostgreSQL `DB_*`, `WORKOS_*`, `REDIS_*`, and `REVERB_*` / `VI
 ./vendor/bin/sail npm run dev
 ```
 
-Sail’s [`compose.yaml`](compose.yaml) already runs **Reverb** and **`php artisan game:tick --daemon`** as separate services, so you do not need to start them manually when using Sail.
+Sail’s [`compose.yaml`](compose.yaml) already runs **Reverb** (port **8080** published to the host by default), **`php artisan game:tick --daemon`**, queue worker, and scheduler as separate services, so you do not need to start them manually when using Sail. Rebuild the Sail image after Dockerfile changes: `./vendor/bin/sail build --no-cache`.
 
 Then open the URL Sail prints (often `http://localhost`).
 
@@ -321,11 +321,11 @@ cp /path/to/.env.example .env     # edit: APP_URL, DB_*, WorkOS, Redis, Reverb, 
 
 The deploy job **does not** create `DEPLOY_DIR`; it only writes `compose.prod.yaml` there. The directory must exist and be writable by `DEPLOY_USER`.
 
-Production `.env` should use **`DB_CONNECTION=pgsql`**, **`DB_HOST=pgsql`**, **`REDIS_HOST=redis`** to match `compose.prod.yaml`. The app is exposed on the host as **`8091` → container `80`**; change the port mapping in `compose.prod.yaml` if it conflicts with other stacks.
+Production `.env` should use **`DB_CONNECTION=pgsql`**, **`DB_HOST=pgsql`**, **`REDIS_HOST=redis`** to match `compose.prod.yaml`. The app is exposed on the host as **`8091` → container `80`** (change **8091** in `compose.prod.yaml` if it conflicts). Reverb is **`${FORWARD_REVERB_PORT:-8092}` → `8080`**. Point `VITE_REVERB_*` (in the built frontend) and public `REVERB_*` at the hostname and port clients use to reach Reverb (often your reverse proxy or host port **8092**). The **`game-tick`** and **`reverb`** services use the same image as `app` and must stay up for live matches.
 
 ### After deploy
 
-Point DNS or a reverse proxy at the host port you mapped (default **8091**), or add Reverb/queue services to `compose.prod.yaml` when you need them.
+Point DNS or a reverse proxy at the web port you mapped (default **8091**). Terminate TLS and route WebSocket upgrades to Reverb’s published port when you need live pushes from browsers outside plain `ws://` to the container.
 
 ---
 

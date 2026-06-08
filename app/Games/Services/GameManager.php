@@ -13,6 +13,7 @@ use App\Models\Game;
 use App\Models\GamePlayer;
 use App\Models\Map;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 
@@ -72,8 +73,10 @@ final class GameManager
     public function join(Game $game, User $user): GamePlayer
     {
         if ($game->status !== GameStatus::Lobby) {
-            abort(422, 'This game has already started.');
+            abort(422, $this->lobbyClosedMessage($game));
         }
+
+        $this->assertLobbyWithinMaxAge($game);
 
         if ($game->players()->where('user_id', $user->id)->exists()) {
             return $game->players()->where('user_id', $user->id)->firstOrFail();
@@ -101,8 +104,10 @@ final class GameManager
         }
 
         if ($game->status !== GameStatus::Lobby) {
-            abort(422, 'This game has already started.');
+            abort(422, $this->lobbyClosedMessage($game));
         }
+
+        $this->assertLobbyWithinMaxAge($game);
 
         $existing = $game->players()->where('guest_key', $guestUuid)->first();
         if ($existing !== null) {
@@ -135,6 +140,10 @@ final class GameManager
             abort(403, 'Only the host can start the game.');
         }
 
+        if ($game->status === GameStatus::Lobby) {
+            $this->assertLobbyWithinMaxAge($game);
+        }
+
         if (! $game->canStart()) {
             abort(422, 'Need at least two players to start.');
         }
@@ -162,23 +171,32 @@ final class GameManager
             Map::query()->whereKey($game->map_id)->increment('games_count');
         }
 
+        $now = microtime(true);
+
         $this->storeLiveState($game, [
             'environment' => $environment->toArray(),
             'playerInputs' => array_fill(0, $playerCount, []),
             'playerCityInputs' => array_fill(0, $playerCount, []),
             'pauseRequests' => array_fill(0, $playerCount, false),
+            'lastPlayerActivityAt' => array_fill(0, $playerCount, $now),
         ]);
 
         Redis::sadd(self::ACTIVE_SET, $game->uuid);
 
         $game->load('players');
 
+        $terrainInfo = $environment->getTerrainInfo();
+        $terrainCells = $this->terrainCellsForSnapshot($game->map_data, $terrainInfo['terrain']);
+        if ($terrainCells !== null) {
+            $terrainInfo['terrainCells'] = $terrainCells;
+        }
+
         foreach ($game->players as $player) {
-            broadcast(new GameInitialized(
+            $this->broadcastIgnoringTransportFailure(new GameInitialized(
                 $game,
                 $player->broadcastConnection(),
                 $player->slot,
-                $environment->getTerrainInfo(),
+                $terrainInfo,
             ));
         }
 
@@ -205,6 +223,7 @@ final class GameManager
         $state['playerInputs'][$slot] = array_merge($state['playerInputs'][$slot] ?? [], $troopOrders);
         $state['playerCityInputs'][$slot] = array_merge($state['playerCityInputs'][$slot] ?? [], $cityOrders);
 
+        $this->touchPlayerActivityInState($state, $slot);
         $this->storeLiveState($game, $state);
     }
 
@@ -223,7 +242,54 @@ final class GameManager
         $state['pauseRequests'][$player->slot] = $paused;
         $player->update(['pause_requested' => $paused]);
 
+        $this->touchPlayerActivityInState($state, $player->slot);
         $this->storeLiveState($game, $state);
+    }
+
+    /**
+     * Marks the given commander slot as active (used for inactivity timeouts).
+     */
+    public function touchPlayerActivity(Game $game, int $slot): void
+    {
+        if ($game->status !== GameStatus::Playing) {
+            return;
+        }
+
+        $state = $this->getLiveState($game);
+        $this->touchPlayerActivityInState($state, $slot);
+        $this->storeLiveState($game, $state);
+    }
+
+    /**
+     * Closes lobbies that never started within {@see GameConstants::LOBBY_MAX_AGE_SECONDS}.
+     *
+     * @return int Number of games updated
+     */
+    public function expireStaleLobbies(): int
+    {
+        $cutoff = now()->subSeconds(GameConstants::LOBBY_MAX_AGE_SECONDS);
+
+        $games = Game::query()
+            ->where('status', GameStatus::Lobby)
+            ->where('created_at', '<', $cutoff)
+            ->get();
+
+        $count = 0;
+
+        foreach ($games as $game) {
+            $settings = $game->settings ?? [];
+            $settings['aborted_reason'] = GameConstants::ABORTED_LOBBY_TIMEOUT;
+            $game->update([
+                'status' => GameStatus::Finished,
+                'finished_at' => now(),
+                'winner_user_id' => null,
+                'winner_slot' => null,
+                'settings' => $settings,
+            ]);
+            $count++;
+        }
+
+        return $count;
     }
 
     public function tick(Game $game): void
@@ -249,11 +315,44 @@ final class GameManager
 
         $winnerName = $winner?->displayLabel() ?? 'Unknown';
 
-        broadcast(new GameEnded(
+        $this->broadcastIgnoringTransportFailure(new GameEnded(
             $game,
             $winner?->user_id,
             $winner?->slot,
             $winnerName,
+        ));
+    }
+
+    /**
+     * Ends a live match with no winner (abandonment / inactivity).
+     */
+    public function finishWithoutWinner(Game $game, string $abortedReason, string $publicMessage): void
+    {
+        if ($game->status !== GameStatus::Playing) {
+            return;
+        }
+
+        $settings = $game->settings ?? [];
+        $settings['aborted_reason'] = $abortedReason;
+
+        $game->update([
+            'status' => GameStatus::Finished,
+            'winner_user_id' => null,
+            'winner_slot' => null,
+            'finished_at' => now(),
+            'settings' => $settings,
+        ]);
+
+        Redis::srem(self::ACTIVE_SET, $game->uuid);
+        Redis::del($this->redisKey($game));
+
+        $game->load('players');
+
+        $this->broadcastIgnoringTransportFailure(new GameEnded(
+            $game,
+            null,
+            null,
+            $publicMessage,
         ));
     }
 
@@ -300,7 +399,7 @@ final class GameManager
     public function broadcastState(Game $game, Environment $environment): void
     {
         foreach ($game->players as $player) {
-            broadcast(new GameStateUpdated(
+            $this->broadcastIgnoringTransportFailure(new GameStateUpdated(
                 $game,
                 $player->broadcastConnection(),
                 $environment->drawInfo($player->slot),
@@ -314,6 +413,66 @@ final class GameManager
     }
 
     /**
+     * Pushes a broadcast event without failing HTTP requests when Reverb/Pusher is unreachable
+     * (for example when `php artisan reverb:start` is not running locally).
+     */
+    private function broadcastIgnoringTransportFailure(object $event): void
+    {
+        try {
+            broadcast($event);
+        } catch (\Throwable $e) {
+            Log::warning('Game broadcast skipped (transport error).', [
+                'event' => $event::class,
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function assertLobbyWithinMaxAge(Game $game): void
+    {
+        if ($game->created_at->lt(now()->subSeconds(GameConstants::LOBBY_MAX_AGE_SECONDS))) {
+            abort(410, 'This lobby expired after one hour without starting.');
+        }
+    }
+
+    private function lobbyClosedMessage(Game $game): string
+    {
+        if ($game->status === GameStatus::Finished
+            && ($game->settings['aborted_reason'] ?? null) === GameConstants::ABORTED_LOBBY_TIMEOUT) {
+            return 'This lobby expired after one hour without starting.';
+        }
+
+        return 'This game has already started.';
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function touchPlayerActivityInState(array &$state, int $slot): void
+    {
+        $pauseRequests = $state['pauseRequests'] ?? [];
+        $count = count($pauseRequests);
+        if ($slot < 0 || $slot >= $count) {
+            return;
+        }
+
+        $now = microtime(true);
+        $activity = $state['lastPlayerActivityAt'] ?? [];
+        if (! is_array($activity)) {
+            $activity = [];
+        }
+
+        $normalized = [];
+        for ($i = 0; $i < $count; $i++) {
+            $normalized[$i] = isset($activity[$i]) && is_numeric($activity[$i])
+                ? (float) $activity[$i]
+                : $now;
+        }
+        $normalized[$slot] = $now;
+        $state['lastPlayerActivityAt'] = $normalized;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function snapshotPayloadForSlot(Game $game, int $slot): array
@@ -322,6 +481,7 @@ final class GameManager
         $state = $this->getLiveState($game);
         $environment = $this->environmentFromState($state);
         $terrainInfo = $environment->getTerrainInfo();
+        $terrainCells = $this->terrainCellsForSnapshot($game->map_data, $terrainInfo['terrain']);
 
         return [
             'gameUuid' => $game->uuid,
@@ -330,12 +490,9 @@ final class GameManager
             'terrain' => $terrainInfo['terrain'],
             'forest' => $terrainInfo['forest'],
             'cityPositions' => $terrainInfo['cityPositions'],
-            'world' => [
-                'width' => GameConstants::WORLD_X,
-                'height' => GameConstants::WORLD_Y,
-                'cellSize' => GameConstants::CELL_SIZE,
-            ],
+            'world' => $terrainInfo['world'],
             'state' => $environment->drawInfo($player->slot),
+            ...($terrainCells !== null ? ['terrainCells' => $terrainCells] : []),
         ];
     }
 
@@ -357,5 +514,59 @@ final class GameManager
         $player = $game->players()->where('guest_key', $guestUuid)->firstOrFail();
 
         return $this->snapshotPayloadForSlot($game, $player->slot);
+    }
+
+    /**
+     * Original Map Builder terrain ids (when dimensions match the live marching-squares grid).
+     *
+     * @param  array<string, mixed>|null  $mapDataSnapshot
+     * @param  list<list<float>>  $terrainGrid
+     * @return list<list<string>>|null
+     */
+    private function terrainCellsForSnapshot(?array $mapDataSnapshot, array $terrainGrid): ?array
+    {
+        if (! is_array($mapDataSnapshot)) {
+            return null;
+        }
+
+        $data = $mapDataSnapshot['data'] ?? null;
+        if (! is_array($data)) {
+            return null;
+        }
+
+        $cells = $data['cells'] ?? null;
+        if (! is_array($cells) || $cells === []) {
+            return null;
+        }
+
+        $expectedRows = count($terrainGrid);
+        $expectedCols = $expectedRows > 0 && isset($terrainGrid[0]) && is_array($terrainGrid[0])
+            ? count($terrainGrid[0])
+            : 0;
+
+        if ($expectedRows < 1 || $expectedCols < 1) {
+            return null;
+        }
+
+        if (count($cells) !== $expectedRows) {
+            return null;
+        }
+
+        $normalized = [];
+
+        foreach ($cells as $row) {
+            if (! is_array($row) || count($row) !== $expectedCols) {
+                return null;
+            }
+
+            $normalizedRow = [];
+            foreach ($row as $cell) {
+                $normalizedRow[] = is_string($cell) ? $cell : 'plains';
+            }
+
+            $normalized[] = $normalizedRow;
+        }
+
+        return $normalized;
     }
 }

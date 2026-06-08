@@ -28,6 +28,7 @@ class GameController extends Controller
 
         $lobbies = Game::query()
             ->where('status', GameStatus::Lobby)
+            ->where('created_at', '>=', now()->subSeconds(GameConstants::LOBBY_MAX_AGE_SECONDS))
             ->with(['players.user', 'host', 'map.user'])
             ->latest()
             ->limit(20)
@@ -244,9 +245,11 @@ class GameController extends Controller
         abort_unless($game->status === GameStatus::Playing, 404);
 
         if ($request->user() !== null) {
-            $game->players()->where('user_id', $request->user()->id)->firstOrFail();
+            $player = $game->players()->where('user_id', $request->user()->id)->firstOrFail();
+            $payload = $gameManager->snapshotPayloadForPlayer($game, $request->user()->id);
+            $gameManager->touchPlayerActivity($game, $player->slot);
 
-            return response()->json($gameManager->snapshotPayloadForPlayer($game, $request->user()->id));
+            return response()->json($payload);
         }
 
         $guestKey = $this->guestKeyFromSession($request);
@@ -254,9 +257,11 @@ class GameController extends Controller
             abort(403);
         }
 
-        $game->players()->where('guest_key', $guestKey)->firstOrFail();
+        $player = $game->players()->where('guest_key', $guestKey)->firstOrFail();
+        $payload = $gameManager->snapshotPayloadForGuest($game, $guestKey);
+        $gameManager->touchPlayerActivity($game, $player->slot);
 
-        return response()->json($gameManager->snapshotPayloadForGuest($game, $guestKey));
+        return response()->json($payload);
     }
 
     public function submitOrders(SubmitOrdersRequest $request, Game $game, GameManager $gameManager): RedirectResponse
@@ -427,6 +432,7 @@ class GameController extends Controller
                 'color' => $player->color,
             ]),
             'sourceMap' => $sourceMap,
+            'abortedReason' => ($game->settings ?? [])['aborted_reason'] ?? null,
         ];
     }
 }

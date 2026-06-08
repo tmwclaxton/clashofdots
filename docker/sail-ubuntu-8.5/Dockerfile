@@ -36,6 +36,7 @@ RUN docker-php-ext-install \
     pdo_mysql \
     pdo_pgsql \
     pdo_sqlite \
+    pcntl \
     zip
 
 RUN pecl install redis \

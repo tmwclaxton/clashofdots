@@ -96,8 +96,8 @@ function formatDate(value: string | null): string {
                         </span>
                     </div>
                 </div>
-                <Link :href="show(match.uuid).url">
-                    <Button variant="outline">View summary</Button>
+                <Link :href="show(match.uuid).url" class="w-full sm:w-auto">
+                    <Button variant="outline" class="w-full sm:w-auto">View summary</Button>
                 </Link>
             </article>
         </div>

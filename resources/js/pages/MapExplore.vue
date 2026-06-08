@@ -284,7 +284,7 @@ const sortOptions = [
     <Head title="Explore maps" />
 
     <div class="flex flex-col gap-8">
-        <h1 class="font-display text-2xl font-bold tracking-tight md:text-3xl">
+        <h1 class="font-display text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">
             Explore maps
         </h1>
 
@@ -465,21 +465,21 @@ const sortOptions = [
                     <span>{{ m.likesCount }} likes / {{ m.dislikesCount }} dislikes</span>
                 </div>
 
-                <div class="mt-auto flex flex-wrap gap-2 border-t border-foreground/10 pt-3">
-                    <Button type="button" size="sm" variant="outline" class="gap-1" as-child>
+                <div class="mt-auto flex flex-col gap-2 border-t border-foreground/10 pt-3 sm:flex-row sm:flex-wrap">
+                    <Button type="button" size="sm" variant="outline" class="w-full gap-1 sm:w-auto" as-child>
                         <Link :href="mapBuilder.url(m.uuid)" title="View in map builder (read-only)">
                             View in builder
                         </Link>
                     </Button>
-                    <Button type="button" size="sm" variant="outline" class="gap-1" @click="copyToBuilder(m)">
+                    <Button type="button" size="sm" variant="outline" class="w-full gap-1 sm:w-auto" @click="copyToBuilder(m)">
                         <Copy class="size-3.5" />
                         Copy to my maps
                     </Button>
-                    <Button type="button" size="sm" class="gap-1" @click="startLobby(m)">
+                    <Button type="button" size="sm" class="w-full gap-1 sm:w-auto" @click="startLobby(m)">
                         <Users class="size-3.5" />
                         Start lobby
                     </Button>
-                    <div class="flex flex-1 items-center justify-end gap-1">
+                    <div class="flex items-center justify-center gap-1 sm:ml-auto sm:justify-end">
                         <Button
                             type="button"
                             size="icon"

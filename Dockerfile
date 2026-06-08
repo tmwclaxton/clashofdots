@@ -14,7 +14,7 @@ RUN apt-get update \
         unzip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install bcmath pdo_mysql pdo_sqlite intl zip pdo_pgsql
+RUN docker-php-ext-install bcmath pdo_mysql pdo_sqlite intl pcntl zip pdo_pgsql
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -84,7 +84,7 @@ RUN apt-get update && apt-get upgrade -y \
         libpq-dev \
         libsqlite3-dev \
         libzip-dev \
-    && docker-php-ext-install bcmath pdo_mysql pdo_sqlite intl zip pdo_pgsql \
+    && docker-php-ext-install bcmath pdo_mysql pdo_sqlite intl pcntl zip pdo_pgsql \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && rm -rf /tmp/pear \

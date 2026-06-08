@@ -8,6 +8,8 @@ use Illuminate\Console\Command;
 
 class GameTickCommand extends Command
 {
+    private static float $lastLobbySweepAt = 0.0;
+
     protected $signature = 'game:tick {--daemon : Run continuously}';
 
     protected $description = 'Run the Clash of Dots simulation tick loop';
@@ -18,6 +20,12 @@ class GameTickCommand extends Command
 
         do {
             $started = microtime(true);
+
+            $now = microtime(true);
+            if ($now - self::$lastLobbySweepAt >= 15.0) {
+                $gameManager->expireStaleLobbies();
+                self::$lastLobbySweepAt = $now;
+            }
 
             foreach ($gameManager->activeGameUuids() as $uuid) {
                 $game = $gameManager->findByUuid($uuid);

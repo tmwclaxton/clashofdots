@@ -85,7 +85,7 @@ function formatDate(iso: string | null): string {
                     </p>
                 </div>
             </div>
-            <Button variant="outline" size="sm" as-child>
+            <Button variant="outline" size="sm" as-child class="w-full sm:w-auto">
                 <Link :href="leaderboardIndex().url">
                     <Trophy class="mr-2 size-4" />
                     Leaderboard
@@ -136,7 +136,7 @@ function formatDate(iso: string | null): string {
                 <li
                     v-for="m in publishedMaps"
                     :key="m.uuid"
-                    class="flex items-center justify-between gap-3 rounded-md border-2 border-foreground bg-background px-4 py-3"
+                    class="flex flex-col gap-2 rounded-md border-2 border-foreground bg-background px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
                 >
                     <span class="font-medium">{{ m.name }}</span>
                     <a

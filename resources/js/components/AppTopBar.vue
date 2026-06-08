@@ -58,7 +58,7 @@ const navItems = computed<NavItem[]>(() => {
 <template>
     <header class="wod-bar-top relative">
         <div
-            class="relative flex w-full flex-wrap items-center justify-between gap-4 px-6 py-3"
+            class="relative flex w-full flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:gap-4 sm:px-6 sm:py-3"
         >
             <div class="flex min-w-0 flex-1 items-center gap-3 sm:gap-5">
                 <Link
@@ -151,7 +151,7 @@ const navItems = computed<NavItem[]>(() => {
         </div>
 
         <nav
-            class="flex w-full gap-1 overflow-x-auto border-t border-foreground/25 px-6 py-2 sm:hidden"
+            class="flex w-full gap-1 overflow-x-auto border-t border-foreground/25 px-3 py-2 sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-label="Main"
         >
             <Button

@@ -3,7 +3,6 @@
 namespace Tests\Unit\Games;
 
 use App\Games\Engine\Environment;
-use App\Games\GameConstants;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -40,5 +39,33 @@ class EnvironmentTest extends TestCase
             [4],
             [6],
         ];
+    }
+
+    public function test_from_array_skips_procedural_generation_and_round_trips(): void
+    {
+        $original = Environment::create(4242, 2);
+        $payload = $original->toArray();
+
+        $restored = Environment::fromArray($payload);
+
+        $this->assertSame($original->gridMaxX, $restored->gridMaxX);
+        $this->assertSame($original->gridMaxY, $restored->gridMaxY);
+        $this->assertCount(count($original->cities), $restored->cities);
+        $this->assertCount(count($original->players), $restored->players);
+    }
+
+    public function test_from_array_tolerates_absurd_grid_metadata_from_json_floats(): void
+    {
+        $original = Environment::create(7, 2);
+        $payload = $original->toArray();
+        $payload['gridMaxX'] = 3.478395492209091E+27;
+        $payload['gridMaxY'] = 1.5;
+
+        $restored = Environment::fromArray($payload);
+
+        $this->assertGreaterThanOrEqual(1, $restored->gridMaxX);
+        $this->assertGreaterThanOrEqual(1, $restored->gridMaxY);
+        $this->assertLessThanOrEqual(4096, $restored->gridMaxX);
+        $this->assertLessThanOrEqual(4096, $restored->gridMaxY);
     }
 }

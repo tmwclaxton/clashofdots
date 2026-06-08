@@ -4,6 +4,7 @@
 #
 # GitHub Actions renders __GHCR_IMAGE__ in this file before scp (see .github/workflows/prod_deploy.yml).
 # App listens on container :80; host maps 8091 -> 80 (change if 8091 is taken).
+# Reverb maps FORWARD_REVERB_PORT (default 8092) -> 8080. Set REVERB_HOST / VITE_REVERB_* to that host:port from the browser.
 
 services:
   app:
@@ -31,6 +32,48 @@ services:
       retries: 3
       timeout: 5s
       start_period: 40s
+    restart: unless-stopped
+
+  # Live match simulation (~30 Hz). Without this, Redis has no tick updates for active games.
+  game-tick:
+    image: __GHCR_IMAGE__
+    env_file: .env
+    environment:
+      WWWUSER: '1337'
+      WWWGROUP: '1000'
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+    command: 'php artisan game:tick --daemon'
+    networks:
+      - clashofdots
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      app:
+        condition: service_started
+    restart: unless-stopped
+
+  # WebSocket server for Echo / live pushes. Map host port if browsers use localhost.
+  reverb:
+    image: __GHCR_IMAGE__
+    env_file: .env
+    environment:
+      WWWUSER: '1337'
+      WWWGROUP: '1000'
+      DB_HOST: pgsql
+      REDIS_HOST: redis
+    command: 'php artisan reverb:start --host=0.0.0.0 --port=8080'
+    ports:
+      - '${FORWARD_REVERB_PORT:-8092}:8080'
+    networks:
+      - clashofdots
+    depends_on:
+      redis:
+        condition: service_started
+      app:
+        condition: service_started
     restart: unless-stopped
 
   pgsql:

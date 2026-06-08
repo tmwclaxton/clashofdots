@@ -166,9 +166,14 @@ class GameLobbyTest extends TestCase
         $this->actingAs($host)
             ->post(route('games.start', $game));
 
-        $this->actingAs($host)
-            ->getJson(route('games.snapshot', $game))
-            ->assertOk()
+        $game->refresh();
+        $expectedCells = $game->map_data['data']['cells'] ?? null;
+        $this->assertIsArray($expectedCells);
+
+        $response = $this->actingAs($host)
+            ->getJson(route('games.snapshot', $game));
+
+        $response->assertOk()
             ->assertJsonStructure([
                 'gameUuid',
                 'slot',
@@ -178,7 +183,10 @@ class GameLobbyTest extends TestCase
                 'cityPositions',
                 'world',
                 'state',
+                'terrainCells',
             ]);
+
+        $this->assertSame($expectedCells, $response->json('terrainCells'));
     }
 
     public function test_submit_orders_rejected_when_game_is_lobby(): void

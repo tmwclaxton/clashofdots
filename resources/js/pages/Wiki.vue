@@ -174,7 +174,7 @@ function speedClass(speed: number, impassable: boolean): string {
             </Button>
         </div>
 
-        <section class="wod-panel p-6">
+        <section class="wod-panel p-4 sm:p-6">
             <div class="flex items-start gap-3">
                 <div class="wod-logo-terrain size-10 shrink-0">
                     <Swords class="size-5" />
@@ -240,7 +240,7 @@ function speedClass(speed: number, impassable: boolean): string {
             </div>
         </section>
 
-        <section class="wod-panel p-6">
+        <section class="wod-panel p-4 sm:p-6">
             <div class="flex items-start gap-3">
                 <div class="wod-logo-terrain size-10 shrink-0">
                     <Coins class="size-5" />
@@ -338,7 +338,7 @@ function speedClass(speed: number, impassable: boolean): string {
             </ul>
         </section>
 
-        <section class="wod-panel p-6">
+        <section class="wod-panel p-4 sm:p-6">
             <div class="flex items-start gap-3">
                 <div class="wod-logo-terrain size-10 shrink-0">
                     <Layers class="size-5" />
@@ -467,7 +467,7 @@ function speedClass(speed: number, impassable: boolean): string {
             </div>
         </section>
 
-        <section class="wod-panel p-6">
+        <section class="wod-panel p-4 sm:p-6">
             <div class="flex items-start gap-3">
                 <div class="wod-logo-terrain size-10 shrink-0">
                     <Sparkles class="size-5" />

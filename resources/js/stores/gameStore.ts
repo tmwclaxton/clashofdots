@@ -39,6 +39,34 @@ function initialWorld() {
     return { width: 1280, height: 700, cellSize: 20 };
 }
 
+function coerceTerrainCellsFromSnapshot(
+    raw: unknown,
+    terrain: number[][] | null,
+): string[][] | null {
+    if (!terrain || terrain.length === 0 || !terrain[0]?.length) {
+        return null;
+    }
+
+    if (!Array.isArray(raw) || raw.length !== terrain.length) {
+        return null;
+    }
+
+    const colCount = terrain[0].length;
+    const rows: string[][] = [];
+
+    for (let gx = 0; gx < raw.length; gx++) {
+        const row = raw[gx];
+
+        if (!Array.isArray(row) || row.length !== colCount) {
+            return null;
+        }
+
+        rows.push(row.map((c) => (typeof c === 'string' ? c : 'plains')));
+    }
+
+    return rows;
+}
+
 export const useGameStore = defineStore('game', {
     state: () => ({
         connected: false,
@@ -48,6 +76,7 @@ export const useGameStore = defineStore('game', {
         color: '#c0392b',
         terrain: null as number[][] | null,
         forest: null as number[][] | null,
+        terrainCells: null as string[][] | null,
         cityPositions: [] as Point[],
         world: initialWorld(),
         latestState: null as GameState | null,
@@ -72,6 +101,7 @@ export const useGameStore = defineStore('game', {
             this.color = '#c0392b';
             this.terrain = null;
             this.forest = null;
+            this.terrainCells = null;
             this.cityPositions = [];
             this.world = initialWorld();
             this.latestState = null;
@@ -105,6 +135,7 @@ export const useGameStore = defineStore('game', {
                     this.latestState = payload.state as GameState;
                 })
                 .listen('.GameEnded', (payload: Record<string, unknown>) => {
+                    this.matchEnded = true;
                     this.winnerUserId =
                         payload.winnerUserId === undefined || payload.winnerUserId === null
                             ? null
@@ -120,6 +151,7 @@ export const useGameStore = defineStore('game', {
         applySnapshotPayload(payload: Record<string, unknown>) {
             this.terrain = payload.terrain as number[][];
             this.forest = payload.forest as number[][];
+            this.terrainCells = coerceTerrainCellsFromSnapshot(payload.terrainCells, this.terrain);
             this.cityPositions = payload.cityPositions as Point[];
 
             if (payload.world && typeof payload.world === 'object') {
@@ -170,6 +202,7 @@ export const useGameStore = defineStore('game', {
                     if (options?.treat404AsEnded && res.status === 404) {
                         this.matchEnded = true;
                     }
+
                     return;
                 }
 

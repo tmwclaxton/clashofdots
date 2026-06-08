@@ -20,6 +20,7 @@ type Lobby = {
     hostName: string;
     players: Array<{ slot: number; name: string; color: string }>;
     sourceMap: { uuid: string; name: string; by: string } | null;
+    abortedReason?: string | null;
 };
 
 const props = defineProps<{
@@ -82,11 +83,20 @@ function startGame() {
     <Head :title="`Lobby ${game.code}`" />
 
     <div class="mx-auto flex max-w-2xl flex-col gap-5">
-        <div class="wod-panel p-8 text-center">
+        <div
+            v-if="game.status === 'finished' && game.abortedReason === 'lobby_timeout'"
+            class="wod-panel border-2 border-dashed border-foreground/40 bg-card/80 p-4 text-center text-sm"
+        >
+            <p class="font-semibold text-foreground">This lobby closed automatically</p>
+            <p class="mt-1 text-muted-foreground">
+                Open lobbies expire after one hour if the battle never starts.
+            </p>
+        </div>
+        <div class="wod-panel p-5 text-center sm:p-8">
             <p class="text-xs font-semibold text-muted-foreground uppercase">
                 Lobby code
             </p>
-            <p class="font-display mt-2 text-4xl font-bold tracking-widest">
+            <p class="font-display mt-2 text-3xl font-bold tracking-widest sm:text-4xl">
                 {{ game.code }}
             </p>
             <p class="mt-3 text-sm text-muted-foreground">
@@ -109,9 +119,6 @@ function startGame() {
             </p>
             <p class="mt-1 font-medium">
                 {{ game.sourceMap.name }}
-            </p>
-            <p class="text-xs text-muted-foreground">
-                Design by {{ game.sourceMap.by }} · this layout is used when the match begins.
             </p>
         </div>
 
@@ -139,9 +146,9 @@ function startGame() {
             </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-            <Link :href="lobbies().url">
-                <Button variant="outline">Back</Button>
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Link :href="lobbies().url" class="w-full sm:w-auto">
+                <Button variant="outline" class="w-full sm:w-auto">Back</Button>
             </Link>
             <div
                 v-if="!game.isParticipant && !page.props.auth.user"
@@ -158,20 +165,22 @@ function startGame() {
                     />
                 </div>
             </div>
-            <Button v-if="!game.isParticipant" @click="joinGame">
+            <Button v-if="!game.isParticipant" class="w-full sm:w-auto" @click="joinGame">
                 Join lobby
             </Button>
             <Button
                 v-if="game.isHost && game.canStart"
+                class="w-full sm:w-auto"
                 @click="startGame"
             >
                 Start battle
             </Button>
             <Link
-                v-if="game.status === 'playing' && game.isParticipant"
+                v-if="game.isParticipant && game.status === 'playing'"
                 :href="play(game.uuid).url"
+                class="w-full sm:w-auto"
             >
-                <Button>Enter battlefield</Button>
+                <Button class="w-full sm:w-auto">Enter battlefield</Button>
             </Link>
         </div>
     </div>

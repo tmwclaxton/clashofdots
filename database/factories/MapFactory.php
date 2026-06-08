@@ -36,7 +36,7 @@ class MapFactory extends Factory
     }
 
     /**
-     * Two-team map that passes {@see MapMarkers::validate()} and center-crops into the live battlefield.
+     * Two-team map that passes {@see MapMarkers::validate()} and is playable on the full editor vertex grid.
      */
     public function playablePublishedTwoTeam(): static
     {

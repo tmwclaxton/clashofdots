@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { Github } from 'lucide-vue-next';
+import { BookOpen, Github, Trophy, Users } from 'lucide-vue-next';
 import { Button, buttonVariants } from '@/components/ui/button';
 import GameLogoMark from '@/components/GameLogoMark.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
@@ -87,7 +87,12 @@ const steps = [
                     </div>
                     <nav class="flex w-full min-w-0 flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
                         <ThemeToggle />
-                        <Button variant="ghost" size="sm" class="shrink-0 px-2 sm:px-3" as-child>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            as-child
+                            class="wod-nav-ghost shrink-0 px-2 sm:px-3"
+                        >
                             <a
                                 :href="GITHUB_REPOSITORY_URL"
                                 target="_blank"
@@ -97,15 +102,34 @@ const steps = [
                                 <span class="hidden sm:inline">GitHub</span>
                             </a>
                         </Button>
-                        <Link :href="wiki().url" class="shrink-0">
-                            <Button variant="ghost" size="sm" class="px-2 sm:px-3">Wiki</Button>
-                        </Link>
-                        <Link :href="leaderboardIndex().url" class="shrink-0">
-                            <Button variant="ghost" size="sm" class="px-2 sm:px-3">Leaderboard</Button>
-                        </Link>
-                        <Link :href="lobbiesIndex().url" class="shrink-0">
-                            <Button size="sm" class="sm:h-10 sm:px-4 sm:text-sm">Play Now</Button>
-                        </Link>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            as-child
+                            class="wod-nav-ghost shrink-0 px-2 sm:px-3"
+                        >
+                            <Link :href="wiki().url">
+                                <BookOpen class="size-4" />
+                                Wiki
+                            </Link>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            as-child
+                            class="wod-nav-ghost shrink-0 px-2 sm:px-3"
+                        >
+                            <Link :href="leaderboardIndex().url">
+                                <Trophy class="size-4" />
+                                Leaderboard
+                            </Link>
+                        </Button>
+                        <Button size="sm" as-child class="shrink-0 sm:h-10 sm:px-4 sm:text-sm">
+                            <Link :href="lobbiesIndex().url">
+                                <Users class="size-4" />
+                                Play Now
+                            </Link>
+                        </Button>
                         <Link
                             v-if="!page.props.auth.user"
                             :href="login().url"

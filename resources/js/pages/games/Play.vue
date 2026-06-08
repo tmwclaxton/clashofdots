@@ -31,13 +31,19 @@ const page = usePage();
 const store = useGameStore();
 
 const spectatePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
+const participatePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
+const showSlowLoadHint = ref(false);
+let slowLoadHintTimer: ReturnType<typeof setTimeout> | null = null;
 
 const broadcastConnection = computed(() => {
     const uid = page.props.auth.user?.id;
+
     if (uid !== undefined && uid !== null) {
         return `u${uid}`;
     }
+
     const g = page.props.guestBroadcast;
+
     return typeof g === 'string' && g.length > 0 ? g : null;
 });
 
@@ -45,12 +51,19 @@ const victoryTitle = computed(() => {
     if (props.spectatorMode) {
         return store.winnerName ? `${store.winnerName} wins` : 'Match over';
     }
+
+    if (store.matchEnded && store.winnerSlot === null && store.winnerUserId === null) {
+        return store.winnerName ?? 'Match ended';
+    }
+
     if (store.winnerSlot !== null && store.winnerSlot === props.game.slot) {
         return 'Victory!';
     }
+
     if (store.winnerUserId !== null && store.winnerUserId === page.props.auth.user?.id) {
         return 'Victory!';
     }
+
     return 'Defeat';
 });
 
@@ -61,17 +74,38 @@ onMounted(() => {
         spectatePollTimer.value = setInterval(() => {
             void store.pullSnapshot(props.snapshotUrl, { treat404AsEnded: true });
         }, 1500);
+
         return;
     }
 
     const conn = broadcastConnection.value;
+
     if (conn) {
         store.connect(props.game.uuid, conn, props.game.slot, props.game.color);
-        void store.fetchSnapshotIfNeeded(props.snapshotUrl);
-        setTimeout(() => {
-            void store.fetchSnapshotIfNeeded(props.snapshotUrl);
-        }, 2200);
+    } else {
+        store.gameUuid = props.game.uuid;
+        store.slot = props.game.slot;
+        store.color = props.game.color;
     }
+
+    void store.pullSnapshot(props.snapshotUrl);
+
+    participatePollTimer.value = setInterval(() => {
+        if (store.initialized || store.matchEnded) {
+            if (participatePollTimer.value !== null) {
+                clearInterval(participatePollTimer.value);
+                participatePollTimer.value = null;
+            }
+
+            return;
+        }
+
+        void store.pullSnapshot(props.snapshotUrl);
+    }, 1200);
+
+    slowLoadHintTimer = setTimeout(() => {
+        showSlowLoadHint.value = true;
+    }, 8000);
 });
 
 onUnmounted(() => {
@@ -79,6 +113,17 @@ onUnmounted(() => {
         clearInterval(spectatePollTimer.value);
         spectatePollTimer.value = null;
     }
+
+    if (participatePollTimer.value !== null) {
+        clearInterval(participatePollTimer.value);
+        participatePollTimer.value = null;
+    }
+
+    if (slowLoadHintTimer !== null) {
+        clearTimeout(slowLoadHintTimer);
+        slowLoadHintTimer = null;
+    }
+
     store.disconnect();
 });
 </script>
@@ -86,29 +131,40 @@ onUnmounted(() => {
 <template>
     <Head title="Battlefield" />
 
-    <div class="flex h-screen flex-col bg-background text-foreground">
+    <div class="flex h-svh min-h-0 flex-col overflow-hidden bg-background text-foreground">
         <header
-            class="wod-bar-top relative flex shrink-0 items-center justify-between px-4 py-2"
+            class="wod-bar-top relative flex shrink-0 flex-col gap-2 px-3 py-2 sm:gap-3 sm:px-4"
         >
-            <div>
-                <p class="font-display text-xs font-bold text-foreground">
-                    Clash of Dots
-                </p>
-                <p class="text-sm font-bold tracking-widest text-foreground">
-                    {{ game.code }}
-                    <span
-                        v-if="spectatorMode"
-                        class="ml-2 text-xs font-normal text-muted-foreground"
-                    >
-                        (spectating · slot 1 vision)
-                    </span>
-                </p>
+            <div class="flex min-w-0 items-start justify-between gap-2">
+                <div class="min-w-0">
+                    <p class="font-display text-xs font-bold text-foreground">
+                        Clash of Dots
+                    </p>
+                    <p class="truncate text-sm font-bold tracking-widest text-foreground">
+                        {{ game.code }}
+                        <span
+                            v-if="spectatorMode"
+                            class="ml-1 text-xs font-normal text-muted-foreground sm:ml-2"
+                        >
+                            (spectating)
+                        </span>
+                    </p>
+                </div>
+                <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                    <ThemeToggle />
+                    <Link :href="lobbies().url">
+                        <Button size="sm" variant="ghost">Exit</Button>
+                    </Link>
+                </div>
             </div>
-            <div class="flex items-center gap-2">
+
+            <div
+                class="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+            >
                 <span
                     v-for="player in [...game.players].sort((a, b) => a.slot - b.slot)"
                     :key="player.slot"
-                    class="wod-chip"
+                    class="wod-chip shrink-0"
                 >
                     <span
                         class="wod-swatch !size-2.5 rounded-full"
@@ -117,31 +173,41 @@ onUnmounted(() => {
                     {{ player.name }}
                 </span>
             </div>
-            <div class="flex items-center gap-2">
-                <ThemeToggle />
-                <template v-if="!spectatorMode">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        @click="store.clearDrafts()"
-                    >
-                        Clear (C)
-                    </Button>
-                    <Button size="sm" @click="store.submitOrders(game.uuid)">
-                        Execute (Space)
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        @click="store.togglePause(game.uuid)"
-                    >
-                        Pause (P)
-                    </Button>
-                </template>
-                <Link :href="lobbies().url">
-                    <Button size="sm" variant="ghost">Exit</Button>
-                </Link>
+
+            <div
+                v-if="!spectatorMode"
+                class="flex flex-wrap items-center gap-1.5 sm:gap-2"
+            >
+                <Button
+                    size="sm"
+                    variant="outline"
+                    class="min-w-0 flex-1 sm:flex-none"
+                    @click="store.clearDrafts()"
+                >
+                    Clear (C)
+                </Button>
+                <Button
+                    size="sm"
+                    class="min-w-0 flex-1 sm:flex-none"
+                    @click="store.submitOrders(game.uuid)"
+                >
+                    Execute (Space)
+                </Button>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    class="min-w-0 flex-1 sm:flex-none"
+                    @click="store.togglePause(game.uuid)"
+                >
+                    Pause (P)
+                </Button>
             </div>
+            <p
+                v-else
+                class="text-xs text-muted-foreground"
+            >
+                Watching via timed refresh · Commander 1 fog-of-war view
+            </p>
         </header>
 
         <div class="relative min-h-0 flex-1 border-y-2 border-foreground">
@@ -154,29 +220,53 @@ onUnmounted(() => {
                 </p>
             </div>
             <div
-                v-if="!spectatorMode && !store.initialized && store.winnerUserId === null && store.winnerSlot === null"
+                v-if="
+                    !spectatorMode &&
+                    !store.initialized &&
+                    !store.matchEnded &&
+                    store.winnerUserId === null &&
+                    store.winnerSlot === null
+                "
                 class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-background/90 text-center"
             >
                 <p class="text-sm font-semibold text-muted-foreground">
-                    Connecting to battlefield…
+                    Loading battlefield…
+                </p>
+                <p class="max-w-sm text-xs text-muted-foreground">
+                    Map data loads over HTTP even without websockets. Reverb is only
+                    needed for live pushes between players.
                 </p>
                 <p
-                    v-if="!store.connected"
+                    v-if="showSlowLoadHint && !store.initialized"
                     class="max-w-sm text-xs text-muted-foreground"
                 >
-                    If this hangs, ensure Reverb is running and your `.env` matches
-                    `VITE_REVERB_*`.
+                    Still stuck? Confirm the match is running, then refresh. If
+                    websockets never connect, run
+                    <code class="rounded bg-muted px-1 font-mono text-[0.7rem]">
+                        php artisan reverb:start
+                    </code>
+                    and rebuild the frontend so
+                    <code class="rounded bg-muted px-1 font-mono text-[0.7rem]">
+                        VITE_REVERB_*
+                    </code>
+                    matches your
+                    <code class="rounded bg-muted px-1 font-mono text-[0.7rem]">
+                        .env
+                    </code>
+                    .
                 </p>
             </div>
             <GameCanvas :read-only="spectatorMode" />
             <div
                 v-if="
                     !spectatorMode &&
-                    (store.winnerUserId !== null || store.winnerSlot !== null)
+                    (store.matchEnded ||
+                        store.winnerUserId !== null ||
+                        store.winnerSlot !== null)
                 "
                 class="absolute inset-0 flex items-center justify-center bg-foreground/40"
             >
-                <div class="wod-panel px-8 py-6 text-center">
+                <div class="wod-panel px-5 py-5 text-center sm:px-8 sm:py-6">
                     <p class="font-display text-2xl font-bold">
                         {{ victoryTitle }}
                     </p>
@@ -189,7 +279,7 @@ onUnmounted(() => {
                 v-else-if="spectatorMode && store.matchEnded"
                 class="absolute inset-0 flex items-center justify-center bg-foreground/40"
             >
-                <div class="wod-panel px-8 py-6 text-center">
+                <div class="wod-panel px-5 py-5 text-center sm:px-8 sm:py-6">
                     <p class="font-display text-2xl font-bold">Match ended</p>
                     <p class="mt-2 text-sm text-muted-foreground">
                         The live state is no longer available.
@@ -201,13 +291,17 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <footer class="wod-bar-bottom px-4 py-2 text-xs font-medium">
+        <footer class="wod-bar-bottom shrink-0 px-3 py-2 text-center text-[0.65rem] font-medium leading-snug sm:px-4 sm:text-left sm:text-xs">
             <template v-if="spectatorMode">
-                Watching via timed refresh · Commander 1 fog-of-war view
+                Spectating · slot 1 vision · auto-refresh
             </template>
             <template v-else>
-                Left-click drag to plan paths · Right-click drag to pan · Scroll
-                to zoom
+                <span class="hidden sm:inline">
+                    Left-click drag to plan paths · Right-click drag to pan · Scroll to zoom
+                </span>
+                <span class="sm:hidden">
+                    Drag to plan · Two-finger pan · Pinch to zoom
+                </span>
             </template>
         </footer>
     </div>

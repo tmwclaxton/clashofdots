@@ -11,8 +11,7 @@ use App\Games\GameConstants;
 /**
  * Converts Map Builder v2 JSON into live {@see Environment} marching-square grids, cities, and players.
  *
- * Large editor maps are center-cropped to {@see MapEditorGrid::LIVE_BATTLEFIELD_CELL_ROWS}×{@see MapEditorGrid::LIVE_BATTLEFIELD_CELL_COLS}
- * (same vertex resolution as {@see GameConstants::ROWS}+1 / {@see GameConstants::COLS}+1).
+ * Uses the full editor cellRows×cellCols vertex grid with no cropping.
  */
 final class BattlefieldFromMap
 {
@@ -33,32 +32,58 @@ final class BattlefieldFromMap
             throw new \InvalidArgumentException('Invalid teamCount on map snapshot.');
         }
 
-        $targetRows = MapEditorGrid::LIVE_BATTLEFIELD_CELL_ROWS;
-        $targetCols = MapEditorGrid::LIVE_BATTLEFIELD_CELL_COLS;
-
-        $offRow = max(0, (int) floor(($cellRows - $targetRows) / 2));
-        $offCol = max(0, (int) floor(($cellCols - $targetCols) / 2));
-
-        if ($cellRows < $targetRows || $cellCols < $targetCols) {
-            throw new \InvalidArgumentException("Map grid {$cellRows}×{$cellCols} is smaller than the live battlefield ({$targetRows}×{$targetCols}).");
-        }
-
-        $terrainGrid = MarchingSquares::emptyGrid();
-        $forestGrid = MarchingSquares::emptyGrid();
-
-        for ($gx = 0; $gx <= GameConstants::ROWS; $gx++) {
-            for ($gy = 0; $gy <= GameConstants::COLS; $gy++) {
-                $er = $offRow + $gx;
-                $ec = $offCol + $gy;
-                $terrainId = is_string($cells[$er][$ec] ?? null) ? $cells[$er][$ec] : 'plains';
-                $terrainGrid[$gx][$gy] = self::editorTerrainToElevation($terrainId);
-                $forestGrid[$gx][$gy] = self::editorTerrainToForestOverlay($terrainId);
+        for ($r = 0; $r < $cellRows; $r++) {
+            $row = $cells[$r] ?? null;
+            if (! is_array($row) || count($row) !== $cellCols) {
+                throw new \InvalidArgumentException("Map cells row {$r} must have length {$cellCols}.");
             }
         }
+
+        $environment->configureFromMapVertexGrid($cellRows, $cellCols);
 
         $markers = $mapDataV2['markers'] ?? [];
         if (! is_array($markers)) {
             throw new \InvalidArgumentException('Map markers must be an array.');
+        }
+
+        $maxR = $environment->gridMaxX;
+        $maxC = $environment->gridMaxY;
+
+        /** @var array<int, array{0: int, 1: int}> $capitalEditorByTeam */
+        $capitalEditorByTeam = [];
+        foreach ($markers as $marker) {
+            if (! is_array($marker)) {
+                continue;
+            }
+            if (($marker['type'] ?? '') !== MapMarkers::TYPE_CAPITAL) {
+                continue;
+            }
+            $team = (int) ($marker['team'] ?? 0);
+            if ($team < 0 || $team >= $teamCount) {
+                continue;
+            }
+            $capitalEditorByTeam[$team] = [(int) ($marker['row'] ?? -1), (int) ($marker['col'] ?? -1)];
+        }
+
+        for ($t = 0; $t < $teamCount; $t++) {
+            if (! isset($capitalEditorByTeam[$t])) {
+                throw new \InvalidArgumentException("Map is missing a capital marker for team slot {$t}.");
+            }
+            [$r, $c] = $capitalEditorByTeam[$t];
+            if ($r < 0 || $r > $maxR || $c < 0 || $c > $maxC) {
+                throw new \InvalidArgumentException("Capital for team slot {$t} is outside the map grid.");
+            }
+        }
+
+        $terrainGrid = MarchingSquares::emptyGrid($maxR, $maxC);
+        $forestGrid = MarchingSquares::emptyGrid($maxR, $maxC);
+
+        for ($gx = 0; $gx <= $maxR; $gx++) {
+            for ($gy = 0; $gy <= $maxC; $gy++) {
+                $terrainId = is_string($cells[$gx][$gy] ?? null) ? $cells[$gx][$gy] : 'plains';
+                $terrainGrid[$gx][$gy] = self::editorTerrainToElevation($terrainId);
+                $forestGrid[$gx][$gy] = self::editorTerrainToForestOverlay($terrainId);
+            }
         }
 
         /** @var list<array{row: int, col: int, team: int}> $flagSites */
@@ -74,19 +99,17 @@ final class BattlefieldFromMap
             }
             $row = (int) ($marker['row'] ?? -1);
             $col = (int) ($marker['col'] ?? -1);
-            $adjRow = $row - $offRow;
-            $adjCol = $col - $offCol;
-            if ($adjRow < 0 || $adjRow > GameConstants::ROWS || $adjCol < 0 || $adjCol > GameConstants::COLS) {
+            if ($row < 0 || $row > $maxR || $col < 0 || $col > $maxC) {
                 continue;
             }
             $type = $marker['type'] ?? '';
             $team = (int) ($marker['team'] ?? 0);
             if ($type === MapMarkers::TYPE_FLAG) {
-                $flagSites[] = ['row' => $adjRow, 'col' => $adjCol, 'team' => $team];
+                $flagSites[] = ['row' => $row, 'col' => $col, 'team' => $team];
             } elseif ($type === MapMarkers::TYPE_CAPITAL) {
-                $capitalByTeam[$team] = ['row' => $adjRow, 'col' => $adjCol];
+                $capitalByTeam[$team] = ['row' => $row, 'col' => $col];
             } elseif (MapMarkers::isTroopMarkerType($type)) {
-                $troopSites[] = ['type' => (string) $type, 'row' => $adjRow, 'col' => $adjCol, 'team' => $team];
+                $troopSites[] = ['type' => (string) $type, 'row' => $row, 'col' => $col, 'team' => $team];
             }
         }
 
@@ -103,10 +126,10 @@ final class BattlefieldFromMap
         ksort($capitalByTeam);
         for ($t = 0; $t < $teamCount; $t++) {
             if (! isset($capitalByTeam[$t])) {
-                throw new \InvalidArgumentException("Missing capital for team slot {$t} after cropping.");
+                throw new \InvalidArgumentException("Missing capital for team slot {$t} on the map.");
             }
-            $c = $capitalByTeam[$t];
-            $cities[] = new City(self::cellVertexToWorld($c['row'], $c['col']), $nextCityId++);
+            $capitalCell = $capitalByTeam[$t];
+            $cities[] = new City(self::cellVertexToWorld($capitalCell['row'], $capitalCell['col']), $nextCityId++);
         }
 
         /** @var array<int, City> $capitalCityByTeam */

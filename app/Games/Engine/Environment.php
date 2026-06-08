@@ -7,6 +7,17 @@ use App\Maps\BattlefieldFromMap;
 
 final class Environment
 {
+    /**
+     * Inclusive maximum marching-squares vertex index along X (editor row / "grid X").
+     * Defaults match {@see GameConstants::ROWS} for procedural maps; map-backed matches use full map width − 1.
+     */
+    public int $gridMaxX = GameConstants::ROWS;
+
+    /**
+     * Inclusive maximum marching-squares vertex index along Y (editor column / "grid Y").
+     */
+    public int $gridMaxY = GameConstants::COLS;
+
     public MarchingSquares $terrainMarching;
 
     public MarchingSquares $forestMarching;
@@ -63,7 +74,7 @@ final class Environment
     }
 
     /**
-     * Build a battlefield from a published Map Builder v2 payload (cropped to live size).
+     * Build a battlefield from a published Map Builder v2 payload (full editor grid; no cropping).
      *
      * @param  array<string, mixed>  $mapDataV2
      */
@@ -92,12 +103,37 @@ final class Environment
         $this->playersInCities = array_fill(0, count($this->cities), []);
     }
 
+    /**
+     * Sizes the marching-squares battlefield to match a Map Builder v2 grid ({@code cellRows}×{@code cellCols} vertices).
+     */
+    public function configureFromMapVertexGrid(int $cellRows, int $cellCols): void
+    {
+        if ($cellRows < 2 || $cellCols < 2) {
+            throw new \InvalidArgumentException('Map vertex grid must be at least 2×2.');
+        }
+
+        $this->gridMaxX = $cellRows - 1;
+        $this->gridMaxY = $cellCols - 1;
+    }
+
+    /**
+     * @return array{width: int, height: int, cellSize: int}
+     */
+    public function worldPixelSize(): array
+    {
+        return [
+            'width' => ($this->gridMaxX + 1) * GameConstants::CELL_SIZE,
+            'height' => ($this->gridMaxY + 1) * GameConstants::CELL_SIZE,
+            'cellSize' => GameConstants::CELL_SIZE,
+        ];
+    }
+
     public function rebuildDefaultVisionFromTerrain(): void
     {
-        $this->defaultVision = MarchingSquares::emptyGrid();
+        $this->defaultVision = MarchingSquares::emptyGrid($this->gridMaxX, $this->gridMaxY);
 
-        for ($y = 0; $y <= GameConstants::COLS; $y++) {
-            for ($x = 0; $x <= GameConstants::ROWS; $x++) {
+        for ($y = 0; $y <= $this->gridMaxY; $y++) {
+            for ($x = 0; $x <= $this->gridMaxX; $x++) {
                 $terrainValue = $this->terrainMarching->grid[$x][$y];
                 $forestValue = $this->forestMarching->grid[$x][$y];
                 $this->defaultVision[$x][$y] = 0.35 + (
@@ -116,6 +152,8 @@ final class Environment
         return [
             'seed' => $this->seed,
             'playerCount' => $this->playerCount,
+            'gridMaxX' => $this->gridMaxX,
+            'gridMaxY' => $this->gridMaxY,
             'terrain' => $this->terrainMarching->grid,
             'forest' => $this->forestMarching->grid,
             'defaultVision' => $this->defaultVision,
@@ -131,12 +169,37 @@ final class Environment
      */
     public static function fromArray(array $data): self
     {
-        $environment = new self($data['seed'], $data['playerCount']);
+        $seed = self::coercePersistedInt($data['seed'] ?? 0);
+        $playerCount = self::coercePlayerCount($data['playerCount'] ?? 1);
+
+        // Persisted matches already include terrain; never run procedural generation here (and avoid
+        // invalid JSON floats / huge grid hints breaking random_int-style math in generateTerrain()).
+        $environment = new self($seed, $playerCount, true);
         $environment->terrainMarching->setGrid($data['terrain']);
         $environment->forestMarching->setGrid($data['forest']);
+
+        $terrain = $data['terrain'] ?? [];
+        $inferredMaxX = GameConstants::ROWS - 1;
+        $inferredMaxY = GameConstants::COLS - 1;
+        if (is_array($terrain) && $terrain !== []) {
+            $inferredMaxX = max(1, count($terrain) - 1);
+            $firstRow = $terrain[0] ?? [];
+            $inferredMaxY = is_array($firstRow) && $firstRow !== []
+                ? max(1, count($firstRow) - 1)
+                : GameConstants::COLS;
+        }
+
+        if (isset($data['gridMaxX'], $data['gridMaxY']) && is_numeric($data['gridMaxX']) && is_numeric($data['gridMaxY'])) {
+            $environment->gridMaxX = self::coerceGridAxis($data['gridMaxX'], $inferredMaxX);
+            $environment->gridMaxY = self::coerceGridAxis($data['gridMaxY'], $inferredMaxY);
+        } else {
+            $environment->gridMaxX = $inferredMaxX;
+            $environment->gridMaxY = $inferredMaxY;
+        }
+
         $environment->defaultVision = $data['defaultVision'];
-        $environment->nextCityId = $data['nextCityId'];
-        $environment->nextTroopId = $data['nextTroopId'] ?? 1;
+        $environment->nextCityId = self::coercePositiveInt($data['nextCityId'] ?? 1, 1);
+        $environment->nextTroopId = self::coercePositiveInt($data['nextTroopId'] ?? 1, 1);
         $environment->cities = [];
         $environment->players = [];
 
@@ -153,12 +216,95 @@ final class Environment
         return $environment;
     }
 
+    private const int MAX_PERSISTED_GRID_AXIS = 4096;
+
+    private static function coercePlayerCount(mixed $value): int
+    {
+        $n = self::coercePersistedInt($value);
+        $n = max(1, $n);
+
+        return min(GameConstants::MAX_PLAYERS, $n);
+    }
+
+    /**
+     * Coerce JSON-decoded numbers to int without throwing on overflow or non-finite floats.
+     */
+    private static function coercePersistedInt(mixed $value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            if (! is_finite($value)) {
+                return 0;
+            }
+
+            if ($value > (float) PHP_INT_MAX || $value < (float) PHP_INT_MIN) {
+                return 0;
+            }
+
+            return (int) $value;
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return self::coercePersistedInt(0 + $value);
+        }
+
+        return 0;
+    }
+
+    private static function coercePositiveInt(mixed $value, int $fallback): int
+    {
+        $n = self::coercePersistedInt($value);
+
+        if ($n < 1) {
+            return max(1, $fallback);
+        }
+
+        return $n;
+    }
+
+    /**
+     * Grid axis from Redis/JSON must stay in a safe int range (avoids huge floats from bad clients).
+     */
+    private static function coerceGridAxis(mixed $value, int $fallback): int
+    {
+        if (! is_numeric($value)) {
+            return self::clampGridAxisIndex($fallback);
+        }
+
+        $f = (float) $value;
+        if (! is_finite($f) || $f < 1.0 || $f > (float) self::MAX_PERSISTED_GRID_AXIS) {
+            return self::clampGridAxisIndex($fallback);
+        }
+
+        if (abs($f - round($f)) > 1.0e-6) {
+            return self::clampGridAxisIndex($fallback);
+        }
+
+        return self::clampGridAxisIndex((int) round($f));
+    }
+
+    private static function clampGridAxisIndex(int $value): int
+    {
+        if ($value < 1) {
+            return 1;
+        }
+
+        if ($value > self::MAX_PERSISTED_GRID_AXIS) {
+            return self::MAX_PERSISTED_GRID_AXIS;
+        }
+
+        return $value;
+    }
+
     private function generateTerrain(): void
     {
         $noise = new PerlinNoise($this->seed, 3);
 
-        for ($y = 0; $y <= GameConstants::COLS; $y++) {
-            for ($x = 0; $x <= GameConstants::ROWS; $x++) {
+        for ($y = 0; $y <= $this->gridMaxY; $y++) {
+            for ($x = 0; $x <= $this->gridMaxX; $x++) {
                 $value = max(0, min(1, ($noise->noise([$x / 25, $y / 25]) - 0.2) + $this->elevationBias($x, $y)));
                 $this->terrainMarching->grid[$x][$y] = $value;
             }
@@ -166,8 +312,8 @@ final class Environment
 
         $forestNoise = new PerlinNoise($this->seed + 1, 2);
 
-        for ($y = 0; $y <= GameConstants::COLS; $y++) {
-            for ($x = 0; $x <= GameConstants::ROWS; $x++) {
+        for ($y = 0; $y <= $this->gridMaxY; $y++) {
+            for ($x = 0; $x <= $this->gridMaxX; $x++) {
                 $terrainValue = $this->terrainMarching->grid[$x][$y];
                 $value = (min(0.6, $forestNoise->noise([$x / 30, $y / 30]) * 2.0)) + 0.3;
                 $plainsDiff = max(0, (GameConstants::TERRAIN_VALUES['plains'] + 0.1) - $terrainValue);
@@ -180,8 +326,8 @@ final class Environment
         $distance = 15;
 
         while (count($this->cities) < 10) {
-            $cx = $this->randomInt(0, GameConstants::ROWS);
-            $cy = $this->randomInt(0, GameConstants::COLS);
+            $cx = $this->randomInt(0, $this->gridMaxX);
+            $cy = $this->randomInt(0, $this->gridMaxY);
             $terrainValue = $this->terrainMarching->grid[$cx][$cy];
 
             $validDistance = true;
@@ -222,14 +368,14 @@ final class Environment
     {
         $leftBottomCity = $this->minCity(fn (City $c) => $c->position[0] + $c->position[1]);
         $topLeftCity = $this->minCity(fn (City $c) => $c->position[0] - $c->position[1]);
-        $middleTopCity = $this->minCity(fn (City $c) => (abs($c->position[0] - (GameConstants::ROWS * GameConstants::CELL_SIZE) / 2) * 1.5) + $c->position[1]);
-        $middleBottomCity = $this->maxCity(fn (City $c) => $c->position[1] - (abs($c->position[0] - (GameConstants::ROWS * GameConstants::CELL_SIZE) / 2) * 1.5));
+        $middleTopCity = $this->minCity(fn (City $c) => (abs($c->position[0] - ($this->gridMaxX * GameConstants::CELL_SIZE) / 2) * 1.5) + $c->position[1]);
+        $middleBottomCity = $this->maxCity(fn (City $c) => $c->position[1] - (abs($c->position[0] - ($this->gridMaxX * GameConstants::CELL_SIZE) / 2) * 1.5));
         $topRightCity = $this->maxCity(fn (City $c) => $c->position[0] - $c->position[1]);
         $rightBottomCity = $this->maxCity(fn (City $c) => $c->position[0] + $c->position[1]);
         $leftCity = $this->minCity(fn (City $c) => $c->position[0]);
         $rightCity = $this->maxCity(fn (City $c) => $c->position[0]);
         $topCity = $this->maxCity(fn (City $c) => $c->position[1]);
-        $middleCity = $this->minCity(fn (City $c) => abs($c->position[0] - (GameConstants::ROWS * GameConstants::CELL_SIZE) / 2) + abs($c->position[1] - (GameConstants::COLS * GameConstants::CELL_SIZE) / 2));
+        $middleCity = $this->minCity(fn (City $c) => abs($c->position[0] - ($this->gridMaxX * GameConstants::CELL_SIZE) / 2) + abs($c->position[1] - ($this->gridMaxY * GameConstants::CELL_SIZE) / 2));
 
         $spawnMap = [
             2 => [
@@ -313,8 +459,8 @@ final class Environment
 
     private function elevationBias(float $x, float $y): float
     {
-        $cx = GameConstants::ROWS / 2;
-        $cy = GameConstants::COLS / 2;
+        $cx = $this->gridMaxX / 2;
+        $cy = $this->gridMaxY / 2;
         $dx = abs($x - $cx);
         $dy = abs($y - $cy);
         $dist = sqrt($dx ** 2 + $dy ** 2);
@@ -328,16 +474,25 @@ final class Environment
         $edgeMargin = 1;
 
         return $cx >= $edgeMargin
-            && $cx <= GameConstants::ROWS - $edgeMargin
+            && $cx <= $this->gridMaxX - $edgeMargin
             && $cy >= $edgeMargin
-            && $cy <= GameConstants::COLS - $edgeMargin;
+            && $cy <= $this->gridMaxY - $edgeMargin;
     }
 
     private function randomInt(int $min, int $max): int
     {
-        $this->rngSeed = ($this->rngSeed * 1103515245 + 12345) & 0x7FFFFFFF;
+        if ($max < $min) {
+            [$min, $max] = [$max, $min];
+        }
 
-        return $min + ($this->rngSeed % ($max - $min + 1));
+        $span = $max - $min + 1;
+        if ($span <= 0) {
+            return $min;
+        }
+
+        $this->rngSeed = (int) (($this->rngSeed * 1103515245 + 12345) & 0x7FFFFFFF);
+
+        return $min + ($this->rngSeed % $span);
     }
 
     public function getTerrainName(float $value, float $fvalue): string
@@ -360,7 +515,8 @@ final class Environment
      * @return array{
      *     terrain: list<list<float>>,
      *     forest: list<list<float>>,
-     *     cityPositions: list<array{0: float, 1: float}>
+     *     cityPositions: list<array{0: float, 1: float}>,
+     *     world: array{width: int, height: int, cellSize: int}
      * }
      */
     public function getTerrainInfo(): array
@@ -369,6 +525,7 @@ final class Environment
             'terrain' => $this->terrainMarching->grid,
             'forest' => $this->forestMarching->grid,
             'cityPositions' => array_map(fn (City $c) => $c->position, $this->cities),
+            'world' => $this->worldPixelSize(),
         ];
     }
 
@@ -601,9 +758,12 @@ final class Environment
         $forest = $this->forestMarching->getGridValue($gx, $gy);
         $newTerrain = $this->getTerrainName($terrain, $forest);
 
-        $outOfWorld = $newPos[0] > GameConstants::WORLD_X
+        $worldW = ($this->gridMaxX + 1) * GameConstants::CELL_SIZE;
+        $worldH = ($this->gridMaxY + 1) * GameConstants::CELL_SIZE;
+
+        $outOfWorld = $newPos[0] > $worldW
             || $newPos[0] < 0
-            || $newPos[1] > GameConstants::WORLD_Y
+            || $newPos[1] > $worldH
             || $newPos[1] < 0;
 
         if ($newTerrain !== 'mountain' && ! $hitEnemy && ! $outOfWorld) {
@@ -672,8 +832,8 @@ final class Environment
 
         foreach ($this->players as $otherPlayer) {
             foreach ($otherPlayer->troops as $troop) {
-                $gx = max(0, min(GameConstants::ROWS, $troop->position[0] / GameConstants::CELL_SIZE));
-                $gy = max(0, min(GameConstants::COLS, $troop->position[1] / GameConstants::CELL_SIZE));
+                $gx = max(0, min($this->gridMaxX, $troop->position[0] / GameConstants::CELL_SIZE));
+                $gy = max(0, min($this->gridMaxY, $troop->position[1] / GameConstants::CELL_SIZE));
 
                 if ($player->vision->getGridValue($gx, $gy) >= GameConstants::THRESHOLD) {
                     $troops[] = [

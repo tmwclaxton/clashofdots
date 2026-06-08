@@ -3,7 +3,7 @@
 namespace App\Games\Services;
 
 use App\Enums\GameStatus;
-use App\Games\Engine\Environment;
+use App\Games\GameConstants;
 use App\Models\Game;
 
 final class GameTickService
@@ -15,6 +15,23 @@ final class GameTickService
         }
 
         $state = $manager->getLiveState($game);
+
+        $activityDirty = MatchPresenceMonitor::normalizeLastActivity($state);
+
+        if (MatchPresenceMonitor::everyoneIdleForAtLeast($state, GameConstants::MATCH_ALL_PLAYERS_INACTIVE_SECONDS)) {
+            $manager->finishWithoutWinner(
+                $game,
+                GameConstants::ABORTED_MATCH_INACTIVITY,
+                'Match ended — all commanders inactive for over two minutes.',
+            );
+
+            return;
+        }
+
+        if ($activityDirty) {
+            $manager->storeLiveState($game, $state);
+        }
+
         $environment = $manager->environmentFromState($state);
 
         if ($this->allPlayersPaused($state)) {

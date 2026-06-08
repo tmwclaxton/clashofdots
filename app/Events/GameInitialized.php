@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use App\Games\GameConstants;
 use App\Models\Game;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -18,7 +17,9 @@ class GameInitialized implements ShouldBroadcastNow
      * @param  array{
      *     terrain: list<list<float>>,
      *     forest: list<list<float>>,
-     *     cityPositions: list<array{0: float, 1: float}>
+     *     cityPositions: list<array{0: float, 1: float}>,
+     *     world: array{width: int, height: int, cellSize: int},
+     *     terrainCells?: list<list<string>>
      * }  $terrainInfo
      */
     public function __construct(
@@ -52,18 +53,20 @@ class GameInitialized implements ShouldBroadcastNow
 
         $color = $this->game->players->firstWhere('slot', $this->slot)?->color ?? '#c0392b';
 
-        return [
+        $payload = [
             'gameUuid' => $this->game->uuid,
             'slot' => $this->slot,
             'color' => $color,
             'terrain' => $this->terrainInfo['terrain'],
             'forest' => $this->terrainInfo['forest'],
             'cityPositions' => $this->terrainInfo['cityPositions'],
-            'world' => [
-                'width' => GameConstants::WORLD_X,
-                'height' => GameConstants::WORLD_Y,
-                'cellSize' => GameConstants::CELL_SIZE,
-            ],
+            'world' => $this->terrainInfo['world'],
         ];
+
+        if (isset($this->terrainInfo['terrainCells']) && is_array($this->terrainInfo['terrainCells'])) {
+            $payload['terrainCells'] = $this->terrainInfo['terrainCells'];
+        }
+
+        return $payload;
     }
 }
