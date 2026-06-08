@@ -10,7 +10,7 @@ class GameTickCommand extends Command
 {
     protected $signature = 'game:tick {--daemon : Run continuously}';
 
-    protected $description = 'Run the War of Spheres simulation tick loop';
+    protected $description = 'Run the Clash of Dots simulation tick loop';
 
     public function handle(GameManager $gameManager): int
     {

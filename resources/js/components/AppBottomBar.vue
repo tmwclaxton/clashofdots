@@ -18,7 +18,7 @@ const user = computed(() => page.props.auth.user);
             <div class="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                 <FactionSwatches />
                 <p>
-                    <span class="font-bold text-foreground">War of Spheres</span>
+                    <span class="font-bold text-foreground">Clash of Dots</span>
                     <span v-if="user" class="text-foreground/70"> · </span>
                     <span v-if="user">Built with Irish Love ☘️</span>
                 </p>

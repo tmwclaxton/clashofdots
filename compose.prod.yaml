@@ -1,6 +1,6 @@
-# Production stack for War of Spheres.
+# Production stack for Clash of Dots.
 # On the server: create your deploy directory, add `.env` (DB_*, APP_KEY, WorkOS, Reverb, etc.), then:
-#   docker compose -p warofspheres -f compose.prod.yaml --env-file .env up -d
+#   docker compose -p clashofdots -f compose.prod.yaml --env-file .env up -d
 #
 # GitHub Actions renders __GHCR_IMAGE__ in this file before scp (see .github/workflows/prod_deploy.yml).
 # App listens on container :80; host maps 8091 -> 80 (change if 8091 is taken).
@@ -17,7 +17,7 @@ services:
     ports:
       - '8091:80'
     networks:
-      - warofspheres
+      - clashofdots
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -42,9 +42,9 @@ services:
     # Postgres 18+ images expect a single mount at /var/lib/postgresql (not .../data).
     # See https://github.com/docker-library/postgres/issues/37
     volumes:
-      - warofspheres-pgsql:/var/lib/postgresql
+      - clashofdots-pgsql:/var/lib/postgresql
     networks:
-      - warofspheres
+      - clashofdots
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 5s
@@ -56,9 +56,9 @@ services:
   redis:
     image: redis:alpine
     volumes:
-      - warofspheres-redis:/data
+      - clashofdots-redis:/data
     networks:
-      - warofspheres
+      - clashofdots
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       retries: 3
@@ -66,11 +66,11 @@ services:
     restart: unless-stopped
 
 networks:
-  warofspheres:
+  clashofdots:
     driver: bridge
 
 volumes:
-  warofspheres-pgsql:
+  clashofdots-pgsql:
     driver: local
-  warofspheres-redis:
+  clashofdots-redis:
     driver: local

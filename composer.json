@@ -2,9 +2,9 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/vue-starter-kit",
     "type": "project",
-    "description": "War of Spheres - multiplayer RTS (Laravel, Inertia, Vue).",
+    "description": "Clash of Dots - multiplayer RTS (Laravel, Inertia, Vue).",
     "keywords": [
-        "war-of-spheres",
+        "clash-of-dots",
         "laravel",
         "inertia",
         "vue",

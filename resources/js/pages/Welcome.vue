@@ -65,7 +65,7 @@ const steps = [
 </script>
 
 <template>
-    <Head title="War of Spheres" />
+    <Head title="Clash of Dots" />
 
     <div class="wod-page">
         <div class="relative flex min-h-svh flex-col">
@@ -79,7 +79,7 @@ const steps = [
                         </div>
                         <div>
                             <p class="font-display text-lg font-bold leading-tight">
-                                War of Spheres
+                                Clash of Dots
                             </p>
                             <p class="wod-tagline">Plan first, fight second</p>
                         </div>

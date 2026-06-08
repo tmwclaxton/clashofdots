@@ -44,7 +44,7 @@ onUnmounted(() => {
         >
             <div>
                 <p class="font-display text-xs font-bold text-foreground">
-                    War of Spheres
+                    Clash of Dots
                 </p>
                 <p class="text-sm font-bold tracking-widest text-foreground">
                     {{ game.code }}

@@ -64,7 +64,7 @@ const mainNavItems = computed<NavItem[]>(() => [
 const rightNavItems: NavItem[] = [
     {
         title: 'GitHub',
-        href: 'https://github.com/tmwclaxton/warofspheres',
+        href: 'https://github.com/tmwclaxton/clashofdots',
         icon: Folder,
     },
 ];

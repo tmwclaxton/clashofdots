@@ -53,7 +53,7 @@ jobs:
       contents: read
       packages: read
     env:
-      COMPOSE_PROJECT: warofspheres
+      COMPOSE_PROJECT: clashofdots
 
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
           missing=0
           if [ -z "$H" ]; then echo "::error::Set repository Secret or Variable DEPLOY_HOST (SSH hostname)"; missing=1; fi
           if [ -z "$U" ]; then echo "::error::Set repository Secret or Variable DEPLOY_USER (SSH user)"; missing=1; fi
-          if [ -z "$D" ]; then echo "::error::Set repository Secret or Variable DEPLOY_DIR (remote path, e.g. /opt/warofspheres)"; missing=1; fi
+          if [ -z "$D" ]; then echo "::error::Set repository Secret or Variable DEPLOY_DIR (remote path, e.g. /opt/clashofdots)"; missing=1; fi
           if [ "$missing" -ne 0 ]; then exit "$missing"; fi
           echo "DEPLOY_HOST=$H" >> "$GITHUB_ENV"
           echo "DEPLOY_USER=$U" >> "$GITHUB_ENV"

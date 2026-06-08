@@ -150,7 +150,7 @@ function speedClass(speed: number, impassable: boolean): string {
     <div class="flex flex-col gap-10 pb-4">
         <Heading
             title="Game Wiki"
-            description="Unit stats, terrain effects, economy rules, and procedural maps - tuned from War of Dots community data and adapted for War of Spheres."
+            description="Unit stats, terrain effects, economy rules, and procedural maps - tuned from War of Dots community data and adapted for Clash of Dots."
         />
 
         <div

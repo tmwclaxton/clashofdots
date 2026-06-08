@@ -13,7 +13,7 @@ import { createApp, h } from 'vue';
 
 library.add(fas, far, fab);
 
-const appName = import.meta.env.VITE_APP_NAME || 'War of Spheres';
+const appName = import.meta.env.VITE_APP_NAME || 'Clash of Dots';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'War of Spheres'),
+    'name' => env('APP_NAME', 'Clash of Dots'),
 
     /*
     |--------------------------------------------------------------------------

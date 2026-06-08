@@ -1,19 +1,19 @@
 <p align="center">
-  <img src="public/apple-touch-icon.png" alt="War of Spheres" width="120" height="120" />
+  <img src="public/apple-touch-icon.png" alt="Clash of Dots" width="120" height="120" />
 </p>
 
-<h1 align="center">War of Spheres</h1>
+<h1 align="center">Clash of Dots</h1>
 
 <p align="center">
   <strong>Plan like a diagram. Fight like an RTS.</strong><br />
-  <strong>War of Spheres</strong> is a server-authoritative multiplayer strategy game - tactical canvas,
+  <strong>Clash of Dots</strong> is a server-authoritative multiplayer strategy game - tactical canvas,
   procedural battlefields, and a <strong>Map Builder</strong> you can publish to the community. Gameplay
   is inspired by the classic browser RTS
   <a href="https://warofdots.net/">War of Dots</a>.
 </p>
 
 <p align="center">
-  <a href="https://github.com/tmwclaxton/warofspheres"><img src="https://img.shields.io/badge/GitHub-source-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" /></a>
+  <a href="https://github.com/tmwclaxton/clashofdots"><img src="https://img.shields.io/badge/GitHub-source-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" /></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/Laravel-13-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 13" /></a>
   <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue-3-42b883?style=for-the-badge&logo=vuedotjs&logoColor=white" alt="Vue 3" /></a>
   <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia-3-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia 3" /></a>
@@ -216,8 +216,8 @@ flowchart TB
 ### Install
 
 ```bash
-git clone https://github.com/tmwclaxton/warofspheres.git
-cd warofspheres
+git clone https://github.com/tmwclaxton/clashofdots.git
+cd clashofdots
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -255,15 +255,15 @@ Use `composer run dev` if your project defines a concurrent dev script.
 
 CI builds the **`Dockerfile`**, pushes **`ghcr.io/<lowercase github.repository>:latest`**, then SSHs to your host, uploads **`compose.prod.yaml`** into `DEPLOY_DIR`, and runs **`docker compose pull`**, **`up -d`**, and **`php artisan migrate --force`**. SSH uses **Cloudflare Access** (`cloudflared access ssh`) when `CF_ACCESS_CLIENT_*` secrets are set.
 
-### Shared host: only warofspheres
+### Shared host: only clashofdots
 
-The workflow and compose file are scoped to **project name `warofspheres`** and **`DEPLOY_DIR`** only. It does **not** run host-wide `docker prune` or other commands that would affect other stacks.
+The workflow and compose file are scoped to **project name `clashofdots`** and **`DEPLOY_DIR`** only. It does **not** run host-wide `docker prune` or other commands that would affect other stacks.
 
 When operating manually on a server that runs multiple apps:
 
-- Work only under your **`DEPLOY_DIR`** (e.g. `/opt/warofspheres`).
-- Always pass **`-p warofspheres`** and **`-f compose.prod.yaml`** (and **`--env-file .env`**) so Docker Compose never touches another project’s containers or volumes.
-- Do not run **`docker volume prune`**, **`docker image prune -a`**, or **`docker system prune`** unless you intend to clean **the whole host**; prefer removing only compose-managed resources for this stack after **`docker compose -p warofspheres … down`**, and only volumes whose names you recognize as belonging to this project.
+- Work only under your **`DEPLOY_DIR`** (e.g. `/opt/clashofdots`).
+- Always pass **`-p clashofdots`** and **`-f compose.prod.yaml`** (and **`--env-file .env`**) so Docker Compose never touches another project’s containers or volumes.
+- Do not run **`docker volume prune`**, **`docker image prune -a`**, or **`docker system prune`** unless you intend to clean **the whole host**; prefer removing only compose-managed resources for this stack after **`docker compose -p clashofdots … down`**, and only volumes whose names you recognize as belonging to this project.
 
 ### Flow
 
@@ -279,7 +279,7 @@ Use **either** the **Secrets** tab **or** the **Variables** tab for `DEPLOY_HOST
 |------|---------|---------|
 | `DEPLOY_HOST` | `ssh.example.com` | SSH hostname. |
 | `DEPLOY_USER` | `deploy` | SSH user. |
-| `DEPLOY_DIR` | `/opt/warofspheres` | Remote directory with `.env` and `compose.prod.yaml`. |
+| `DEPLOY_DIR` | `/opt/clashofdots` | Remote directory with `.env` and `compose.prod.yaml`. |
 
 Non-sensitive values are fine as **Variables**; using **Secrets** (as in your screenshot) is also valid.
 
@@ -297,9 +297,9 @@ Workflow: [`.github/workflows/prod_deploy.yml`](.github/workflows/prod_deploy.ym
 
 ```bash
 ssh YOUR_USER@YOUR_HOST
-sudo mkdir -p /opt/warofspheres    # same path as DEPLOY_DIR; skip if it already exists
-sudo chown YOUR_USER:YOUR_USER /opt/warofspheres
-cd /opt/warofspheres
+sudo mkdir -p /opt/clashofdots    # same path as DEPLOY_DIR; skip if it already exists
+sudo chown YOUR_USER:YOUR_USER /opt/clashofdots
+cd /opt/clashofdots
 cp /path/to/.env.example .env     # edit: APP_URL, DB_*, WorkOS, Redis, Reverb, etc.
 ```
 

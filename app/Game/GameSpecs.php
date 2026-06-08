@@ -7,7 +7,7 @@ use App\Maps\TerrainCatalog;
 /**
  * Canonical game reference data for the wiki and future engine tuning.
  *
- * Values are inspired by War of Dots community guides, adapted for War of Spheres
+ * Values are inspired by War of Dots community guides, adapted for Clash of Dots
  * terrain types (12 editor terrains, infantry/tank split, capitals vs outposts).
  */
 final class GameSpecs

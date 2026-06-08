@@ -56,7 +56,7 @@ const navItems = computed<NavItem[]>(() => [
                     </div>
                     <div class="hidden sm:block">
                         <p class="font-display text-base font-bold leading-tight">
-                            War of Spheres
+                            Clash of Dots
                         </p>
                         <p class="wod-tagline">Plan first, fight second</p>
                     </div>
