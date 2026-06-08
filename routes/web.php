@@ -12,8 +12,10 @@ Route::get('/wiki', fn () => Inertia::render('Wiki', GameSpecs::forWiki()))->nam
 
 Route::get('maps/explore', [MapController::class, 'explore'])->name('maps.explore');
 
+// Published maps are viewable in the builder without auth (see MapPolicy::view). Bare /map-builder requires login.
+Route::get('map-builder/{map?}', [MapController::class, 'builder'])->name('map-builder');
+
 Route::middleware(['auth'])->group(function () {
-    Route::get('map-builder/{map?}', [MapController::class, 'builder'])->name('map-builder');
     Route::get('maps', [MapController::class, 'index'])->name('maps.index');
     Route::post('maps', [MapController::class, 'store'])->name('maps.store');
     Route::post('maps/{map}/publish', [MapController::class, 'publish'])->name('maps.publish');

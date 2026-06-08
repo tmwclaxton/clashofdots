@@ -14,10 +14,14 @@ export type MapSummary = {
     published?: boolean;
 };
 
-const props = defineProps<{
-    editor: MapEditorInstance;
-    maps: MapSummary[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        editor: MapEditorInstance;
+        maps: MapSummary[];
+        allowLibraryMutations?: boolean;
+    }>(),
+    { allowLibraryMutations: true },
+);
 
 const emit = defineEmits<{
     requestNewMap: [];
@@ -106,7 +110,13 @@ function formatUpdated(iso: string | null): string {
             <p class="font-display text-xs font-bold uppercase tracking-wide text-muted-foreground">
                 Maps
             </p>
-            <Button size="sm" variant="outline" class="h-7 gap-1 px-2 text-xs" @click="requestNewMap">
+            <Button
+                v-if="allowLibraryMutations"
+                size="sm"
+                variant="outline"
+                class="h-7 gap-1 px-2 text-xs"
+                @click="requestNewMap"
+            >
                 <FilePlus2 class="size-3.5" />
                 New
             </Button>
@@ -138,6 +148,7 @@ function formatUpdated(iso: string | null): string {
                         </span>
                     </button>
                     <Button
+                        v-if="allowLibraryMutations"
                         size="icon"
                         variant="ghost"
                         class="size-7 shrink-0 text-muted-foreground hover:text-destructive"

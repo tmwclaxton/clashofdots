@@ -76,6 +76,16 @@ watch(
 
 const editorLocked = computed(() => mapPublished.value);
 
+const publishedMapExploreUrl = computed(() => {
+    const uuid = editor.currentUuid.value;
+
+    if (!uuid || !mapPublished.value) {
+        return mapsExplore().url;
+    }
+
+    return mapsExplore.url({ query: { uuid } });
+});
+
 const hasSavedMap = computed(() => editor.currentUuid.value !== null);
 
 function getCookie(name: string): string {
@@ -115,6 +125,9 @@ watch(
 );
 
 const page = usePage();
+
+const auth = computed(() => page.props.auth as { user?: object } | undefined);
+const allowLibraryMutations = computed(() => Boolean(auth.value?.user));
 
 const AUTO_SAVE_DEBOUNCE_MS = 3500;
 
@@ -476,6 +489,12 @@ async function onDuplicatePublished(): Promise<void> {
         return;
     }
 
+    if (!auth.value?.user) {
+        toast.info('Sign in to duplicate this map into your library.');
+
+        return;
+    }
+
     duplicateBusy.value = true;
 
     try {
@@ -575,13 +594,13 @@ onUnmounted(() => {
                 type="button"
                 size="sm"
                 variant="outline"
-                class="h-8 gap-1 px-2 text-xs"
+                class="h-9 gap-1.5 border-2 border-foreground !bg-wod-blue px-3 text-xs font-bold !text-white shadow-[0_2px_0_0_var(--wod-shadow)] hover:!bg-wod-blue/90 hover:!text-white active:!bg-wod-blue/80 dark:!bg-wod-blue dark:hover:!bg-wod-blue/85"
                 title="Replace the map with procedurally generated terrain"
                 :disabled="editorLocked"
                 @click="openGenerateDialog"
             >
-                <Sparkles class="size-3.5" />
-                Generate
+                <Sparkles class="size-4 shrink-0" />
+                Generate Map
             </Button>
             <Button
                 type="button"
@@ -609,8 +628,15 @@ onUnmounted(() => {
                 </select>
             </div>
             <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
-                <Button type="button" size="sm" variant="ghost" class="h-8 px-2 text-xs" as-child>
-                    <Link :href="mapsExplore().url">Explore</Link>
+                <Button
+                    v-if="mapPublished && editor.currentUuid"
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    class="h-8 px-2 text-xs"
+                    as-child
+                >
+                    <Link :href="publishedMapExploreUrl">Explore</Link>
                 </Button>
                 <Button
                     type="button"
@@ -679,6 +705,7 @@ onUnmounted(() => {
             <MapListPanel
                 :editor="editor"
                 :maps="mapsList"
+                :allow-library-mutations="allowLibraryMutations"
                 @maps-list-updated="onMapsListUpdated"
                 @open-map="onOpenMapFromList"
                 @request-new-map="onRequestNewMap"

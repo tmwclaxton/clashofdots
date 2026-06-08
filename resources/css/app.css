@@ -259,17 +259,6 @@
         pointer-events: none;
     }
 
-    .wod-bar-top::after {
-        content: '';
-        position: absolute;
-        right: 0;
-        bottom: 2px;
-        left: 0;
-        height: 3px;
-        background: var(--wod-green-dk);
-        pointer-events: none;
-    }
-
     .dark .wod-bar-top {
         background-image: linear-gradient(
             180deg,
@@ -288,17 +277,6 @@
             #c8d68a 50%,
             #dce8a8 100%
         );
-    }
-
-    .wod-bar-bottom::before {
-        content: '';
-        position: absolute;
-        top: 2px;
-        right: 0;
-        left: 0;
-        height: 3px;
-        background: var(--wod-green-dk);
-        pointer-events: none;
     }
 
     .wod-bar-bottom::after {

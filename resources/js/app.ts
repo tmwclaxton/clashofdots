@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 import { createPinia } from 'pinia';
-import { createApp, h } from 'vue';
+import { createApp, createSSRApp, h } from 'vue';
 
 library.add(fas, far, fab);
 
@@ -32,16 +32,25 @@ createInertiaApp({
         color: '#e53935',
     },
     setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
+        const app = (typeof window === 'undefined' ? createSSRApp : createApp)({
+            render: () => h(App, props),
+        })
             .use(plugin)
             .use(createPinia())
-            .component('font-awesome-icon', FontAwesomeIcon)
-            .mount(el);
+            .component('font-awesome-icon', FontAwesomeIcon);
+
+        if (el) {
+            app.mount(el);
+        }
+
+        return app;
     },
 });
 
-// This will set light / dark mode on page load...
-initializeTheme();
+if (typeof window !== 'undefined') {
+    // This will set light / dark mode on page load...
+    initializeTheme();
 
-// This will listen for flash toast data from the server...
-initializeFlashToast();
+    // This will listen for flash toast data from the server...
+    initializeFlashToast();
+}

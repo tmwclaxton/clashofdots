@@ -7,11 +7,11 @@ import {
     Globe2,
     History,
     Map,
-    Swords,
     Users,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import FactionSwatches from '@/components/FactionSwatches.vue';
+import GameLogoMark from '@/components/GameLogoMark.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -51,9 +51,7 @@ const navItems = computed<NavItem[]>(() => [
         >
             <div class="flex items-center gap-5">
                 <Link :href="home().url" class="flex items-center gap-2.5">
-                    <div class="wod-logo-terrain size-9">
-                        <Swords class="size-4" />
-                    </div>
+                    <GameLogoMark />
                     <div class="hidden sm:block">
                         <p class="font-display text-base font-bold leading-tight">
                             Clash of Dots
@@ -134,7 +132,7 @@ const navItems = computed<NavItem[]>(() => [
         </div>
 
         <nav
-            class="flex w-full gap-1 overflow-x-auto border-t-2 border-foreground/20 px-6 py-2 md:hidden"
+            class="flex w-full gap-1 overflow-x-auto border-t border-foreground/25 px-6 py-2 md:hidden"
         >
             <Button
                 v-for="item in navItems"

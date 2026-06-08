@@ -40,10 +40,34 @@ class MapTest extends TestCase
         return $data;
     }
 
-    public function test_guests_cannot_access_map_builder(): void
+    public function test_guests_cannot_access_map_builder_without_slug(): void
     {
         $this->get(route('map-builder'))
             ->assertRedirect(route('login'));
+    }
+
+    public function test_guest_can_view_published_map_in_map_builder(): void
+    {
+        $owner = User::factory()->create();
+        $map = Map::factory()->for($owner)->published()->create(['name' => 'Public arena']);
+
+        $this->get(route('map-builder', ['map' => $map->uuid]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('MapBuilder')
+                ->where('initialDocument.uuid', $map->uuid)
+                ->where('initialDocument.name', 'Public arena')
+                ->where('initialDocument.published', true)
+                ->where('maps', []));
+    }
+
+    public function test_guest_cannot_open_unpublished_map_in_map_builder(): void
+    {
+        $owner = User::factory()->create();
+        $map = Map::factory()->for($owner)->create(['name' => 'Draft', 'published' => false]);
+
+        $this->get(route('map-builder', ['map' => $map->uuid]))
+            ->assertForbidden();
     }
 
     public function test_guests_cannot_list_maps(): void
@@ -78,7 +102,7 @@ class MapTest extends TestCase
                 ->where('initialDocument.name', 'Slugged map'));
     }
 
-    public function test_map_builder_slug_returns_forbidden_for_another_users_map(): void
+    public function test_authenticated_user_cannot_open_another_users_unpublished_map_in_builder(): void
     {
         $owner = User::factory()->create();
         $other = User::factory()->create();
@@ -87,6 +111,21 @@ class MapTest extends TestCase
         $this->actingAs($other)
             ->get(route('map-builder', ['map' => $map->uuid]))
             ->assertForbidden();
+    }
+
+    public function test_authenticated_user_can_open_another_users_published_map_in_builder(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $map = Map::factory()->for($owner)->published()->create(['name' => 'Shared']);
+
+        $this->actingAs($other)
+            ->get(route('map-builder', ['map' => $map->uuid]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('MapBuilder')
+                ->where('initialDocument.uuid', $map->uuid)
+                ->where('initialDocument.published', true));
     }
 
     public function test_map_builder_without_slug_has_null_initial_document(): void
@@ -607,7 +646,75 @@ class MapTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('MapExplore')
-                ->has('maps'));
+                ->has('maps')
+                ->has('pagination')
+                ->has('filters')
+                ->where('pagination.total', 0));
+    }
+
+    public function test_explore_filters_maps_by_name(): void
+    {
+        $user = User::factory()->create();
+        Map::factory()->for($user)->published()->create(['name' => 'Alpine Pass']);
+        Map::factory()->for($user)->published()->create(['name' => 'Desert Ridge']);
+
+        $this->get(route('maps.explore', ['q' => 'alpine']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('MapExplore')
+                ->has('maps', 1)
+                ->where('maps.0.name', 'Alpine Pass')
+                ->where('pagination.total', 1)
+                ->where('filters.q', 'alpine'));
+    }
+
+    public function test_explore_filters_maps_by_author_name(): void
+    {
+        $alice = User::factory()->create(['name' => 'Alice Mapper']);
+        $bob = User::factory()->create(['name' => 'Bob Builder']);
+        Map::factory()->for($alice)->published()->create(['name' => 'Map A']);
+        Map::factory()->for($bob)->published()->create(['name' => 'Map B']);
+
+        $this->get(route('maps.explore', ['author' => 'alice']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('maps', 1)
+                ->where('maps.0.name', 'Map A')
+                ->where('pagination.total', 1));
+    }
+
+    public function test_explore_filters_maps_by_uuid(): void
+    {
+        $user = User::factory()->create();
+        $target = Map::factory()->for($user)->published()->create(['name' => 'Target Map']);
+        Map::factory()->for($user)->published()->create(['name' => 'Other Map']);
+
+        $this->get(route('maps.explore', ['uuid' => $target->uuid]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('MapExplore')
+                ->has('maps', 1)
+                ->where('maps.0.uuid', $target->uuid)
+                ->where('maps.0.name', 'Target Map')
+                ->where('pagination.total', 1)
+                ->where('filters.uuid', $target->uuid));
+    }
+
+    public function test_explore_pagination_returns_second_page(): void
+    {
+        $user = User::factory()->create();
+        for ($i = 0; $i < 15; $i++) {
+            Map::factory()->for($user)->published()->create(['name' => "Map page {$i}"]);
+        }
+
+        $this->get(route('maps.explore', ['per_page' => 12, 'page' => 2]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('maps', 3)
+                ->where('pagination.current_page', 2)
+                ->where('pagination.last_page', 2)
+                ->where('pagination.per_page', 12)
+                ->where('pagination.total', 15));
     }
 
     public function test_owner_can_publish_valid_map(): void

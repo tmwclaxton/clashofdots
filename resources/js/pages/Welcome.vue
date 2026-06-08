@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { Github, Swords } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
+import { Github } from 'lucide-vue-next';
+import { Button, buttonVariants } from '@/components/ui/button';
+import GameLogoMark from '@/components/GameLogoMark.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import { GITHUB_REPOSITORY_URL } from '@/lib/site';
+import { cn } from '@/lib/utils';
 import { login, wiki } from '@/routes';
 import { index as lobbiesIndex } from '@/routes/lobbies';
 
@@ -67,26 +69,24 @@ const steps = [
 <template>
     <Head title="Clash of Dots" />
 
-    <div class="wod-page">
-        <div class="relative flex min-h-svh flex-col">
+    <div class="wod-page min-w-0 overflow-x-hidden">
+        <div class="relative flex min-h-svh min-w-0 flex-col">
             <header class="wod-bar-top relative shrink-0">
                 <div
-                    class="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4"
+                    class="relative mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-4"
                 >
-                    <div class="flex items-center gap-3">
-                        <div class="wod-logo-terrain size-9">
-                            <Swords class="size-4" />
-                        </div>
-                        <div>
-                            <p class="font-display text-lg font-bold leading-tight">
+                    <div class="flex min-w-0 items-center gap-2.5 sm:gap-3">
+                        <GameLogoMark class="size-8 sm:size-9" />
+                        <div class="min-w-0">
+                            <p class="font-display text-base font-bold leading-tight sm:text-lg">
                                 Clash of Dots
                             </p>
-                            <p class="wod-tagline">Plan first, fight second</p>
+                            <p class="wod-tagline text-xs sm:text-sm">Plan first, fight second</p>
                         </div>
                     </div>
-                    <nav class="flex items-center gap-2">
+                    <nav class="flex w-full min-w-0 flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
                         <ThemeToggle />
-                        <Button variant="ghost" as-child>
+                        <Button variant="ghost" size="sm" class="shrink-0 px-2 sm:px-3" as-child>
                             <a
                                 :href="GITHUB_REPOSITORY_URL"
                                 target="_blank"
@@ -96,38 +96,49 @@ const steps = [
                                 <span class="hidden sm:inline">GitHub</span>
                             </a>
                         </Button>
-                        <Link :href="wiki().url">
-                            <Button variant="ghost">Wiki</Button>
+                        <Link :href="wiki().url" class="shrink-0">
+                            <Button variant="ghost" size="sm" class="px-2 sm:px-3">Wiki</Button>
                         </Link>
-                        <Link v-if="page.props.auth.user" :href="lobbiesIndex().url">
-                            <Button>Play Now</Button>
+                        <Link v-if="page.props.auth.user" :href="lobbiesIndex().url" class="shrink-0">
+                            <Button size="sm" class="sm:h-10 sm:px-4 sm:text-sm">Play Now</Button>
                         </Link>
-                        <Link v-else :href="login()">
-                            <Button variant="outline">Enter Battle</Button>
+                        <Link
+                            v-else
+                            :href="login().url"
+                            :class="
+                                cn(
+                                    buttonVariants({ variant: 'outline', size: 'sm' }),
+                                    'shrink-0 sm:h-10 sm:px-4 sm:text-sm',
+                                )
+                            "
+                        >
+                            <GameLogoMark class="size-4 rounded-sm sm:size-5" />
+                            <span class="hidden min-[380px]:inline">Enter Battle</span>
+                            <span class="min-[380px]:hidden">Enter</span>
                         </Link>
                     </nav>
                 </div>
             </header>
 
-            <section class="relative flex flex-1 flex-col justify-center">
-                <div class="mx-auto w-full max-w-6xl px-6 py-10">
+            <section class="relative flex min-w-0 flex-1 flex-col justify-center">
+                <div class="mx-auto w-full min-w-0 max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
                     <div class="max-w-3xl">
                         <a
                             :href="GITHUB_REPOSITORY_URL"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="mb-4 inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-card/80 px-3 py-1 text-sm font-semibold text-foreground transition-colors hover:bg-card"
+                            class="mb-4 inline-flex max-w-full items-center gap-2 rounded-full border-2 border-foreground bg-card/80 px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-card sm:text-sm"
                         >
-                            <Github class="size-4" />
-                            Open source on GitHub
+                            <Github class="size-4 shrink-0" />
+                            <span class="truncate">Open source on GitHub</span>
                         </a>
                         <h1
-                            class="font-display text-5xl leading-[1.05] font-bold md:text-6xl"
+                            class="font-display text-3xl font-bold leading-[1.08] tracking-tight text-balance sm:text-5xl sm:leading-[1.05] md:text-6xl"
                         >
                             Draw the plan. Win the war.
                         </h1>
                         <p
-                            class="mt-5 text-lg leading-relaxed whitespace-nowrap text-muted-foreground"
+                            class="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg"
                         >
                             A real-time strategy game inspired by
                             <em class="font-display not-italic">
@@ -148,17 +159,26 @@ const steps = [
                                 >Historia Civilis</a>
                             </em>.
                         </p>
-                        <div class="mt-7 flex flex-wrap gap-3">
+                        <div class="mt-6 flex w-full min-w-0 flex-col gap-3 sm:mt-7 sm:flex-row sm:flex-wrap">
                             <Link
                                 v-if="page.props.auth.user"
                                 :href="lobbiesIndex().url"
+                                class="w-full sm:w-auto"
                             >
-                                <Button size="lg">Enter the battlefield</Button>
+                                <Button class="w-full sm:w-auto" size="lg">Enter the battlefield</Button>
                             </Link>
-                            <Link v-else :href="login()">
-                                <Button size="lg" variant="outline">
-                                    Enter Battle
-                                </Button>
+                            <Link
+                                v-else
+                                :href="login().url"
+                                :class="
+                                    cn(
+                                        buttonVariants({ variant: 'outline', size: 'lg' }),
+                                        'w-full sm:w-auto',
+                                    )
+                                "
+                            >
+                                <GameLogoMark class="size-5 rounded-sm" />
+                                Enter Battle
                             </Link>
                         </div>
                     </div>
@@ -166,12 +186,12 @@ const steps = [
             </section>
         </div>
 
-        <main class="mx-auto max-w-6xl px-6 pb-16">
+        <main class="mx-auto w-full min-w-0 max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">
             <section class="grid gap-4 sm:grid-cols-2">
                 <article
                     v-for="feature in features"
                     :key="feature.title"
-                    class="wod-panel flex gap-4 p-5"
+                    class="wod-panel flex gap-3 p-4 sm:gap-4 sm:p-5"
                 >
                     <div
                         :class="['wod-swatch mt-1', feature.swatch]"
@@ -188,8 +208,8 @@ const steps = [
                 </article>
             </section>
 
-            <section class="wod-panel-dark mt-12 p-8 md:p-10">
-                <h2 class="font-display text-2xl font-bold md:text-3xl">
+            <section class="wod-panel-dark mt-10 p-5 sm:mt-12 sm:p-8 md:p-10">
+                <h2 class="font-display text-xl font-bold sm:text-2xl md:text-3xl">
                     How it plays
                 </h2>
                 <ol class="mt-8 grid gap-6 md:grid-cols-3">
@@ -212,9 +232,9 @@ const steps = [
             </section>
 
             <section
-                class="mt-12 flex flex-col items-start justify-between gap-5 wod-panel p-6 md:flex-row md:items-center"
+                class="mt-10 flex w-full min-w-0 flex-col gap-5 wod-panel p-5 sm:mt-12 sm:flex-row sm:items-center sm:justify-between sm:p-6"
             >
-                <div>
+                <div class="min-w-0">
                     <h2 class="font-display text-xl font-bold md:text-2xl">
                         Ready when you are.
                     </h2>
@@ -225,25 +245,36 @@ const steps = [
                 <Link
                     v-if="page.props.auth.user"
                     :href="lobbiesIndex().url"
+                    class="w-full shrink-0 sm:w-auto"
                 >
-                    <Button size="lg">Browse lobbies</Button>
+                    <Button class="w-full sm:w-auto" size="lg">Browse lobbies</Button>
                 </Link>
-                <Link v-else :href="login()">
-                    <Button size="lg" variant="outline">Enter Battle</Button>
+                <Link
+                    v-else
+                    :href="login().url"
+                    :class="
+                        cn(
+                            buttonVariants({ variant: 'outline', size: 'lg' }),
+                            'w-full shrink-0 sm:w-auto',
+                        )
+                    "
+                >
+                    <GameLogoMark class="size-5 rounded-sm" />
+                    Enter Battle
                 </Link>
             </section>
         </main>
 
-        <footer class="wod-bar-bottom px-6 text-center">
-            <p class="font-display font-bold text-foreground">
+        <footer class="wod-bar-bottom px-4 py-3 text-center text-sm sm:px-6">
+            <p class="font-display text-pretty font-bold leading-snug text-foreground">
                 <a
                     :href="GITHUB_REPOSITORY_URL"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="wod-link"
+                    class="wod-link break-words"
                 >Open source on GitHub</a>
                 <span class="text-muted-foreground"> · </span>
-                Built with Irish Love ☘️
+                <span class="whitespace-nowrap">Built with Irish Love ☘️</span>
             </p>
         </footer>
     </div>

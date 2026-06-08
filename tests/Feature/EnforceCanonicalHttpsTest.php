@@ -15,11 +15,11 @@ class EnforceCanonicalHttpsTest extends TestCase
     {
         $this->app['env'] = 'production';
 
-        Config::set('app.url', 'https://clashofdots.com');
+        Config::set('app.url', 'https://www.clashofdots.com');
 
         $defaults = [
             'REMOTE_ADDR' => '127.0.0.1',
-            'HTTP_HOST' => 'clashofdots.com',
+            'HTTP_HOST' => 'www.clashofdots.com',
         ];
 
         if ($secure) {
@@ -36,24 +36,24 @@ class EnforceCanonicalHttpsTest extends TestCase
             'HTTP_X_FORWARDED_PROTO' => 'http',
         ], secure: false);
 
-        $response->assertRedirect('https://clashofdots.com/');
+        $response->assertRedirect('https://www.clashofdots.com/');
         $response->assertStatus(301);
     }
 
-    public function test_redirects_www_host_to_canonical_https_in_production(): void
+    public function test_redirects_apex_host_to_canonical_www_https_in_production(): void
     {
         $response = $this->productionRequest('/', [
-            'HTTP_HOST' => 'www.clashofdots.com',
+            'HTTP_HOST' => 'clashofdots.com',
             'HTTP_X_FORWARDED_PROTO' => 'https',
         ]);
 
-        $response->assertRedirect('https://clashofdots.com/');
+        $response->assertRedirect('https://www.clashofdots.com/');
         $response->assertStatus(301);
     }
 
     public function test_secure_canonical_requests_include_hsts_header_in_production(): void
     {
-        $response = $this->productionRequest('https://clashofdots.com/');
+        $response = $this->productionRequest('https://www.clashofdots.com/');
 
         $response->assertOk();
         $response->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
@@ -61,14 +61,14 @@ class EnforceCanonicalHttpsTest extends TestCase
 
     public function test_generates_https_preload_links_behind_proxy_in_production(): void
     {
-        $response = $this->productionRequest('https://clashofdots.com/');
+        $response = $this->productionRequest('https://www.clashofdots.com/');
 
         $response->assertOk();
 
         $link = $response->headers->get('Link');
 
         $this->assertNotNull($link);
-        $this->assertStringNotContainsString('http://clashofdots.com', $link);
+        $this->assertStringNotContainsString('http://www.clashofdots.com', $link);
     }
 
     public function test_does_not_redirect_local_requests(): void

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Maps;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Maps\ExploreMapsRequest;
 use App\Http\Requests\Maps\PublishMapRequest;
 use App\Http\Requests\Maps\SaveMapRequest;
 use App\Maps\MapEditorGrid;
@@ -11,8 +12,10 @@ use App\Maps\TerrainCatalog;
 use App\Models\Map;
 use App\Models\MapVote;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -24,54 +27,108 @@ class MapController extends Controller
     /**
      * Public gallery of published community maps.
      */
-    public function explore(Request $request): InertiaResponse
+    public function explore(ExploreMapsRequest $request): InertiaResponse
     {
-        $published = Map::query()
+        $filters = $request->exploreFilters();
+
+        $query = Map::query()
             ->where('published', true)
             ->with([
                 'user:id,name',
                 'forkedFrom:id,uuid,name,user_id',
                 'forkedFrom.user:id,name',
-            ])
-            ->latest('published_at')
-            ->limit(48)
-            ->get();
+            ]);
+
+        if ($filters['q'] !== '') {
+            $like = '%'.$this->escapeLike(mb_strtolower($filters['q'], 'UTF-8')).'%';
+            $query->whereRaw('LOWER(maps.name) LIKE ?', [$like]);
+        }
+
+        if ($filters['author'] !== '') {
+            $like = '%'.$this->escapeLike(mb_strtolower($filters['author'], 'UTF-8')).'%';
+            $query->whereHas('user', function ($userQuery) use ($like): void {
+                $userQuery->whereRaw('LOWER(users.name) LIKE ?', [$like]);
+            });
+        }
+
+        if ($filters['uuid'] !== '') {
+            $query->where('uuid', $filters['uuid']);
+        }
+
+        match ($filters['sort']) {
+            'oldest' => $query->orderBy('published_at')->orderBy('id'),
+            'name_az' => $query->orderBy('name')->orderBy('id'),
+            'name_za' => $query->orderByDesc('name')->orderBy('id'),
+            'most_likes' => $query->orderByDesc('likes_count')->orderByDesc('published_at')->orderByDesc('id'),
+            'most_forks' => $query->orderByDesc('forks_count')->orderByDesc('published_at')->orderByDesc('id'),
+            'most_games' => $query->orderByDesc('games_count')->orderByDesc('published_at')->orderByDesc('id'),
+            default => $query->orderByDesc('published_at')->orderByDesc('id'),
+        };
+
+        /** @var LengthAwarePaginator<int, Map> $paginator */
+        $paginator = $query->paginate($filters['per_page'])->withQueryString();
 
         $viewerId = $request->user()?->id;
         $voteByMapId = [];
-        if ($viewerId !== null && $published->isNotEmpty()) {
+        if ($viewerId !== null && $paginator->isNotEmpty()) {
             $voteByMapId = MapVote::query()
                 ->where('user_id', $viewerId)
-                ->whereIn('map_id', $published->pluck('id'))
+                ->whereIn('map_id', $paginator->pluck('id'))
                 ->get()
                 ->keyBy('map_id')
                 ->all();
         }
 
-        $cards = $published->map(function (Map $map) use ($voteByMapId) {
+        $cards = $paginator->getCollection()->map(function (Map $map) use ($voteByMapId) {
             $vote = $voteByMapId[$map->id] ?? null;
 
             return $this->exploreCard($map, $vote instanceof MapVote ? $vote : null);
-        });
+        })->values()->all();
 
         return Inertia::render('MapExplore', [
             'maps' => $cards,
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'from' => $paginator->firstItem(),
+                'to' => $paginator->lastItem(),
+                'prev_url' => $paginator->previousPageUrl(),
+                'next_url' => $paginator->nextPageUrl(),
+                'pages' => $this->explorePaginationPages($paginator),
+            ],
+            'filters' => [
+                'q' => $filters['q'],
+                'author' => $filters['author'],
+                'uuid' => $filters['uuid'],
+                'sort' => $filters['sort'],
+                'per_page' => $filters['per_page'],
+            ],
         ]);
     }
 
     /**
      * Map editor. Optional {@link Map} UUID in the path reloads that map (same as choosing it in the sidebar).
+     *
+     * Guests may open **published** maps only (read-only in the UI). The bare editor requires authentication.
      */
-    public function builder(?Map $map = null): InertiaResponse
+    public function builder(Request $request, ?Map $map = null): InertiaResponse|RedirectResponse
     {
+        if ($map === null && ! $request->user()) {
+            return redirect()->guest(route('login'));
+        }
+
         if ($map !== null) {
             Gate::authorize('view', $map);
         }
 
-        $maps = Map::query()
-            ->where('user_id', auth()->id())
-            ->orderByDesc('updated_at')
-            ->get(['id', 'uuid', 'name', 'updated_at', 'published']);
+        $maps = $request->user() !== null
+            ? Map::query()
+                ->where('user_id', $request->user()->id)
+                ->orderByDesc('updated_at')
+                ->get(['id', 'uuid', 'name', 'updated_at', 'published'])
+            : collect();
 
         return Inertia::render('MapBuilder', [
             'maps' => $maps,
@@ -250,5 +307,39 @@ class MapController extends Controller
             'updated_at' => $map->updated_at?->toIso8601String(),
             'published' => $map->published,
         ];
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+    }
+
+    /**
+     * @param  LengthAwarePaginator<int, Map>  $paginator
+     * @return list<array{page: int, url: string, active: bool}>
+     */
+    private function explorePaginationPages(LengthAwarePaginator $paginator): array
+    {
+        if ($paginator->lastPage() <= 1) {
+            return [];
+        }
+
+        $current = $paginator->currentPage();
+        $last = $paginator->lastPage();
+        $window = 7;
+        $start = max(1, $current - (int) floor($window / 2));
+        $end = min($last, $start + $window - 1);
+        $start = max(1, $end - $window + 1);
+
+        $pages = [];
+        for ($i = $start; $i <= $end; $i++) {
+            $pages[] = [
+                'page' => $i,
+                'url' => $paginator->url($i),
+                'active' => $i === $current,
+            ];
+        }
+
+        return $pages;
     }
 }
