@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Games\GameConstants;
 use App\Games\Services\GameManager;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class GameTickCommand extends Command
 {
@@ -31,7 +32,15 @@ class GameTickCommand extends Command
                 $game = $gameManager->findByUuid($uuid);
 
                 if ($game) {
-                    $gameManager->tick($game);
+                    try {
+                        $gameManager->tick($game);
+                    } catch (\Throwable $e) {
+                        Log::error('Game tick failed; continuing loop.', [
+                            'game_uuid' => $uuid,
+                            'exception' => $e::class,
+                            'message' => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
 

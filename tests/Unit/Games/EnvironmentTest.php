@@ -25,11 +25,25 @@ class EnvironmentTest extends TestCase
     public function test_draw_info_includes_spawn_troops_before_first_tick(): void
     {
         $environment = Environment::create(999, 2);
-        $info = $environment->drawInfo(0);
+        $sampleTroop = null;
 
-        $this->assertNotEmpty($info['cities']);
-        $this->assertArrayHasKey('vision', $info);
-        $this->assertArrayHasKey('border', $info);
+        for ($slot = 0; $slot < 2; $slot++) {
+            $info = $environment->drawInfo($slot, 0);
+
+            if ($info['troops'] !== []) {
+                $sampleTroop = $info['troops'][0];
+                break;
+            }
+        }
+
+        $this->assertNotNull($sampleTroop, 'Expected at least one visible troop for drawInfo in this fixture.');
+        $info0 = $environment->drawInfo(0, 0);
+        $this->assertNotEmpty($info0['cities']);
+        $this->assertArrayHasKey('vision', $info0);
+        $this->assertArrayHasKey('border', $info0);
+        $this->assertArrayHasKey('morale', $sampleTroop);
+        $this->assertArrayHasKey('warmupMultiplier', $sampleTroop);
+        $this->assertArrayHasKey('combatMultiplier', $sampleTroop);
     }
 
     public static function playerCounts(): array

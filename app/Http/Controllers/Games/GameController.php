@@ -8,6 +8,7 @@ use App\Games\Services\GameManager;
 use App\Games\Services\GuestGameIdentity;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Games\CreateGameRequest;
+use App\Http\Requests\Games\RecruitTroopRequest;
 use App\Http\Requests\Games\SubmitOrdersRequest;
 use App\Models\Game;
 use App\Models\GamePlayer;
@@ -291,6 +292,19 @@ class GameController extends Controller
         }
 
         $gameManager->togglePause($game, $player, $request->boolean('paused'));
+
+        return back();
+    }
+
+    public function recruit(RecruitTroopRequest $request, Game $game, GameManager $gameManager): RedirectResponse
+    {
+        $player = $this->actingPlayer($request, $game);
+
+        if ($player === null) {
+            abort(403);
+        }
+
+        $gameManager->recruitInfantry($game, $player);
 
         return back();
     }

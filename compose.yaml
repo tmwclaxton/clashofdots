@@ -1,3 +1,16 @@
+# Laravel Sail — `docker compose` / `./vendor/bin/sail up`
+#
+# PHP services inject Docker DNS hostnames so Redis, Reverb, and Postgres work
+# inside the network even if `.env` still says 127.0.0.1 / localhost.
+# Browsers still reach Reverb via the published host port; `VITE_REVERB_HOST=localhost`
+# is set on the app container for `sail npm run dev`.
+
+x-laravel-sail-connectivity: &laravel-sail-connectivity
+    WWWUSER: '${WWWUSER:-1337}'
+    LARAVEL_SAIL: 1
+    REDIS_HOST: redis
+    REVERB_HOST: reverb
+
 services:
     laravel.test:
         build:
@@ -12,48 +25,60 @@ services:
             - '${APP_PORT:-80}:80'
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
         environment:
-            WWWUSER: '${WWWUSER:-1337}'
-            LARAVEL_SAIL: 1
+            <<: *laravel-sail-connectivity
             XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
             XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            VITE_REVERB_APP_KEY: '${REVERB_APP_KEY}'
+            VITE_REVERB_HOST: localhost
+            VITE_REVERB_PORT: '${REVERB_PORT:-8080}'
+            VITE_REVERB_SCHEME: '${REVERB_SCHEME:-http}'
         volumes:
             - '.:/var/www/html:z'
         networks:
             - sail
         depends_on:
-            - pgsql
-            - redis
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
     queue-worker:
         image: 'sail-8.5/app'
         command: 'php artisan queue:work --sleep=3 --tries=1 --timeout=9000 --max-time=3600'
         environment:
-            WWWUSER: '${WWWUSER:-1337}'
-            LARAVEL_SAIL: 1
+            <<: *laravel-sail-connectivity
         volumes:
             - '.:/var/www/html:z'
         networks:
             - sail
         restart: unless-stopped
         depends_on:
-            - laravel.test
-            - pgsql
-            - redis
+            laravel.test:
+                condition: service_started
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
     scheduler:
         image: 'sail-8.5/app'
         command: 'php artisan schedule:work'
         environment:
-            WWWUSER: '${WWWUSER:-1337}'
-            LARAVEL_SAIL: 1
+            <<: *laravel-sail-connectivity
         volumes:
             - '.:/var/www/html:z'
         networks:
             - sail
         restart: unless-stopped
         depends_on:
-            - laravel.test
-            - pgsql
-            - redis
+            laravel.test:
+                condition: service_started
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
     pgsql:
         image: 'postgres:18-alpine'
         ports:
@@ -79,6 +104,7 @@ services:
                 - '${DB_USERNAME}'
             retries: 3
             timeout: 5s
+
     redis:
         image: 'redis:alpine'
         ports:
@@ -94,39 +120,47 @@ services:
                 - ping
             retries: 3
             timeout: 5s
+
     reverb:
         image: 'sail-8.5/app'
         command: 'php artisan reverb:start --host=0.0.0.0 --port=8080'
         ports:
             - '${REVERB_PORT:-8080}:8080'
         environment:
-            WWWUSER: '${WWWUSER:-1337}'
-            LARAVEL_SAIL: 1
+            <<: *laravel-sail-connectivity
         volumes:
             - '.:/var/www/html:z'
         networks:
             - sail
         restart: unless-stopped
         depends_on:
-            - laravel.test
-            - redis
+            laravel.test:
+                condition: service_started
+            redis:
+                condition: service_healthy
+
     game-tick:
         image: 'sail-8.5/app'
         command: 'php artisan game:tick --daemon'
         environment:
-            WWWUSER: '${WWWUSER:-1337}'
-            LARAVEL_SAIL: 1
+            <<: *laravel-sail-connectivity
         volumes:
             - '.:/var/www/html:z'
         networks:
             - sail
         restart: unless-stopped
         depends_on:
-            - laravel.test
-            - redis
+            laravel.test:
+                condition: service_started
+            pgsql:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+
 networks:
     sail:
         driver: bridge
+
 volumes:
     sail-pgsql:
         driver: local

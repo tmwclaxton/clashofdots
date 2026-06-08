@@ -15,11 +15,17 @@ class GameStateUpdated implements ShouldBroadcastNow
 
     /**
      * @param  array<string, mixed>  $state
+     * @param  list<array{credits?: int, incomePerTick?: int}>|null  $economySnapshot
+     * @param  list<bool>  $pauseRequests
      */
     public function __construct(
         public Game $game,
         public string $broadcastConnection,
         public array $state,
+        public ?array $economySnapshot = null,
+        public ?int $worldTick = null,
+        public array $pauseRequests = [],
+        public bool $allPlayersPaused = false,
     ) {}
 
     /**
@@ -42,9 +48,22 @@ class GameStateUpdated implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
-        return [
+        $payload = [
             'gameUuid' => $this->game->uuid,
             'state' => $this->state,
         ];
+
+        if ($this->economySnapshot !== null) {
+            $payload['economy'] = $this->economySnapshot;
+        }
+
+        if ($this->worldTick !== null) {
+            $payload['worldTick'] = $this->worldTick;
+        }
+
+        $payload['pauseRequests'] = $this->pauseRequests;
+        $payload['allPlayersPaused'] = $this->allPlayersPaused;
+
+        return $payload;
     }
 }

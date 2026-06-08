@@ -15,6 +15,7 @@ services:
       WWWGROUP: '1000'
       DB_HOST: pgsql
       REDIS_HOST: redis
+      REVERB_HOST: reverb
     ports:
       - '8091:80'
     networks:
@@ -43,6 +44,7 @@ services:
       WWWGROUP: '1000'
       DB_HOST: pgsql
       REDIS_HOST: redis
+      REVERB_HOST: reverb
     command: 'php artisan game:tick --daemon'
     networks:
       - clashofdots

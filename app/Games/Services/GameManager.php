@@ -6,7 +6,9 @@ use App\Enums\GameStatus;
 use App\Events\GameEnded;
 use App\Events\GameInitialized;
 use App\Events\GameStateUpdated;
+use App\Games\Engine\City;
 use App\Games\Engine\Environment;
+use App\Games\Engine\Player;
 use App\Games\GameConstants;
 use App\Maps\MapMarkers;
 use App\Models\Game;
@@ -179,6 +181,11 @@ final class GameManager
             'playerCityInputs' => array_fill(0, $playerCount, []),
             'pauseRequests' => array_fill(0, $playerCount, false),
             'lastPlayerActivityAt' => array_fill(0, $playerCount, $now),
+            'worldTick' => 0,
+            'economy' => array_fill(0, $playerCount, [
+                'credits' => GameConstants::ECONOMY_STARTING_CREDITS,
+                'incomePerTick' => 0,
+            ]),
         ]);
 
         Redis::sadd(self::ACTIVE_SET, $game->uuid);
@@ -191,12 +198,19 @@ final class GameManager
             $terrainInfo['terrainCells'] = $terrainCells;
         }
 
+        $stateAfterStart = $this->getLiveState($game);
+        $worldTick = (int) ($stateAfterStart['worldTick'] ?? 0);
+        $economy = $stateAfterStart['economy'] ?? [];
+
         foreach ($game->players as $player) {
             $this->broadcastIgnoringTransportFailure(new GameInitialized(
                 $game,
                 $player->broadcastConnection(),
                 $player->slot,
-                $terrainInfo,
+                array_merge($terrainInfo, [
+                    'economy' => $economy,
+                    'worldTick' => $worldTick,
+                ]),
             ));
         }
 
@@ -225,6 +239,34 @@ final class GameManager
 
         $this->touchPlayerActivityInState($state, $slot);
         $this->storeLiveState($game, $state);
+
+        $environment = $this->environmentFromState($state);
+
+        $mergedTroopPaths = [];
+
+        foreach ($state['playerInputs'] as $inputs) {
+            if (is_array($inputs)) {
+                $mergedTroopPaths = array_merge($mergedTroopPaths, $inputs);
+            }
+        }
+
+        $environment->assignTroopPathsFromOrders($mergedTroopPaths);
+
+        $mergedCityPaths = [];
+
+        foreach ($state['playerCityInputs'] as $inputs) {
+            if (is_array($inputs)) {
+                $mergedCityPaths = array_merge($mergedCityPaths, $inputs);
+            }
+        }
+
+        $environment->assignCityPathsFromOrders($mergedCityPaths);
+
+        $state['environment'] = $environment->toArray();
+        $this->storeLiveState($game, $state);
+
+        $game->loadMissing('players');
+        $this->broadcastState($game, $environment, $state);
     }
 
     public function togglePause(Game $game, GamePlayer $player, bool $paused): void
@@ -380,7 +422,23 @@ final class GameManager
             abort(404, 'Live game state not found.');
         }
 
+        $this->ensurePlayingGameTrackedForTicks($game);
+
         return json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * The tick worker only advances games listed in {@see self::ACTIVE_SET}. If that set was
+     * cleared or drifted while Redis still holds live JSON, re-register so `game:tick` picks up
+     * the match again (idempotent SADD).
+     */
+    private function ensurePlayingGameTrackedForTicks(Game $game): void
+    {
+        if ($game->status !== GameStatus::Playing) {
+            return;
+        }
+
+        Redis::sadd(self::ACTIVE_SET, $game->uuid);
     }
 
     /**
@@ -396,15 +454,213 @@ final class GameManager
         return Environment::fromArray($state['environment']);
     }
 
-    public function broadcastState(Game $game, Environment $environment): void
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    public function repairLiveStateEconomy(Game $game, array &$state): bool
     {
+        $slotCount = count($state['pauseRequests'] ?? []);
+        if ($slotCount < 1) {
+            return false;
+        }
+
+        $dirty = false;
+
+        if (! isset($state['worldTick'])) {
+            $state['worldTick'] = 0;
+            $dirty = true;
+        }
+
+        if (! isset($state['economy']) || ! is_array($state['economy']) || count($state['economy']) !== $slotCount) {
+            $state['economy'] = array_fill(0, $slotCount, [
+                'credits' => GameConstants::ECONOMY_STARTING_CREDITS,
+                'incomePerTick' => 0,
+            ]);
+            $dirty = true;
+        }
+
+        if ($dirty) {
+            $this->storeLiveState($game, $state);
+        }
+
+        return $dirty;
+    }
+
+    public function recruitInfantry(Game $game, GamePlayer $gamePlayer): void
+    {
+        if ($game->status !== GameStatus::Playing) {
+            abort(422, 'Recruiting is only available during a live match.');
+        }
+
+        if ($gamePlayer->game_id !== $game->id) {
+            abort(403);
+        }
+
+        $state = $this->getLiveState($game);
+        $this->repairLiveStateEconomy($game, $state);
+
+        $environment = $this->environmentFromState($state);
+        $slot = $gamePlayer->slot;
+        $player = $environment->players[$slot] ?? null;
+
+        if ($player === null) {
+            abort(500, 'Invalid commander slot.');
+        }
+
+        $capital = $this->findOwnedCapitalCity($environment, $player);
+
+        if ($capital === null) {
+            abort(422, 'You must control your capital to recruit.');
+        }
+
+        if (count($player->troops) >= GameConstants::ECONOMY_MAX_ARMY_PER_PLAYER) {
+            abort(422, 'Your army is at maximum size.');
+        }
+
+        if (! isset($state['economy'][$slot]) || ! is_array($state['economy'][$slot])) {
+            abort(500, 'Economy state is missing for this commander.');
+        }
+
+        $credits = (int) ($state['economy'][$slot]['credits'] ?? 0);
+
+        if ($credits < GameConstants::ECONOMY_RECRUIT_COST) {
+            abort(422, 'Not enough credits to recruit.');
+        }
+
+        $spawn = $this->findRecruitSpawnPosition($environment, $capital->position);
+
+        if ($spawn === null) {
+            abort(422, 'No clear rally point near your capital. Move units aside.');
+        }
+
+        $worldTick = (int) ($state['worldTick'] ?? 0);
+        $troopId = $environment->takeNextTroopId();
+        $player->spawnTroop($spawn, [], $troopId, $worldTick);
+
+        $state['economy'][$slot]['credits'] = $credits - GameConstants::ECONOMY_RECRUIT_COST;
+        $state['environment'] = $environment->toArray();
+
+        $this->touchPlayerActivityInState($state, $slot);
+        $this->storeLiveState($game, $state);
+
+        $game->loadMissing('players');
+        $this->broadcastState($game, $environment, $state);
+    }
+
+    public function broadcastState(Game $game, Environment $environment, array $state): void
+    {
+        $worldTick = (int) ($state['worldTick'] ?? 0);
+        $economy = $state['economy'] ?? null;
+
+        $game->loadMissing('players');
+
+        $pauseRequestsRaw = $state['pauseRequests'] ?? [];
+        $pauseRequests = is_array($pauseRequestsRaw) ? array_values($pauseRequestsRaw) : [];
+        $allPlayersPaused = $this->allPlayersPausedFromState($pauseRequests);
+
         foreach ($game->players as $player) {
             $this->broadcastIgnoringTransportFailure(new GameStateUpdated(
                 $game,
                 $player->broadcastConnection(),
-                $environment->drawInfo($player->slot),
+                $environment->drawInfo($player->slot, $worldTick),
+                is_array($economy) ? $economy : null,
+                $worldTick,
+                $pauseRequests,
+                $allPlayersPaused,
             ));
         }
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $pauseRequests
+     */
+    private function allPlayersPausedFromState(array $pauseRequests): bool
+    {
+        if ($pauseRequests === []) {
+            return false;
+        }
+
+        foreach ($pauseRequests as $paused) {
+            if (! $paused) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function findOwnedCapitalCity(Environment $environment, Player $player): ?City
+    {
+        foreach ($environment->cities as $city) {
+            if ($city->markerType === MapMarkers::TYPE_CAPITAL && $city->owner === $player) {
+                return $city;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{0: float, 1: float}  $capitalPosition
+     * @return array{0: float, 1: float}|null
+     */
+    private function findRecruitSpawnPosition(Environment $environment, array $capitalPosition): ?array
+    {
+        $blockedTerrain = ['mountain', 'water', 'deep_water', 'river'];
+        $offsets = [];
+
+        for ($dx = -15; $dx <= 15; $dx++) {
+            for ($dy = -15; $dy <= 15; $dy++) {
+                if ($dx === 0 && $dy === 0) {
+                    continue;
+                }
+
+                $offsets[] = [$dx * GameConstants::CELL_SIZE, $dy * GameConstants::CELL_SIZE];
+            }
+        }
+
+        usort($offsets, function (array $a, array $b): int {
+            $da = $a[0] ** 2 + $a[1] ** 2;
+            $db = $b[0] ** 2 + $b[1] ** 2;
+
+            return $da <=> $db;
+        });
+
+        foreach ($offsets as [$ox, $oy]) {
+            $pos = [(float) $capitalPosition[0] + $ox, (float) $capitalPosition[1] + $oy];
+            $name = $environment->terrainNameAtWorldPosition($pos);
+
+            if (in_array($name, $blockedTerrain, true)) {
+                continue;
+            }
+
+            if (! $this->recruitPositionHasClearance($environment, $pos, (float) GameConstants::ECONOMY_RECRUIT_CLEARANCE)) {
+                continue;
+            }
+
+            return $pos;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{0: float, 1: float}  $pos
+     */
+    private function recruitPositionHasClearance(Environment $environment, array $pos, float $minDistance): bool
+    {
+        foreach ($environment->players as $p) {
+            foreach ($p->troops as $t) {
+                $dx = $t->position[0] - $pos[0];
+                $dy = $t->position[1] - $pos[1];
+
+                if (hypot($dx, $dy) < $minDistance) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private function redisKey(Game $game): string
@@ -479,9 +735,15 @@ final class GameManager
     {
         $player = $game->players()->where('slot', $slot)->firstOrFail();
         $state = $this->getLiveState($game);
+        $this->repairLiveStateEconomy($game, $state);
+        $worldTick = (int) ($state['worldTick'] ?? 0);
         $environment = $this->environmentFromState($state);
         $terrainInfo = $environment->getTerrainInfo();
         $terrainCells = $this->terrainCellsForSnapshot($game->map_data, $terrainInfo['terrain']);
+
+        $pauseRequestsRaw = $state['pauseRequests'] ?? [];
+        $pauseRequests = is_array($pauseRequestsRaw) ? array_values($pauseRequestsRaw) : [];
+        $allPlayersPaused = $this->allPlayersPausedFromState($pauseRequests);
 
         return [
             'gameUuid' => $game->uuid,
@@ -491,7 +753,11 @@ final class GameManager
             'forest' => $terrainInfo['forest'],
             'cityPositions' => $terrainInfo['cityPositions'],
             'world' => $terrainInfo['world'],
-            'state' => $environment->drawInfo($player->slot),
+            'state' => $environment->drawInfo($player->slot, $worldTick),
+            'economy' => $state['economy'] ?? [],
+            'worldTick' => $worldTick,
+            'pauseRequests' => $pauseRequests,
+            'allPlayersPaused' => $allPlayersPaused,
             ...($terrainCells !== null ? ['terrainCells' => $terrainCells] : []),
         ];
     }

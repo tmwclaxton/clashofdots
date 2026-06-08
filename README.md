@@ -229,22 +229,25 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Configure `.env` (PostgreSQL `DB_*`, `WORKOS_*`, `REDIS_*`, and `REVERB_*` / `VITE_REVERB_*` for WebSockets). Matches need **Redis** plus **Reverb** and the **game tick** worker so the battlefield simulates and broadcasts state. **Sail:** set `REVERB_HOST=reverb` (and keep `REVERB_PORT=8080`) so the `laravel.test` container can reach the `reverb` service; the browser still uses `VITE_REVERB_HOST`/`PORT` (often `localhost` and `8080` with the port published in `compose.yaml`). Automated **PHPUnit** runs use **in-memory SQLite** (`phpunit.xml`) so tests do not require a live Postgres server unless you change that.
+Copy **`.env.example` → `.env`** and run `php artisan key:generate`. Defaults match **Sail**: `DB_HOST=pgsql`, `REDIS_HOST=redis`, `REVERB_HOST=reverb`, and `VITE_REVERB_HOST=localhost`. **`compose.yaml`** also injects `REDIS_HOST`, `REVERB_HOST`, and `VITE_REVERB_*` into PHP containers so live matches work after **`./vendor/bin/sail up`** even if an older `.env` still had `127.0.0.1`. Configure **`WORKOS_*`** when you use login. Matches need **Redis**, **Reverb**, and the **`game-tick`** service (all included in Sail). **PHPUnit** uses **in-memory SQLite** (`phpunit.xml`) unless you change it.
+
+**PHP on the host (no Docker):** set `DB_HOST=127.0.0.1`, `REDIS_HOST=127.0.0.1`, `REVERB_HOST=127.0.0.1`, and keep `VITE_REVERB_HOST=localhost` with Reverb’s port published to the host.
 
 **Guests:** you can open **Lobbies**, join with a code, and fight without signing in. The app stores a stable guest UUID in the Laravel session (`wod_guest_key`) so the same browser can use **Ongoing** to return after a disconnect. Creating a lobby and **Past matches** still require login.
 
 ### Run with Sail
 
 ```bash
+cp .env.example .env   # first time only; then: php artisan key:generate (host or sail)
 ./vendor/bin/sail up -d
 ./vendor/bin/sail artisan migrate
 ./vendor/bin/sail npm install
 ./vendor/bin/sail npm run dev
 ```
 
-Sail’s [`compose.yaml`](compose.yaml) already runs **Reverb** (port **8080** published to the host by default), **`php artisan game:tick --daemon`**, queue worker, and scheduler as separate services, so you do not need to start them manually when using Sail. Rebuild the Sail image after Dockerfile changes: `./vendor/bin/sail build --no-cache`.
+[`compose.yaml`](compose.yaml) brings up **app** (nginx + PHP), **pgsql**, **redis**, **reverb** (port **8080** on the host by default), **`game-tick`** (`php artisan game:tick --daemon`), **queue-worker**, and **scheduler**. Postgres and Redis use **health checks** before the app container is considered ready; PHP services get **`REDIS_HOST=redis`**, **`REVERB_HOST=reverb`**, and **`VITE_REVERB_HOST=localhost`** so Redis, server-side broadcasting, and Vite all resolve correctly inside Docker.
 
-Then open the URL Sail prints (often `http://localhost`).
+Open **`APP_URL`** (often `http://localhost` with `APP_PORT=80`). Rebuild the image after Dockerfile changes: `./vendor/bin/sail build --no-cache`.
 
 ### Run without Sail
 
@@ -255,6 +258,17 @@ composer run dev
 ```
 
 `composer run dev` runs the HTTP server, queue worker, logs, Vite, **Reverb**, and **`game:tick --daemon`** together. Ensure **Redis** is running and `REDIS_*` in `.env` points at it.
+
+### Live match checklist (troops must move)
+
+Submitted orders are stored in **Redis**, but **units only advance when `php artisan game:tick --daemon` is running** (included in Sail’s `game-tick` service and `composer run dev`). If troops never move after you press **Space**:
+
+1. **Redis** — `REDIS_*` must match a running instance (Sail: `redis` host).
+2. **Tick worker** — start `game:tick` or use `composer run dev` / full Sail stack.
+3. **Pause** — if **every** commander has pause on, ticks skip simulation until someone resumes (**P** in play).
+4. **Reverb** — optional for movement; the play page still **polls JSON snapshots every ~1.8s** so you see positions without websockets. Reverb adds lower-latency `GameStateUpdated` pushes.
+
+Regression: `php artisan test tests/Feature/Games/GameTickOrdersTest.php` (requires Redis; skipped otherwise).
 
 If you prefer to run pieces yourself:
 

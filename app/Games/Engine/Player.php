@@ -25,7 +25,7 @@ final class Player
         $this->border = new MarchingSquares;
         $this->vision = new MarchingSquares;
         $this->vision->setGrid($environment->defaultVision);
-        $this->troops = [new Troop($this->startPos, $this, $initialTroopId)];
+        $this->troops = [new Troop($this->startPos, $this, $initialTroopId, null, -1)];
     }
 
     /**
@@ -73,9 +73,9 @@ final class Player
         return $max + 1;
     }
 
-    public function spawnTroop(array $position, array $path, int $troopId): Troop
+    public function spawnTroop(array $position, array $path, int $troopId, int $spawnedAtWorldTick = -1): Troop
     {
-        $troop = new Troop($position, $this, $troopId, $path);
+        $troop = new Troop($position, $this, $troopId, $path, $spawnedAtWorldTick);
         $this->troops[] = $troop;
 
         return $troop;

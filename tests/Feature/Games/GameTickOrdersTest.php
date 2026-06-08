@@ -1,0 +1,171 @@
+<?php
+
+namespace Tests\Feature\Games;
+
+use App\Enums\GameStatus;
+use App\Games\Services\GameManager;
+use App\Games\Services\GameTickService;
+use App\Models\Game;
+use App\Models\Map;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Redis;
+use Predis\Client;
+use Tests\TestCase;
+
+class GameTickOrdersTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (! extension_loaded('redis') && ! class_exists(Client::class)) {
+            $this->markTestSkipped('Redis is required for game tick tests.');
+        }
+    }
+
+    public function test_submit_orders_then_tick_moves_troop_along_path(): void
+    {
+        $host = User::factory()->create();
+        $guest = User::factory()->create();
+        $owner = User::factory()->create();
+        $map = Map::factory()->for($owner)->playablePublishedTwoTeam()->create();
+
+        $this->actingAs($host)
+            ->post(route('games.store'), ['map_uuid' => $map->uuid]);
+        $game = Game::query()->firstOrFail();
+
+        $this->actingAs($guest)
+            ->post(route('games.join', $game));
+
+        $this->actingAs($host)
+            ->post(route('games.start', $game))
+            ->assertRedirect(route('games.play', $game));
+
+        $game->refresh();
+        $this->assertSame(GameStatus::Playing, $game->status);
+
+        $manager = app(GameManager::class);
+        $tickService = app(GameTickService::class);
+
+        try {
+            $state = $manager->getLiveState($game);
+            $hostPlayer = $game->players()->where('user_id', $host->id)->firstOrFail();
+            $this->assertSame(0, $hostPlayer->slot);
+
+            $troopId = $state['environment']['players'][0]['troops'][0]['id'];
+            $posBefore = $state['environment']['players'][0]['troops'][0]['position'];
+            $this->assertIsArray($posBefore);
+            $this->assertCount(2, $posBefore);
+
+            $targetX = (float) $posBefore[0] + 200.0;
+            $targetY = (float) $posBefore[1];
+
+            $troopOrders = [[$troopId, [[$targetX, $targetY]]]];
+            $cityOrders = [];
+            $manager->submitOrders($game, $hostPlayer, [$troopOrders, $cityOrders]);
+
+            $stateAfterSubmit = $manager->getLiveState($game);
+            $pathAfterSubmit = $stateAfterSubmit['environment']['players'][0]['troops'][0]['path'] ?? [];
+            $this->assertNotSame([], $pathAfterSubmit, 'Troop path should be stored on submit so clients see routes before the next tick.');
+
+            for ($i = 0; $i < 400; $i++) {
+                $game->refresh();
+                if ($game->status !== GameStatus::Playing) {
+                    break;
+                }
+                $tickService->tick($game, $manager);
+            }
+
+            $game->refresh();
+            $this->assertSame(GameStatus::Playing, $game->status);
+
+            $stateAfter = $manager->getLiveState($game);
+            $posAfter = $stateAfter['environment']['players'][0]['troops'][0]['position'];
+
+            $moved = abs($posAfter[0] - $posBefore[0]) > 2.0 || abs($posAfter[1] - $posBefore[1]) > 2.0;
+            $this->assertTrue($moved, 'Troop should move toward order waypoint after ticks when game:tick pipeline runs.');
+        } finally {
+            Redis::del('game:live:'.$game->uuid);
+            Redis::srem('games:active', $game->uuid);
+        }
+    }
+
+    public function test_tick_does_not_advance_when_all_players_paused(): void
+    {
+        $host = User::factory()->create();
+        $guest = User::factory()->create();
+        $owner = User::factory()->create();
+        $map = Map::factory()->for($owner)->playablePublishedTwoTeam()->create();
+
+        $this->actingAs($host)
+            ->post(route('games.store'), ['map_uuid' => $map->uuid]);
+        $game = Game::query()->firstOrFail();
+
+        $this->actingAs($guest)
+            ->post(route('games.join', $game));
+
+        $this->actingAs($host)
+            ->post(route('games.start', $game));
+
+        $game->refresh();
+        $manager = app(GameManager::class);
+        $tickService = app(GameTickService::class);
+
+        try {
+            $state = $manager->getLiveState($game);
+            $posBefore = $state['environment']['players'][0]['troops'][0]['position'];
+
+            $state['pauseRequests'] = [true, true];
+            $manager->storeLiveState($game, $state);
+
+            $tickService->tick($game, $manager);
+
+            $stateAfter = $manager->getLiveState($game);
+            $posAfter = $stateAfter['environment']['players'][0]['troops'][0]['position'];
+
+            $this->assertSame($posBefore[0], $posAfter[0]);
+            $this->assertSame($posBefore[1], $posAfter[1]);
+        } finally {
+            Redis::del('game:live:'.$game->uuid);
+            Redis::srem('games:active', $game->uuid);
+        }
+    }
+
+    public function test_get_live_state_re_registers_playing_game_in_active_tick_set(): void
+    {
+        $host = User::factory()->create();
+        $guest = User::factory()->create();
+        $owner = User::factory()->create();
+        $map = Map::factory()->for($owner)->playablePublishedTwoTeam()->create();
+
+        $this->actingAs($host)
+            ->post(route('games.store'), ['map_uuid' => $map->uuid]);
+        $game = Game::query()->firstOrFail();
+
+        $this->actingAs($guest)
+            ->post(route('games.join', $game));
+
+        $this->actingAs($host)
+            ->post(route('games.start', $game));
+
+        $game->refresh();
+        $manager = app(GameManager::class);
+
+        try {
+            $manager->getLiveState($game);
+            Redis::srem('games:active', $game->uuid);
+            $members = Redis::smembers('games:active') ?: [];
+            $this->assertNotContains($game->uuid, $members, 'Sanity: active set entry removed for test.');
+
+            $manager->getLiveState($game);
+            $membersAfter = Redis::smembers('games:active') ?: [];
+            $this->assertContains($game->uuid, $membersAfter, 'Loading live state should re-add Playing games so game:tick advances them.');
+        } finally {
+            Redis::del('game:live:'.$game->uuid);
+            Redis::srem('games:active', $game->uuid);
+        }
+    }
+}

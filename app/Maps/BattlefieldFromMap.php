@@ -120,7 +120,7 @@ final class BattlefieldFromMap
         $nextCityId = 1;
 
         foreach ($flagSites as $f) {
-            $cities[] = new City(self::cellVertexToWorld($f['row'], $f['col']), $nextCityId++);
+            $cities[] = new City(self::cellVertexToWorld($f['row'], $f['col']), $nextCityId++, MapMarkers::TYPE_FLAG);
         }
 
         ksort($capitalByTeam);
@@ -129,7 +129,7 @@ final class BattlefieldFromMap
                 throw new \InvalidArgumentException("Missing capital for team slot {$t} on the map.");
             }
             $capitalCell = $capitalByTeam[$t];
-            $cities[] = new City(self::cellVertexToWorld($capitalCell['row'], $capitalCell['col']), $nextCityId++);
+            $cities[] = new City(self::cellVertexToWorld($capitalCell['row'], $capitalCell['col']), $nextCityId++, MapMarkers::TYPE_CAPITAL);
         }
 
         /** @var array<int, City> $capitalCityByTeam */

@@ -67,6 +67,14 @@ class GameInitialized implements ShouldBroadcastNow
             $payload['terrainCells'] = $this->terrainInfo['terrainCells'];
         }
 
+        if (isset($this->terrainInfo['economy']) && is_array($this->terrainInfo['economy'])) {
+            $payload['economy'] = $this->terrainInfo['economy'];
+        }
+
+        if (isset($this->terrainInfo['worldTick'])) {
+            $payload['worldTick'] = (int) $this->terrainInfo['worldTick'];
+        }
+
         return $payload;
     }
 }

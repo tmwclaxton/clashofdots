@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import GameCanvas from '@/components/game/GameCanvas.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import { Button } from '@/components/ui/button';
 import { index as lobbies } from '@/routes/lobbies';
 import { useGameStore } from '@/stores/gameStore';
+import { useToastStore } from '@/stores/toastStore';
+
+/** Mirrors {@see GameConstants::ECONOMY_RECRUIT_COST} */
+const RECRUIT_COST = 45;
+
+/** Mirrors {@see GameConstants::ECONOMY_MAX_ARMY_PER_PLAYER} */
+const MAX_ARMY = 24;
+
+/** Mirrors {@see GameConstants::TICK_RATE} — used only for credits/sec hint in the HUD. */
+const TICK_RATE = 30;
 
 type GamePayload = {
     uuid: string;
@@ -29,10 +39,20 @@ const props = withDefaults(
 
 const page = usePage();
 const store = useGameStore();
+const toast = useToastStore();
+
+/** How often we pull JSON snapshots during a live match (backs up Reverb / shows tick progress). */
+const MATCH_SNAPSHOT_POLL_MS = 1800;
+
+/** Consecutive polls with no `worldTick` advance ⇒ likely tick worker missing (not all-paused). */
+const SIMULATION_STALL_POLL_THRESHOLD = 5;
 
 const spectatePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
 const participatePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
+const participateLivePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
 const showSlowLoadHint = ref(false);
+const lastCityOwners = ref<Record<number, number | null>>({});
+const simulationStallPolls = ref(0);
 let slowLoadHintTimer: ReturnType<typeof setTimeout> | null = null;
 
 const broadcastConnection = computed(() => {
@@ -66,6 +86,88 @@ const victoryTitle = computed(() => {
 
     return 'Defeat';
 });
+
+const myEconomy = computed(() => store.economy?.[props.game.slot] ?? null);
+
+const myCredits = computed(() => myEconomy.value?.credits ?? null);
+
+const incomePerTick = computed(() => myEconomy.value?.incomePerTick ?? 0);
+
+const incomePerSecondHint = computed(
+    () => Math.round((incomePerTick.value / TICK_RATE) * 100) / 100,
+);
+
+const showSimulationStallHint = computed(
+    () =>
+        !props.spectatorMode
+        && store.initialized
+        && !store.matchEnded
+        && !store.serverAllPlayersPaused
+        && simulationStallPolls.value >= SIMULATION_STALL_POLL_THRESHOLD,
+);
+
+const showGlobalPauseHint = computed(
+    () => !props.spectatorMode && store.initialized && store.serverAllPlayersPaused,
+);
+
+const myArmyCount = computed(() => {
+    const st = store.latestState;
+
+    if (!st) {
+        return 0;
+    }
+
+    return st.troops.filter((t) => t.ownerSlot === props.game.slot).length;
+});
+
+const recruitDisabled = computed(() => {
+    if (props.spectatorMode || !store.initialized) {
+        return true;
+    }
+
+    const c = myCredits.value;
+
+    if (c === null) {
+        return true;
+    }
+
+    return c < RECRUIT_COST || myArmyCount.value >= MAX_ARMY;
+});
+
+watch(
+    () => store.worldTick,
+    () => {
+        simulationStallPolls.value = 0;
+    },
+);
+
+watch(
+    () => store.latestState?.cities,
+    (cities) => {
+        if (!cities || props.spectatorMode) {
+            return;
+        }
+
+        for (const c of cities) {
+            const cur = c.ownerSlot ?? null;
+            const prev = lastCityOwners.value[c.id];
+
+            if (prev !== undefined && prev !== cur) {
+                const isCapital = c.markerType === 'capital';
+                const label = isCapital ? 'Capital' : 'Flag';
+
+                if (cur === props.game.slot) {
+                    toast.success(`${label} captured.`);
+                } else if (prev === props.game.slot) {
+                    toast.warning(`${label} lost.`);
+                }
+            }
+
+            lastCityOwners.value[c.id] = cur;
+        }
+    },
+    { deep: true },
+);
 
 onMounted(() => {
     if (props.spectatorMode) {
@@ -103,6 +205,37 @@ onMounted(() => {
         void store.pullSnapshot(props.snapshotUrl);
     }, 1200);
 
+    participateLivePollTimer.value = setInterval(() => {
+        void (async () => {
+            if (store.matchEnded) {
+                return;
+            }
+
+            if (!store.initialized) {
+                return;
+            }
+
+            const tickBefore = store.worldTick;
+            await store.pullSnapshot(props.snapshotUrl);
+
+            if (store.matchEnded) {
+                return;
+            }
+
+            if (store.serverAllPlayersPaused) {
+                simulationStallPolls.value = 0;
+
+                return;
+            }
+
+            if (store.worldTick === tickBefore && store.initialized) {
+                simulationStallPolls.value += 1;
+            } else {
+                simulationStallPolls.value = 0;
+            }
+        })();
+    }, MATCH_SNAPSHOT_POLL_MS);
+
     slowLoadHintTimer = setTimeout(() => {
         showSlowLoadHint.value = true;
     }, 8000);
@@ -117,6 +250,11 @@ onUnmounted(() => {
     if (participatePollTimer.value !== null) {
         clearInterval(participatePollTimer.value);
         participatePollTimer.value = null;
+    }
+
+    if (participateLivePollTimer.value !== null) {
+        clearInterval(participateLivePollTimer.value);
+        participateLivePollTimer.value = null;
     }
 
     if (slowLoadHintTimer !== null) {
@@ -176,8 +314,45 @@ onUnmounted(() => {
 
             <div
                 v-if="!spectatorMode"
+                class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
+            >
+                <span
+                    v-if="myCredits !== null"
+                    class="wod-chip shrink-0 font-mono text-foreground"
+                    title="Bank balance and passive income (per simulation tick)."
+                >
+                    {{ myCredits }} credits
+                    <span v-if="incomePerTick > 0" class="text-muted-foreground">
+                        · +{{ incomePerTick }}/tick (~{{ incomePerSecondHint }}/s)
+                    </span>
+                </span>
+                <span class="hidden text-[0.65rem] sm:inline" title="Map markers">
+                    Square = capital · pentagon = flag
+                </span>
+            </div>
+
+            <div
+                v-if="!spectatorMode"
                 class="flex flex-wrap items-center gap-1.5 sm:gap-2"
             >
+                <Button
+                    size="sm"
+                    variant="secondary"
+                    class="min-w-0 flex-1 sm:flex-none"
+                    :disabled="recruitDisabled"
+                    :title="
+                        recruitDisabled
+                            ? myArmyCount >= MAX_ARMY
+                                ? 'Army at maximum size.'
+                                : (myCredits ?? 0) < RECRUIT_COST
+                                  ? `Need ${RECRUIT_COST} credits.`
+                                  : 'Recruit requires controlling your capital.'
+                            : `Spend ${RECRUIT_COST} credits to train one infantry at your capital.`
+                    "
+                    @click="store.recruitInfantry(game.uuid)"
+                >
+                    Recruit ({{ RECRUIT_COST }})
+                </Button>
                 <Button
                     size="sm"
                     variant="outline"
@@ -189,7 +364,7 @@ onUnmounted(() => {
                 <Button
                     size="sm"
                     class="min-w-0 flex-1 sm:flex-none"
-                    @click="store.submitOrders(game.uuid)"
+                    @click="store.submitOrders(game.uuid, { snapshotFetchUrl: snapshotUrl })"
                 >
                     Execute (Space)
                 </Button>
@@ -202,6 +377,53 @@ onUnmounted(() => {
                     Pause (P)
                 </Button>
             </div>
+
+            <div
+                v-if="showGlobalPauseHint"
+                class="rounded-md border border-amber-500/60 bg-amber-500/10 px-2 py-1.5 text-[0.7rem] text-amber-950 dark:text-amber-100"
+                role="status"
+            >
+                Match is paused: every commander has pause on. Press
+                <span class="font-mono">P</span>
+                (or use Pause) so at least one side unpauses — the simulation does not advance while
+                all pause toggles are on.
+            </div>
+
+            <div
+                v-if="showSimulationStallHint"
+                class="rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5 text-[0.7rem] text-destructive"
+                role="alert"
+            >
+                World time is not advancing. If you use Sail, run
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.65rem] text-foreground">
+                    ./vendor/bin/sail ps
+                </code>
+                and ensure
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.65rem] text-foreground">game-tick</code>
+                is Up. Otherwise start
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.65rem] text-foreground">
+                    php artisan game:tick --daemon
+                </code>
+                or
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.65rem] text-foreground">
+                    composer run dev
+                </code>
+                (~{{ TICK_RATE }}&nbsp;Hz). Reloading this page re-registers the match if Redis lost the
+                active-game list. If everyone has Pause (P) on, unpause at least one side — time
+                stays frozen while all pauses are on.
+            </div>
+            <p
+                v-if="!spectatorMode"
+                class="text-[0.65rem] leading-snug text-muted-foreground"
+            >
+                The map also refreshes over HTTP every few seconds. Live pushes need Reverb +
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.6rem]">VITE_REVERB_*</code>
+                . Units advance only while
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.6rem]">php artisan game:tick --daemon</code>
+                runs (included in
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.6rem]">composer run dev</code>
+                ).
+            </p>
             <p
                 v-else
                 class="text-xs text-muted-foreground"
@@ -256,7 +478,10 @@ onUnmounted(() => {
                     .
                 </p>
             </div>
-            <GameCanvas :read-only="spectatorMode" />
+            <GameCanvas
+                :read-only="spectatorMode"
+                :snapshot-fetch-url="spectatorMode ? '' : snapshotUrl"
+            />
             <div
                 v-if="
                     !spectatorMode &&

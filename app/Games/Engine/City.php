@@ -8,6 +8,9 @@ final class City
 
     public ?Player $owner = null;
 
+    /** Map marker role for UI: `flag`, `capital`, or null (neutral). */
+    public ?string $markerType = null;
+
     /** @var list<array{0: float, 1: float}> */
     public array $path = [];
 
@@ -17,7 +20,10 @@ final class City
     public function __construct(
         public array $position,
         public int $id,
-    ) {}
+        ?string $markerType = null,
+    ) {
+        $this->markerType = $markerType;
+    }
 
     /**
      * @return array<string, mixed>
@@ -30,6 +36,7 @@ final class City
             'timer' => $this->timer,
             'ownerSlot' => $this->owner?->slot,
             'path' => $this->path,
+            'markerType' => $this->markerType,
         ];
     }
 
@@ -38,7 +45,8 @@ final class City
      */
     public static function fromArray(array $data, Environment $environment): self
     {
-        $city = new self($data['position'], $data['id']);
+        $marker = $data['markerType'] ?? null;
+        $city = new self($data['position'], $data['id'], is_string($marker) ? $marker : null);
         $city->timer = $data['timer'];
         $city->path = $data['path'] ?? [];
 

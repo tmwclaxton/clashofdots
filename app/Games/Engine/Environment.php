@@ -512,6 +512,24 @@ final class Environment
     }
 
     /**
+     * @param  array{0: float, 1: float}  $position
+     */
+    public function terrainNameAtWorldPosition(array $position): string
+    {
+        $gx = max(0, min($this->gridMaxX, $position[0] / GameConstants::CELL_SIZE));
+        $gy = max(0, min($this->gridMaxY, $position[1] / GameConstants::CELL_SIZE));
+        $terrain = $this->terrainMarching->getGridValue($gx, $gy);
+        $forest = $this->forestMarching->getGridValue($gx, $gy);
+
+        return $this->getTerrainName($terrain, $forest);
+    }
+
+    public function takeNextTroopId(): int
+    {
+        return $this->nextTroopId++;
+    }
+
+    /**
      * @return array{
      *     terrain: list<list<float>>,
      *     forest: list<list<float>>,
@@ -529,15 +547,169 @@ final class Environment
         ];
     }
 
+    private function troopEffectiveAge(Troop $troop, int $worldTick): int
+    {
+        if ($troop->spawnedAtWorldTick < 0) {
+            return $worldTick;
+        }
+
+        return max(0, $worldTick - $troop->spawnedAtWorldTick);
+    }
+
+    private function troopWarmupMultiplier(Troop $troop, int $worldTick): float
+    {
+        $age = $this->troopEffectiveAge($troop, $worldTick);
+        if ($age >= GameConstants::TROOP_WARMUP_TICKS) {
+            return 1.0;
+        }
+
+        $t = 1.0 - ($age / (float) GameConstants::TROOP_WARMUP_TICKS);
+
+        return 1.0 + ($t * (GameConstants::TROOP_WARMUP_ATTACK_PEAK - 1.0));
+    }
+
+    /**
+     * @param  array{0: float, 1: float}  $troopPosition
+     */
+    private function supplyLineEnemyPressure(Player $player, array $troopPosition): float
+    {
+        $owned = array_values(array_map(
+            fn (City $city) => $city->position,
+            array_filter($this->cities, fn (City $city) => $city->owner === $player),
+        ));
+
+        if ($owned === []) {
+            return 0.0;
+        }
+
+        $closestCity = $owned[0];
+        $closestDist = PHP_FLOAT_MAX;
+        foreach ($owned as $cityPos) {
+            [, $dist] = GameMath::xyToDirDis([$troopPosition[0] - $cityPos[0], $troopPosition[1] - $cityPos[1]]);
+            if ($dist < $closestDist) {
+                $closestCity = $cityPos;
+                $closestDist = $dist;
+            }
+        }
+
+        [$cityDir, $cityDist] = GameMath::xyToDirDis([
+            $troopPosition[0] - $closestCity[0],
+            $troopPosition[1] - $closestCity[1],
+        ]);
+        $samplePoints = [];
+        for ($dist = 0; $dist < (int) ($cityDist / 20); $dist++) {
+            $samplePoints[] = GameMath::dirDisToXy($cityDir, $dist * 20);
+        }
+
+        if ($samplePoints === []) {
+            return 0.0;
+        }
+
+        $borderAvgs = [];
+        foreach ($this->players as $otherPlayer) {
+            if ($otherPlayer === $player) {
+                continue;
+            }
+
+            $sum = 0.0;
+            foreach ($samplePoints as $sample) {
+                $sum += $otherPlayer->border->getGridValue(
+                    ($closestCity[0] + $sample[0]) / GameConstants::CELL_SIZE,
+                    ($closestCity[1] + $sample[1]) / GameConstants::CELL_SIZE,
+                );
+            }
+            $borderAvgs[] = $sum / count($samplePoints);
+        }
+
+        $borderAvg = $borderAvgs === [] ? 0.0 : (array_sum($borderAvgs) / count($borderAvgs));
+
+        return min(1.0, $borderAvg / 2.0);
+    }
+
+    /**
+     * Applies move orders to troop path fields (used by ticks and immediately after HTTP submit).
+     *
+     * @param  list<array{0: mixed, 1: mixed}>  $pathsToApply
+     */
+    public function assignTroopPathsFromOrders(array $pathsToApply): void
+    {
+        if ($pathsToApply === []) {
+            return;
+        }
+
+        $pairs = [];
+
+        foreach ($pathsToApply as $row) {
+            if (! is_array($row) || count($row) < 2 || ! is_array($row[1])) {
+                continue;
+            }
+
+            $pairs[] = [(int) $row[0], $row[1]];
+        }
+
+        if ($pairs === []) {
+            return;
+        }
+
+        $troopIds = array_column($pairs, 0);
+        $troopPaths = array_column($pairs, 1);
+
+        foreach ($this->players as $player) {
+            foreach ($player->troops as $troop) {
+                $tidx = array_search($troop->id, $troopIds, true);
+
+                if ($tidx !== false) {
+                    $troop->path = $troopPaths[$tidx];
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies rally / move orders to city path fields.
+     *
+     * @param  list<array{0: mixed, 1: mixed}>  $pathsToApply
+     */
+    public function assignCityPathsFromOrders(array $pathsToApply): void
+    {
+        if ($pathsToApply === []) {
+            return;
+        }
+
+        $pairs = [];
+
+        foreach ($pathsToApply as $row) {
+            if (! is_array($row) || count($row) < 2 || ! is_array($row[1])) {
+                continue;
+            }
+
+            $pairs[] = [(int) $row[0], $row[1]];
+        }
+
+        if ($pairs === []) {
+            return;
+        }
+
+        $cityIds = array_column($pairs, 0);
+        $cityPaths = array_column($pairs, 1);
+
+        foreach ($this->cities as $city) {
+            $cidx = array_search($city->id, $cityIds, true);
+
+            if ($cidx !== false) {
+                $city->path = $cityPaths[$cidx];
+            }
+        }
+    }
+
     /**
      * @param  list<array{0: int, 1: list<array{0: float, 1: float}>}>  $pathsToApply
      */
-    public function updateTroops(array $pathsToApply): void
+    public function updateTroops(array $pathsToApply, int $worldTick): void
     {
         $this->playersInCities = array_fill(0, count($this->cities), []);
 
-        $troopIds = array_column($pathsToApply, 0);
-        $troopPaths = array_column($pathsToApply, 1);
+        $this->assignTroopPathsFromOrders($pathsToApply);
 
         foreach ($this->players as $player) {
             $player->vision->setGrid($this->defaultVision);
@@ -568,11 +740,6 @@ final class Environment
                     $toRemove[] = $troop;
 
                     continue;
-                }
-
-                $tidx = array_search($troop->id, $troopIds, true);
-                if ($tidx !== false) {
-                    $troop->path = $troopPaths[$tidx];
                 }
 
                 $oldPos = $troop->position;
@@ -692,10 +859,34 @@ final class Environment
                 }
 
                 if ($enemiesInRange !== []) {
-                    $attackPower = (int) (GameConstants::TERRAIN_ATTACKS[$onTerrain] / 25);
+                    $base = (int) (GameConstants::TERRAIN_ATTACKS[$onTerrain] / 25);
+                    $base = max(1, $base);
+                    $warmup = $this->troopWarmupMultiplier($troop, $worldTick);
+                    $moraleFac = max(0.25, $troop->morale / 100.0);
+                    $attackPower = max(1, (int) round($base * $warmup * $moraleFac));
                     usort($enemiesInRange, fn ($a, $b) => $a[1] <=> $b[1]);
                     $enemiesInRange[0][0]->health -= $attackPower;
                 }
+
+                $supplyPressure = $this->supplyLineEnemyPressure($player, $troop->position);
+                $inCombat = $enemiesInRange !== [];
+                $hasFriendlyCity = $owned !== [];
+                if ($inCombat) {
+                    $drain = GameConstants::TROOP_MORALE_COMBAT_DRAIN;
+                    if ($supplyPressure >= GameConstants::TROOP_SUPPLY_CUT_THRESHOLD) {
+                        $drain += GameConstants::TROOP_SUPPLY_CUT_MORALE_DRAIN * $supplyPressure;
+                    }
+                    $troop->morale = (int) round($troop->morale - $drain);
+                } elseif ($hasFriendlyCity) {
+                    $troop->morale = (int) round($troop->morale + GameConstants::TROOP_MORALE_REST_GAIN);
+                    if ($supplyPressure >= GameConstants::TROOP_SUPPLY_CUT_THRESHOLD) {
+                        $troop->morale = (int) round($troop->morale - GameConstants::TROOP_SUPPLY_CUT_MORALE_DRAIN * 0.35);
+                    }
+                } elseif ($supplyPressure >= GameConstants::TROOP_SUPPLY_CUT_THRESHOLD) {
+                    $troop->morale = (int) round($troop->morale - GameConstants::TROOP_SUPPLY_CUT_MORALE_DRAIN * 0.55);
+                }
+
+                $troop->morale = max(GameConstants::TROOP_MORALE_MIN, min(GameConstants::TROOP_MORALE_MAX, $troop->morale));
 
                 if ($onTerrain === 'hill') {
                     $this->cityVisionBrush->apply($player->vision, $troop->position, 0);
@@ -777,17 +968,11 @@ final class Environment
     /**
      * @param  list<array{0: int, 1: list<array{0: float, 1: float}>}>  $pathsToApply
      */
-    public function updateCities(array $pathsToApply): void
+    public function updateCities(array $pathsToApply, int $worldTick): void
     {
-        $cityIds = array_column($pathsToApply, 0);
-        $cityPaths = array_column($pathsToApply, 1);
+        $this->assignCityPathsFromOrders($pathsToApply);
 
         foreach ($this->cities as $i => $city) {
-            $cidx = array_search($city->id, $cityIds, true);
-            if ($cidx !== false) {
-                $city->path = $cityPaths[$cidx];
-            }
-
             [$cx, $cy] = $city->position;
             $lastOwner = $city->owner;
 
@@ -810,6 +995,7 @@ final class Environment
                         [$cx + $this->randomInt(-6, 5), $cy + $this->randomInt(-6, 5)],
                         $city->path,
                         $this->nextTroopId++,
+                        $worldTick,
                     );
                     $city->timer = 0;
                 }
@@ -825,7 +1011,7 @@ final class Environment
      *     cities: list<array<string, mixed>>
      * }
      */
-    public function drawInfo(int $playerSlot): array
+    public function drawInfo(int $playerSlot, int $worldTick = 0): array
     {
         $player = $this->players[$playerSlot];
         $troops = [];
@@ -836,6 +1022,8 @@ final class Environment
                 $gy = max(0, min($this->gridMaxY, $troop->position[1] / GameConstants::CELL_SIZE));
 
                 if ($player->vision->getGridValue($gx, $gy) >= GameConstants::THRESHOLD) {
+                    $warmup = $this->troopWarmupMultiplier($troop, $worldTick);
+                    $moraleFac = max(0.25, $troop->morale / 100.0);
                     $troops[] = [
                         'position' => $troop->position,
                         'color' => $troop->owner->color,
@@ -843,6 +1031,9 @@ final class Environment
                         'ownerSlot' => $troop->owner->slot,
                         'path' => $troop->path,
                         'health' => $troop->health,
+                        'morale' => $troop->morale,
+                        'warmupMultiplier' => round($warmup, 3),
+                        'combatMultiplier' => round($warmup * $moraleFac, 3),
                     ];
                 }
             }
@@ -855,6 +1046,7 @@ final class Environment
                 'id' => $city->id,
                 'path' => $city->path,
                 'ownerSlot' => $city->owner?->slot,
+                'markerType' => $city->markerType,
             ];
         }, $this->cities);
 

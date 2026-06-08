@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useIsDark } from '@/composables/useIsDark';
 import {
     editorBlendedTerrainFillStyle,
@@ -7,13 +7,19 @@ import {
     ENGINE_FOREST_THRESHOLD,
     engineCellFillStyle,
 } from '@/lib/terrainRender';
-import { useGameStore } from '@/stores/gameStore';
+import {
+    GAME_VIEW_ZOOM_MAX,
+    GAME_VIEW_ZOOM_MIN,
+    useGameStore,
+} from '@/stores/gameStore';
 
 const props = withDefaults(
     defineProps<{
         readOnly?: boolean;
+        /** When set, orders trigger an immediate snapshot pull (covers missing Reverb). */
+        snapshotFetchUrl?: string;
     }>(),
-    { readOnly: false },
+    { readOnly: false, snapshotFetchUrl: '' },
 );
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -24,6 +30,33 @@ let dragging = false;
 let panning = false;
 let lastMouse: [number, number] = [0, 0];
 let terrainCanvas: HTMLCanvasElement | null = null;
+let resizeObserver: ResizeObserver | null = null;
+
+/** One-shot fit when a match snapshot first fills the store (per game uuid). */
+const initialFitDone = ref(false);
+
+function tryInitialCameraFit(): void {
+    if (initialFitDone.value || !store.initialized) {
+        return;
+    }
+
+    const canvas = canvasRef.value;
+
+    if (!canvas) {
+        return;
+    }
+
+    const r = canvas.getBoundingClientRect();
+
+    if (r.width < 16 || r.height < 16) {
+        return;
+    }
+
+    store.fitCameraToView(r.width, r.height);
+    initialFitDone.value = true;
+    bakeTerrain();
+    draw();
+}
 
 function canvasInk(): string {
     return getComputedStyle(document.documentElement)
@@ -94,7 +127,9 @@ function bakeTerrain() {
 }
 
 function screenToWorld(x: number, y: number): [number, number] {
-    return [x / store.zoom - store.camX, y / store.zoom - store.camY];
+    const z = store.zoom;
+
+    return [x / z - store.camX, y / z - store.camY];
 }
 
 function draw() {
@@ -132,6 +167,7 @@ function draw() {
     if (state) {
         drawFog(ctx, state.vision);
         drawBorders(ctx, state.border);
+        drawBorderStrokes(ctx, state.border);
     }
 
     for (const city of state?.cities ?? store.cityPositions.map((p, i) => ({
@@ -140,12 +176,13 @@ function draw() {
         ownerColor: null,
         ownerSlot: null,
         path: [],
+        markerType: null as string | null,
     }))) {
-        drawCity(ctx, city.position, city.ownerColor);
+        drawCity(ctx, city.position, city.ownerColor, city.markerType);
     }
 
     for (const troop of state?.troops ?? []) {
-        drawTroop(ctx, troop.position, troop.color, troop.health);
+        drawTroop(ctx, troop);
     }
 
     for (const draft of store.draftPaths) {
@@ -176,7 +213,7 @@ function drawFog(ctx: CanvasRenderingContext2D, vision: number[][]) {
 
 function drawBorders(ctx: CanvasRenderingContext2D, border: number[][]) {
     const { cellSize } = store.world;
-    ctx.fillStyle = 'rgba(241, 196, 15, 0.15)';
+    ctx.fillStyle = 'rgba(241, 196, 15, 0.08)';
 
     for (let gy = 0; gy < border[0].length - 1; gy++) {
         for (let gx = 0; gx < border.length - 1; gx++) {
@@ -187,9 +224,93 @@ function drawBorders(ctx: CanvasRenderingContext2D, border: number[][]) {
     }
 }
 
-function drawCity(ctx: CanvasRenderingContext2D, position: [number, number], color: number[] | null) {
+function drawBorderStrokes(ctx: CanvasRenderingContext2D, border: number[][]) {
+    if (!border.length || !border[0]?.length) {
+        return;
+    }
+
+    const { cellSize } = store.world;
+    const thr = 0.35;
+    const w = border.length;
+    const h = border[0].length;
+
+    const hi = (gx: number, gy: number): boolean => {
+        if (gx < 0 || gy < 0 || gx >= w || gy >= h) {
+            return false;
+        }
+
+        return border[gx][gy] > thr;
+    };
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(241, 196, 15, 0.42)';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+
+    for (let gy = 0; gy < h; gy++) {
+        for (let gx = 0; gx < w; gx++) {
+            if (!hi(gx, gy)) {
+                continue;
+            }
+
+            const x = gx * cellSize;
+            const y = gy * cellSize;
+            const strength = border[gx][gy];
+
+            if (!hi(gx, gy - 1)) {
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + cellSize, y);
+            }
+
+            if (!hi(gx, gy + 1)) {
+                ctx.moveTo(x, y + cellSize);
+                ctx.lineTo(x + cellSize, y + cellSize);
+            }
+
+            if (!hi(gx - 1, gy)) {
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y + cellSize);
+            }
+
+            if (!hi(gx + 1, gy)) {
+                ctx.moveTo(x + cellSize, y);
+                ctx.lineTo(x + cellSize, y + cellSize);
+            }
+
+            if (strength > 0.72 && (gx + gy) % 3 === 0) {
+                const jx = ((gx * 47 + gy * 13) % 5) - 2;
+                const jy = ((gx * 19 + gy * 59) % 5) - 2;
+                ctx.moveTo(x + cellSize * 0.2 + jx, y + cellSize * 0.2 + jy);
+                ctx.lineTo(x + cellSize * 0.85 + jx, y + cellSize * 0.85 + jy);
+            }
+        }
+    }
+
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawCity(
+    ctx: CanvasRenderingContext2D,
+    position: [number, number],
+    color: number[] | null,
+    markerType?: string | null,
+) {
     const [x, y] = position;
     ctx.fillStyle = color ? rgb(color) : '#f1c40f';
+
+    if (markerType === 'capital') {
+        const s = 14;
+        ctx.fillRect(x - s / 2, y - s / 2, s, s);
+        ctx.strokeStyle = canvasInk();
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - s / 2, y - s / 2, s, s);
+
+        return;
+    }
+
     ctx.beginPath();
 
     for (let i = 0; i < 5; i++) {
@@ -211,9 +332,17 @@ function drawCity(ctx: CanvasRenderingContext2D, position: [number, number], col
     ctx.stroke();
 }
 
-function drawTroop(ctx: CanvasRenderingContext2D, position: [number, number], color: number[], health: number) {
-    const [x, y] = position;
-    ctx.fillStyle = rgb(color);
+type TroopDraw = {
+    position: [number, number];
+    color: number[];
+    health: number;
+    morale?: number;
+};
+
+function drawTroop(ctx: CanvasRenderingContext2D, troop: TroopDraw) {
+    const [x, y] = troop.position;
+    const morale = troop.morale ?? 100;
+    ctx.fillStyle = rgb(troop.color);
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -221,11 +350,18 @@ function drawTroop(ctx: CanvasRenderingContext2D, position: [number, number], co
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    if (health < 100) {
+    if (troop.health < 100) {
         ctx.fillStyle = canvasInk();
-        ctx.fillRect(x - 8, y - 12, 16, 3);
+        ctx.fillRect(x - 8, y - 14, 16, 3);
         ctx.fillStyle = '#27ae60';
-        ctx.fillRect(x - 8, y - 12, (16 * health) / 100, 3);
+        ctx.fillRect(x - 8, y - 14, (16 * troop.health) / 100, 3);
+    }
+
+    if (morale < 99) {
+        ctx.fillStyle = canvasInk();
+        ctx.fillRect(x - 8, y - 10, 16, 2);
+        ctx.fillStyle = '#8e44ad';
+        ctx.fillRect(x - 8, y - 10, (16 * morale) / 100, 2);
     }
 }
 
@@ -270,6 +406,11 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
         return null;
     }
 
+    /** World radius so the pick target is at least ~22 CSS px (fixed radii vanish when zoomed out). */
+    const z = store.zoom;
+    const troopPickR = Math.max(12, 22 / z);
+    const cityPickR = Math.max(14, 22 / z);
+
     for (const troop of state.troops) {
         if (troop.ownerSlot !== store.slot) {
             continue;
@@ -278,7 +419,7 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
         const dx = troop.position[0] - world[0];
         const dy = troop.position[1] - world[1];
 
-        if (Math.hypot(dx, dy) < 12) {
+        if (Math.hypot(dx, dy) < troopPickR) {
             return { id: troop.id, kind: 'troop' };
         }
     }
@@ -291,7 +432,7 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
         const dx = city.position[0] - world[0];
         const dy = city.position[1] - world[1];
 
-        if (Math.hypot(dx, dy) < 14) {
+        if (Math.hypot(dx, dy) < cityPickR) {
             return { id: city.id, kind: 'city' };
         }
     }
@@ -368,8 +509,30 @@ function onMouseUp() {
 
 function onWheel(e: WheelEvent) {
     e.preventDefault();
+
+    const canvas = canvasRef.value;
+
+    if (!canvas) {
+        return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const [wx, wy] = screenToWorld(sx, sy);
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
-    store.zoom = Math.min(3, Math.max(0.4, store.zoom * factor));
+    const prevZoom = store.zoom;
+    const nextZoom = Math.min(GAME_VIEW_ZOOM_MAX, Math.max(GAME_VIEW_ZOOM_MIN, prevZoom * factor));
+
+    if (nextZoom === prevZoom) {
+        draw();
+
+        return;
+    }
+
+    store.zoom = nextZoom;
+    store.camX = sx / nextZoom - wx;
+    store.camY = sy / nextZoom - wy;
     draw();
 }
 
@@ -380,7 +543,12 @@ function onKeyDown(e: KeyboardEvent) {
 
     if (e.code === 'Space') {
         e.preventDefault();
-        store.submitOrders(store.gameUuid);
+        const url = props.snapshotFetchUrl?.trim() ?? '';
+
+        store.submitOrders(
+            store.gameUuid,
+            url.length > 0 ? { snapshotFetchUrl: url } : undefined,
+        );
     }
 
     if (e.key.toLowerCase() === 'c') {
@@ -396,12 +564,40 @@ function onKeyDown(e: KeyboardEvent) {
 onMounted(() => {
     terrainCanvas = document.createElement('canvas');
     window.addEventListener('keydown', onKeyDown);
+
+    const canvas = canvasRef.value;
+
+    if (canvas) {
+        resizeObserver = new ResizeObserver(() => {
+            tryInitialCameraFit();
+        });
+        resizeObserver.observe(canvas);
+    }
+
+    tryInitialCameraFit();
     draw();
 });
 
 onUnmounted(() => {
     window.removeEventListener('keydown', onKeyDown);
+    resizeObserver?.disconnect();
+    resizeObserver = null;
 });
+
+watch(
+    () => store.gameUuid,
+    () => {
+        initialFitDone.value = false;
+        nextTick(() => tryInitialCameraFit());
+    },
+);
+
+watch(
+    () => [store.initialized, store.world.width, store.world.height],
+    () => {
+        nextTick(() => tryInitialCameraFit());
+    },
+);
 
 watch(
     () => [store.terrain, store.forest, store.terrainCells, store.latestState, store.draftPaths, store.activeDraft],

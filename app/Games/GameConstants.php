@@ -18,6 +18,42 @@ final class GameConstants
 
     public const int TICK_RATE = 30;
 
+    /** Ticks (~seconds×30) fresh troops get an attack “adrenaline” bonus that decays to neutral. */
+    public const int TROOP_WARMUP_TICKS = 120;
+
+    /** Peak multiplier at spawn (decays linearly over warmup). */
+    public const float TROOP_WARMUP_ATTACK_PEAK = 1.45;
+
+    public const int TROOP_MORALE_MIN = 15;
+
+    public const int TROOP_MORALE_MAX = 100;
+
+    /** Morale lost per tick while engaged with an enemy in range. */
+    public const float TROOP_MORALE_COMBAT_DRAIN = 0.35;
+
+    /** Morale recovered per tick when not in combat and in supply (near owned city). */
+    public const float TROOP_MORALE_REST_GAIN = 0.22;
+
+    /** If supply line to capital is this blocked (0–1), apply extra morale drain (encirclement). */
+    public const float TROOP_SUPPLY_CUT_THRESHOLD = 0.55;
+
+    public const float TROOP_SUPPLY_CUT_MORALE_DRAIN = 0.5;
+
+    /** Starting credits per commander (spent on recruits). */
+    public const int ECONOMY_STARTING_CREDITS = 220;
+
+    /** Credits earned per owned city per tick (flags + capitals). */
+    public const int ECONOMY_INCOME_PER_CITY_PER_TICK = 1;
+
+    /** Cost to recruit one infantry at your capital. */
+    public const int ECONOMY_RECRUIT_COST = 45;
+
+    /** Minimum clearance from other units when spawning recruits. */
+    public const int ECONOMY_RECRUIT_CLEARANCE = 22;
+
+    /** Maximum infantry units per commander (auto-spawns + recruits). */
+    public const int ECONOMY_MAX_ARMY_PER_PLAYER = 24;
+
     public const int MAX_PLAYERS = 6;
 
     public const int MIN_PLAYERS = 2;

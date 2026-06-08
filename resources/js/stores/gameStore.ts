@@ -1,9 +1,15 @@
 import { router } from '@inertiajs/vue3';
 import { defineStore } from 'pinia';
 import { createGameEcho } from '@/lib/echo';
-import { orders, pause as pauseRoute } from '@/routes/games';
+import { orders, pause as pauseRoute, recruit as recruitRoute } from '@/routes/games';
+import { useToastStore } from '@/stores/toastStore';
 
 type Point = [number, number];
+
+type EconomySlot = {
+    credits: number;
+    incomePerTick: number;
+};
 
 type TroopState = {
     position: Point;
@@ -12,6 +18,9 @@ type TroopState = {
     ownerSlot: number;
     path: Point[];
     health: number;
+    morale?: number;
+    warmupMultiplier?: number;
+    combatMultiplier?: number;
 };
 
 type CityState = {
@@ -20,6 +29,7 @@ type CityState = {
     id: number;
     path: Point[];
     ownerSlot: number | null;
+    markerType?: string | null;
 };
 
 type GameState = {
@@ -38,6 +48,11 @@ type DraftPath = {
 function initialWorld() {
     return { width: 1280, height: 700, cellSize: 20 };
 }
+
+/** Canvas uses `scale(zoom)` then `translate(camX, camY)` so `sx = zoom * (wx + camX)`. */
+export const GAME_VIEW_ZOOM_MIN = 0.04;
+
+export const GAME_VIEW_ZOOM_MAX = 10;
 
 function coerceTerrainCellsFromSnapshot(
     raw: unknown,
@@ -67,6 +82,28 @@ function coerceTerrainCellsFromSnapshot(
     return rows;
 }
 
+function parseEconomy(raw: unknown): EconomySlot[] | null {
+    if (!Array.isArray(raw) || raw.length === 0) {
+        return null;
+    }
+
+    const out: EconomySlot[] = [];
+
+    for (const row of raw) {
+        if (!row || typeof row !== 'object') {
+            continue;
+        }
+
+        const o = row as Record<string, unknown>;
+        out.push({
+            credits: Number(o.credits ?? 0),
+            incomePerTick: Number(o.incomePerTick ?? 0),
+        });
+    }
+
+    return out.length > 0 ? out : null;
+}
+
 export const useGameStore = defineStore('game', {
     state: () => ({
         connected: false,
@@ -80,6 +117,8 @@ export const useGameStore = defineStore('game', {
         cityPositions: [] as Point[],
         world: initialWorld(),
         latestState: null as GameState | null,
+        economy: null as EconomySlot[] | null,
+        worldTick: 0,
         draftPaths: [] as DraftPath[],
         activeDraft: null as DraftPath | null,
         camX: 0,
@@ -91,6 +130,10 @@ export const useGameStore = defineStore('game', {
         winnerName: null as string | null,
         matchEnded: false,
         echo: null as ReturnType<typeof createGameEcho> | null,
+        /** Per-commander pause flags from the server (matches Redis `pauseRequests`). */
+        serverPauseRequests: [] as boolean[],
+        /** When true, the simulation tick intentionally does not advance the world. */
+        serverAllPlayersPaused: false,
     }),
     actions: {
         reset() {
@@ -105,6 +148,8 @@ export const useGameStore = defineStore('game', {
             this.cityPositions = [];
             this.world = initialWorld();
             this.latestState = null;
+            this.economy = null;
+            this.worldTick = 0;
             this.draftPaths = [];
             this.activeDraft = null;
             this.camX = 0;
@@ -115,6 +160,8 @@ export const useGameStore = defineStore('game', {
             this.winnerSlot = null;
             this.winnerName = null;
             this.matchEnded = false;
+            this.serverPauseRequests = [];
+            this.serverAllPlayersPaused = false;
         },
         connect(gameUuid: string, broadcastConnection: string, slot: number, color: string) {
             this.disconnect();
@@ -133,6 +180,23 @@ export const useGameStore = defineStore('game', {
                 })
                 .listen('.GameStateUpdated', (payload: Record<string, unknown>) => {
                     this.latestState = payload.state as GameState;
+                    const eco = parseEconomy(payload.economy);
+
+                    if (eco) {
+                        this.economy = eco;
+                    }
+
+                    if (payload.worldTick !== undefined && payload.worldTick !== null) {
+                        this.worldTick = Number(payload.worldTick);
+                    }
+
+                    if (Array.isArray(payload.pauseRequests)) {
+                        this.serverPauseRequests = (payload.pauseRequests as unknown[]).map((p) => Boolean(p));
+                    }
+
+                    if (typeof payload.allPlayersPaused === 'boolean') {
+                        this.serverAllPlayersPaused = payload.allPlayersPaused;
+                    }
                 })
                 .listen('.GameEnded', (payload: Record<string, unknown>) => {
                     this.matchEnded = true;
@@ -168,6 +232,24 @@ export const useGameStore = defineStore('game', {
 
             if (payload.state && typeof payload.state === 'object') {
                 this.latestState = payload.state as GameState;
+            }
+
+            const eco = parseEconomy(payload.economy);
+
+            if (eco) {
+                this.economy = eco;
+            }
+
+            if (payload.worldTick !== undefined && payload.worldTick !== null) {
+                this.worldTick = Number(payload.worldTick);
+            }
+
+            if (Array.isArray(payload.pauseRequests)) {
+                this.serverPauseRequests = (payload.pauseRequests as unknown[]).map((p) => Boolean(p));
+            }
+
+            if (typeof payload.allPlayersPaused === 'boolean') {
+                this.serverAllPlayersPaused = payload.allPlayersPaused;
             }
 
             this.initialized = true;
@@ -238,7 +320,10 @@ export const useGameStore = defineStore('game', {
             const dx = point[0] - last[0];
             const dy = point[1] - last[1];
 
-            if (Math.hypot(dx, dy) > 8) {
+            /** ~5 CSS px in world units; a fixed world threshold is sub-pixel when zoomed out. */
+            const minSeg = Math.max(2, 5 / this.zoom);
+
+            if (Math.hypot(dx, dy) > minSeg) {
                 this.activeDraft.points.push(point);
             }
         },
@@ -264,7 +349,24 @@ export const useGameStore = defineStore('game', {
             this.draftPaths = [];
             this.activeDraft = null;
         },
-        submitOrders(gameUuid: string) {
+        /**
+         * Fit the whole battlefield in the view. Matches {@link GameCanvas} transform:
+         * screen = zoom * (world + cam).
+         */
+        fitCameraToView(cssWidth: number, cssHeight: number, margin = 0.94): void {
+            const ww = this.world.width;
+            const wh = this.world.height;
+
+            if (!(ww > 0 && wh > 0 && cssWidth > 0 && cssHeight > 0)) {
+                return;
+            }
+
+            const z = Math.min((cssWidth * margin) / ww, (cssHeight * margin) / wh);
+            this.zoom = Math.min(GAME_VIEW_ZOOM_MAX, Math.max(GAME_VIEW_ZOOM_MIN, z));
+            this.camX = cssWidth / (2 * this.zoom) - ww / 2;
+            this.camY = cssHeight / (2 * this.zoom) - wh / 2;
+        },
+        submitOrders(gameUuid: string, options?: { snapshotFetchUrl?: string }) {
             const troopOrders = this.draftPaths
                 .filter((p) => p.kind === 'troop')
                 .map((p) => [p.entityId, p.points] as [number, Point[]]);
@@ -272,16 +374,37 @@ export const useGameStore = defineStore('game', {
                 .filter((p) => p.kind === 'city')
                 .map((p) => [p.entityId, p.points] as [number, Point[]]);
 
+            const toast = useToastStore();
+            const snapshotUrl = options?.snapshotFetchUrl;
+
             router.post(
                 orders(gameUuid).url,
                 {
                     troop_orders: troopOrders,
                     city_orders: cityOrders,
                 },
-                { preserveScroll: true },
-            );
+                {
+                    preserveScroll: true,
+                    onError: (errors) => {
+                        const first =
+                            errors.troop_orders ??
+                            errors.city_orders ??
+                            Object.values(errors).find((v) => typeof v === 'string');
+                        const message =
+                            typeof first === 'string'
+                                ? first
+                                : 'Orders could not be submitted. Check you are in an active match and paths are valid.';
+                        toast.error(message);
+                    },
+                    onSuccess: async () => {
+                        this.clearDrafts();
 
-            this.clearDrafts();
+                        if (snapshotUrl !== undefined && snapshotUrl.length > 0) {
+                            await this.pullSnapshot(snapshotUrl);
+                        }
+                    },
+                },
+            );
         },
         togglePause(gameUuid: string) {
             this.paused = !this.paused;
@@ -290,6 +413,9 @@ export const useGameStore = defineStore('game', {
                 { paused: this.paused },
                 { preserveScroll: true },
             );
+        },
+        recruitInfantry(gameUuid: string) {
+            router.post(recruitRoute({ game: gameUuid }).url, {}, { preserveScroll: true });
         },
     },
 });
