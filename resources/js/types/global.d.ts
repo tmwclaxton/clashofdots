@@ -13,6 +13,13 @@ declare module 'vite/client' {
     }
 }
 
+declare global {
+    interface Window {
+        dataLayer?: unknown[];
+        gtag?: (...args: unknown[]) => void;
+    }
+}
+
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {

@@ -8,6 +8,7 @@ import { initializeTheme } from '@/composables/useAppearance';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
+import { initializeGoogleAnalytics } from '@/lib/googleAnalytics';
 import { createPinia } from 'pinia';
 import { createApp, createSSRApp, h } from 'vue';
 
@@ -53,4 +54,7 @@ if (typeof window !== 'undefined') {
 
     // This will listen for flash toast data from the server...
     initializeFlashToast();
+
+    // Track Inertia navigations for Google Analytics...
+    initializeGoogleAnalytics();
 }
