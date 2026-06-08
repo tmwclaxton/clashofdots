@@ -4,6 +4,13 @@ import { useIsDark } from '@/composables/useIsDark';
 import { ENGINE_FOREST_THRESHOLD, engineCellFillStyle } from '@/lib/terrainRender';
 import { useGameStore } from '@/stores/gameStore';
 
+const props = withDefaults(
+    defineProps<{
+        readOnly?: boolean;
+    }>(),
+    { readOnly: false },
+);
+
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const store = useGameStore();
 const { isDark } = useIsDark();
@@ -264,6 +271,10 @@ function onMouseDown(e: MouseEvent) {
         return;
     }
 
+    if (props.readOnly) {
+        return;
+    }
+
     const world = screenToWorld(sx, sy);
     const entity = findEntity(world);
     if (entity) {
@@ -313,6 +324,10 @@ function onWheel(e: WheelEvent) {
 }
 
 function onKeyDown(e: KeyboardEvent) {
+    if (props.readOnly) {
+        return;
+    }
+
     if (e.code === 'Space') {
         e.preventDefault();
         store.submitOrders(store.gameUuid);

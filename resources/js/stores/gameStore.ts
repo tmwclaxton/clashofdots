@@ -58,6 +58,9 @@ export const useGameStore = defineStore('game', {
         zoom: 1,
         paused: false,
         winnerUserId: null as number | null,
+        winnerSlot: null as number | null,
+        winnerName: null as string | null,
+        matchEnded: false,
         echo: null as ReturnType<typeof createGameEcho> | null,
     }),
     actions: {
@@ -79,8 +82,11 @@ export const useGameStore = defineStore('game', {
             this.zoom = 1;
             this.paused = false;
             this.winnerUserId = null;
+            this.winnerSlot = null;
+            this.winnerName = null;
+            this.matchEnded = false;
         },
-        connect(gameUuid: string, userId: number, slot: number, color: string) {
+        connect(gameUuid: string, broadcastConnection: string, slot: number, color: string) {
             this.disconnect();
             this.gameUuid = gameUuid;
             this.slot = slot;
@@ -88,7 +94,7 @@ export const useGameStore = defineStore('game', {
             this.echo = createGameEcho();
 
             this.echo
-                .private(`game.${gameUuid}.${userId}`)
+                .private(`game.${gameUuid}.${broadcastConnection}`)
                 .subscribed(() => {
                     this.connected = true;
                 })
@@ -99,7 +105,16 @@ export const useGameStore = defineStore('game', {
                     this.latestState = payload.state as GameState;
                 })
                 .listen('.GameEnded', (payload: Record<string, unknown>) => {
-                    this.winnerUserId = payload.winnerUserId as number | null;
+                    this.winnerUserId =
+                        payload.winnerUserId === undefined || payload.winnerUserId === null
+                            ? null
+                            : Number(payload.winnerUserId);
+                    this.winnerSlot =
+                        payload.winnerSlot === undefined || payload.winnerSlot === null
+                            ? null
+                            : Number(payload.winnerSlot);
+                    this.winnerName =
+                        typeof payload.winnerName === 'string' ? payload.winnerName : null;
                 });
         },
         applySnapshotPayload(payload: Record<string, unknown>) {
@@ -130,6 +145,9 @@ export const useGameStore = defineStore('game', {
                 return;
             }
 
+            await this.pullSnapshot(url);
+        },
+        async pullSnapshot(url: string, options?: { treat404AsEnded?: boolean }) {
             try {
                 const raw = document.cookie
                     .split('; ')
@@ -149,6 +167,9 @@ export const useGameStore = defineStore('game', {
                 });
 
                 if (!res.ok) {
+                    if (options?.treat404AsEnded && res.status === 404) {
+                        this.matchEnded = true;
+                    }
                     return;
                 }
 

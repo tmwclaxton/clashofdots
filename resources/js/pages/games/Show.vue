@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { join, play, start } from '@/routes/games';
 import { index as lobbies } from '@/routes/lobbies';
 
@@ -23,6 +25,9 @@ type Lobby = {
 const props = defineProps<{
     game: Lobby;
 }>();
+
+const page = usePage();
+const guestDisplayName = ref('');
 
 const commanderByDisplaySlot = computed(() => {
     const out: Record<number, Lobby['players'][0] | undefined> = {};
@@ -61,7 +66,11 @@ onBeforeUnmount(() => {
 });
 
 function joinGame() {
-    router.post(join(props.game.uuid).url);
+    const payload =
+        page.props.auth.user === null && guestDisplayName.value.trim() !== ''
+            ? { display_name: guestDisplayName.value.trim() }
+            : {};
+    router.post(join(props.game.uuid).url, payload);
 }
 
 function startGame() {
@@ -134,6 +143,21 @@ function startGame() {
             <Link :href="lobbies().url">
                 <Button variant="outline">Back</Button>
             </Link>
+            <div
+                v-if="!game.isParticipant && !page.props.auth.user"
+                class="flex w-full flex-col gap-2 sm:w-auto"
+            >
+                <div class="space-y-1">
+                    <Label for="guest-name" class="text-xs">Display name (optional)</Label>
+                    <Input
+                        id="guest-name"
+                        v-model="guestDisplayName"
+                        maxlength="50"
+                        placeholder="Guest"
+                        class="max-w-xs"
+                    />
+                </div>
+            </div>
             <Button v-if="!game.isParticipant" @click="joinGame">
                 Join lobby
             </Button>

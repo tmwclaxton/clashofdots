@@ -3,6 +3,7 @@
 namespace Tests\Feature\Games;
 
 use App\Enums\GameStatus;
+use App\Games\Services\GuestGameIdentity;
 use App\Models\Game;
 use App\Models\Map;
 use App\Models\User;
@@ -22,6 +23,37 @@ class GameLobbyTest extends TestCase
         if (! extension_loaded('redis') && ! class_exists(Client::class)) {
             $this->markTestSkipped('Redis is required for game tests.');
         }
+    }
+
+    public function test_guest_can_view_lobbies_without_login(): void
+    {
+        $this->get(route('lobbies.index'))
+            ->assertOk();
+
+        $this->assertIsString(session(GuestGameIdentity::SESSION_KEY));
+    }
+
+    public function test_guest_can_join_lobby_with_browser_session(): void
+    {
+        $host = User::factory()->create();
+        $owner = User::factory()->create();
+        $map = Map::factory()->for($owner)->playablePublishedTwoTeam()->create();
+
+        $this->actingAs($host)
+            ->post(route('games.store'), ['map_uuid' => $map->uuid]);
+
+        $game = Game::query()->firstOrFail();
+
+        $this->get(route('lobbies.index'));
+        $guestKey = session(GuestGameIdentity::SESSION_KEY);
+        $this->assertIsString($guestKey);
+
+        $this->post(route('games.join', $game), ['display_name' => 'Visitor'])
+            ->assertRedirect(route('games.show', $game));
+
+        $this->assertTrue(
+            $game->fresh()->players()->where('guest_key', $guestKey)->where('display_name', 'Visitor')->exists(),
+        );
     }
 
     public function test_authenticated_user_can_view_lobby_page(): void

@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Games\Services\GuestGameIdentity;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -37,12 +39,20 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
 
+        $guestBroadcast = null;
+        $guestKey = $request->session()->get(GuestGameIdentity::SESSION_KEY);
+        if (is_string($guestKey) && Str::isUuid($guestKey)) {
+            $guestBroadcast = GuestGameIdentity::broadcastSegment($guestKey);
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user,
+                'isAdmin' => $user?->isAdmin() ?? false,
             ],
+            'guestBroadcast' => $guestBroadcast,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

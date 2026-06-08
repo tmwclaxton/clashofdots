@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { Plus } from 'lucide-vue-next';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
@@ -42,12 +42,15 @@ const props = defineProps<{
     publishedMaps: PublishedMap[];
 }>();
 
+const page = usePage();
+
 const createForm = useForm({
     map_uuid: '',
 });
 
 const joinForm = useForm({
     code: '',
+    display_name: '',
 });
 
 const selectedMap = computed(() =>
@@ -73,7 +76,7 @@ function joinLobby() {
         />
 
         <div class="grid gap-4 lg:grid-cols-2">
-            <div class="wod-panel space-y-4 p-5">
+            <div v-if="page.props.auth.user" class="wod-panel space-y-4 p-5">
                 <div class="flex items-center gap-2">
                     <div class="wod-swatch bg-wod-red" aria-hidden="true" />
                     <h2 class="font-bold">Create lobby</h2>
@@ -123,6 +126,12 @@ function joinLobby() {
                     <div class="wod-swatch bg-wod-blue" aria-hidden="true" />
                     <h2 class="font-bold">Join by code</h2>
                 </div>
+                <p
+                    v-if="!page.props.auth.user"
+                    class="text-xs text-muted-foreground"
+                >
+                    No account needed — your browser keeps a guest session so you can rejoin if you disconnect.
+                </p>
                 <div class="space-y-2">
                     <Label for="code">Lobby code</Label>
                     <Input
@@ -133,6 +142,16 @@ function joinLobby() {
                         placeholder="ABC123"
                     />
                     <InputError :message="joinForm.errors.code" />
+                </div>
+                <div v-if="!page.props.auth.user" class="space-y-2">
+                    <Label for="join-display">Display name (optional)</Label>
+                    <Input
+                        id="join-display"
+                        v-model="joinForm.display_name"
+                        maxlength="50"
+                        placeholder="Guest"
+                    />
+                    <InputError :message="joinForm.errors.display_name" />
                 </div>
                 <Button
                     variant="outline"

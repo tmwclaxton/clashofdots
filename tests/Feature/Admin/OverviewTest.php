@@ -26,6 +26,30 @@ class OverviewTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_flag_is_shared_with_inertia_for_admin_users(): void
+    {
+        $user = User::factory()->create(['email' => 'toby@grantgunner.org']);
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.isAdmin', true)
+            );
+    }
+
+    public function test_admin_flag_is_false_for_non_admin_users(): void
+    {
+        $user = User::factory()->create(['email' => 'someone@example.com']);
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('auth.isAdmin', false)
+            );
+    }
+
     public function test_admin_users_can_view_the_overview_page(): void
     {
         $user = User::factory()->create(['email' => 'tmwclaxton@gmail.com']);

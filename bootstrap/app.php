@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnforceCanonicalHttps;
+use App\Http\Middleware\EnsureGuestGameIdentity;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
+            'guest.game' => EnsureGuestGameIdentity::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

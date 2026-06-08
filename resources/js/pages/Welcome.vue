@@ -7,6 +7,7 @@ import ThemeToggle from '@/components/ThemeToggle.vue';
 import { GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { cn } from '@/lib/utils';
 import { login, wiki } from '@/routes';
+import { index as leaderboardIndex } from '@/routes/leaderboard';
 import { index as lobbiesIndex } from '@/routes/lobbies';
 
 withDefaults(
@@ -99,11 +100,14 @@ const steps = [
                         <Link :href="wiki().url" class="shrink-0">
                             <Button variant="ghost" size="sm" class="px-2 sm:px-3">Wiki</Button>
                         </Link>
-                        <Link v-if="page.props.auth.user" :href="lobbiesIndex().url" class="shrink-0">
+                        <Link :href="leaderboardIndex().url" class="shrink-0">
+                            <Button variant="ghost" size="sm" class="px-2 sm:px-3">Leaderboard</Button>
+                        </Link>
+                        <Link :href="lobbiesIndex().url" class="shrink-0">
                             <Button size="sm" class="sm:h-10 sm:px-4 sm:text-sm">Play Now</Button>
                         </Link>
                         <Link
-                            v-else
+                            v-if="!page.props.auth.user"
                             :href="login().url"
                             :class="
                                 cn(
@@ -113,8 +117,8 @@ const steps = [
                             "
                         >
                             <GameLogoMark class="size-4 rounded-sm sm:size-5" />
-                            <span class="hidden min-[380px]:inline">Enter Battle</span>
-                            <span class="min-[380px]:hidden">Enter</span>
+                            <span class="hidden min-[380px]:inline">Sign in</span>
+                            <span class="min-[380px]:hidden">Login</span>
                         </Link>
                     </nav>
                 </div>
@@ -160,15 +164,11 @@ const steps = [
                             </em>.
                         </p>
                         <div class="mt-6 flex w-full min-w-0 flex-col gap-3 sm:mt-7 sm:flex-row sm:flex-wrap">
-                            <Link
-                                v-if="page.props.auth.user"
-                                :href="lobbiesIndex().url"
-                                class="w-full sm:w-auto"
-                            >
+                            <Link :href="lobbiesIndex().url" class="w-full sm:w-auto">
                                 <Button class="w-full sm:w-auto" size="lg">Enter the battlefield</Button>
                             </Link>
                             <Link
-                                v-else
+                                v-if="!page.props.auth.user"
                                 :href="login().url"
                                 :class="
                                     cn(
@@ -178,7 +178,7 @@ const steps = [
                                 "
                             >
                                 <GameLogoMark class="size-5 rounded-sm" />
-                                Enter Battle
+                                Sign in for maps & history
                             </Link>
                         </div>
                     </div>
@@ -239,29 +239,27 @@ const steps = [
                         Ready when you are.
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Log in, find a lobby, and start drawing your advance.
+                        Open a lobby with a code, or sign in to publish maps and track past matches.
                     </p>
                 </div>
-                <Link
-                    v-if="page.props.auth.user"
-                    :href="lobbiesIndex().url"
-                    class="w-full shrink-0 sm:w-auto"
-                >
-                    <Button class="w-full sm:w-auto" size="lg">Browse lobbies</Button>
-                </Link>
-                <Link
-                    v-else
-                    :href="login().url"
-                    :class="
-                        cn(
-                            buttonVariants({ variant: 'outline', size: 'lg' }),
-                            'w-full shrink-0 sm:w-auto',
-                        )
-                    "
-                >
-                    <GameLogoMark class="size-5 rounded-sm" />
-                    Enter Battle
-                </Link>
+                <div class="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:items-end">
+                    <Link :href="lobbiesIndex().url" class="w-full sm:w-auto">
+                        <Button class="w-full sm:w-auto" size="lg">Browse lobbies</Button>
+                    </Link>
+                    <Link
+                        v-if="!page.props.auth.user"
+                        :href="login().url"
+                        :class="
+                            cn(
+                                buttonVariants({ variant: 'outline', size: 'lg' }),
+                                'w-full sm:w-auto',
+                            )
+                        "
+                    >
+                        <GameLogoMark class="size-5 rounded-sm" />
+                        Sign in
+                    </Link>
+                </div>
             </section>
         </main>
 

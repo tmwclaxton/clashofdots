@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['uuid', 'code', 'status', 'max_players', 'seed', 'host_user_id', 'map_id', 'map_data', 'winner_user_id', 'settings', 'started_at', 'finished_at'])]
+#[Fillable(['uuid', 'code', 'status', 'max_players', 'seed', 'host_user_id', 'map_id', 'map_data', 'winner_user_id', 'winner_slot', 'settings', 'started_at', 'finished_at'])]
 class Game extends Model
 {
     /** @use HasFactory<GameFactory> */
@@ -77,6 +77,7 @@ class Game extends Model
             'status' => GameStatus::class,
             'settings' => 'array',
             'map_data' => 'array',
+            'winner_slot' => 'integer',
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
         ];

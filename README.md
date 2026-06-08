@@ -215,6 +215,7 @@ flowchart TB
 
 - PHP **8.3+**, [Composer](https://getcomposer.org/)
 - Node **22+** and npm  
+- [PostgreSQL](https://www.postgresql.org/) (primary app database; configure `DB_*` in `.env`)
 - [Redis](https://redis.io/) (live match state; required for lobbies and matches)
 - [Docker](https://www.docker.com/) (recommended for [Laravel Sail](https://laravel.com/docs/sail))
 
@@ -228,7 +229,9 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Configure `.env` (database, `WORKOS_*`, `REDIS_*`, and `REVERB_*` / `VITE_REVERB_*` for WebSockets). Matches need **Redis** plus **Reverb** and the **game tick** worker so the battlefield simulates and broadcasts state.
+Configure `.env` (PostgreSQL `DB_*`, `WORKOS_*`, `REDIS_*`, and `REVERB_*` / `VITE_REVERB_*` for WebSockets). Matches need **Redis** plus **Reverb** and the **game tick** worker so the battlefield simulates and broadcasts state. Automated **PHPUnit** runs use **in-memory SQLite** (`phpunit.xml`) so tests do not require a live Postgres server unless you change that.
+
+**Guests:** you can open **Lobbies**, join with a code, and fight without signing in. The app stores a stable guest UUID in the Laravel session (`wod_guest_key`) so the same browser can use **Ongoing** to return after a disconnect. Creating a lobby and **Past matches** still require login.
 
 ### Run with Sail
 

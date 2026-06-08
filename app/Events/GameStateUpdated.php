@@ -18,7 +18,7 @@ class GameStateUpdated implements ShouldBroadcastNow
      */
     public function __construct(
         public Game $game,
-        public int $userId,
+        public string $broadcastConnection,
         public array $state,
     ) {}
 
@@ -28,7 +28,7 @@ class GameStateUpdated implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('game.'.$this->game->uuid.'.'.$this->userId),
+            new PrivateChannel('game.'.$this->game->uuid.'.'.$this->broadcastConnection),
         ];
     }
 

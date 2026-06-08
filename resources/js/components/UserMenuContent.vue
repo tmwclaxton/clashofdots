@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from 'lucide-vue-next';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { LayoutDashboard, LogOut, Settings, UserCircle } from 'lucide-vue-next';
+import { computed } from 'vue';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -8,8 +9,10 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import UserInfo from '@/components/UserInfo.vue';
+import { overview as adminOverview } from '@/routes/admin';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
+import { show as profileShow } from '@/routes/profiles';
 import type { User } from '@/types';
 
 type Props = {
@@ -21,6 +24,8 @@ const handleLogout = () => {
 };
 
 defineProps<Props>();
+
+const isAdmin = computed(() => usePage().props.auth.isAdmin);
 </script>
 
 <template>
@@ -31,10 +36,30 @@ defineProps<Props>();
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
+        <DropdownMenuItem v-if="user.profile_uuid" :as-child="true">
+            <Link
+                class="block w-full cursor-pointer"
+                :href="profileShow.url(user.profile_uuid)"
+                prefetch
+            >
+                <UserCircle class="mr-2 h-4 w-4" />
+                Public profile
+            </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem :as-child="true">
             <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
                 <Settings class="mr-2 h-4 w-4" />
                 Settings
+            </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem v-if="isAdmin" :as-child="true">
+            <Link
+                class="block w-full cursor-pointer"
+                :href="adminOverview().url"
+                prefetch
+            >
+                <LayoutDashboard class="mr-2 h-4 w-4" />
+                Admin
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>

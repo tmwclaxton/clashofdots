@@ -16,6 +16,8 @@ class GameEnded implements ShouldBroadcastNow
     public function __construct(
         public Game $game,
         public ?int $winnerUserId,
+        public ?int $winnerSlot,
+        public string $winnerName,
     ) {}
 
     /**
@@ -23,8 +25,10 @@ class GameEnded implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
+        $this->game->loadMissing('players');
+
         return $this->game->players
-            ->map(fn ($player) => new PrivateChannel('game.'.$this->game->uuid.'.'.$player->user_id))
+            ->map(fn ($player) => new PrivateChannel('game.'.$this->game->uuid.'.'.$player->broadcastConnection()))
             ->all();
     }
 
@@ -41,6 +45,8 @@ class GameEnded implements ShouldBroadcastNow
         return [
             'gameUuid' => $this->game->uuid,
             'winnerUserId' => $this->winnerUserId,
+            'winnerSlot' => $this->winnerSlot,
+            'winnerName' => $this->winnerName,
         ];
     }
 }

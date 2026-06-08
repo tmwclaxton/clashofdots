@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Games\GameConstants;
 use App\Models\Game;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -22,7 +23,7 @@ class GameInitialized implements ShouldBroadcastNow
      */
     public function __construct(
         public Game $game,
-        public int $userId,
+        public string $broadcastConnection,
         public int $slot,
         public array $terrainInfo,
     ) {}
@@ -33,7 +34,7 @@ class GameInitialized implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('game.'.$this->game->uuid.'.'.$this->userId),
+            new PrivateChannel('game.'.$this->game->uuid.'.'.$this->broadcastConnection),
         ];
     }
 
@@ -47,17 +48,21 @@ class GameInitialized implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
+        $this->game->loadMissing('players');
+
+        $color = $this->game->players->firstWhere('slot', $this->slot)?->color ?? '#c0392b';
+
         return [
             'gameUuid' => $this->game->uuid,
             'slot' => $this->slot,
-            'color' => $this->game->players()->where('user_id', $this->userId)->value('color'),
+            'color' => $color,
             'terrain' => $this->terrainInfo['terrain'],
             'forest' => $this->terrainInfo['forest'],
             'cityPositions' => $this->terrainInfo['cityPositions'],
             'world' => [
-                'width' => \App\Games\GameConstants::WORLD_X,
-                'height' => \App\Games\GameConstants::WORLD_Y,
-                'cellSize' => \App\Games\GameConstants::CELL_SIZE,
+                'width' => GameConstants::WORLD_X,
+                'height' => GameConstants::WORLD_Y,
+                'cellSize' => GameConstants::CELL_SIZE,
             ],
         ];
     }

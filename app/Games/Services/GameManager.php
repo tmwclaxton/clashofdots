@@ -87,6 +87,43 @@ final class GameManager
 
         return $game->players()->create([
             'user_id' => $user->id,
+            'guest_key' => null,
+            'display_name' => null,
+            'slot' => $slot,
+            'color' => GameConstants::colorHex($slot),
+        ]);
+    }
+
+    public function joinAsGuest(Game $game, string $guestUuid, ?string $displayName): GamePlayer
+    {
+        if (! Str::isUuid($guestUuid)) {
+            abort(422, 'Invalid guest session.');
+        }
+
+        if ($game->status !== GameStatus::Lobby) {
+            abort(422, 'This game has already started.');
+        }
+
+        $existing = $game->players()->where('guest_key', $guestUuid)->first();
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        if ($game->isFull()) {
+            abort(422, 'This lobby is full.');
+        }
+
+        $label = $displayName !== null ? trim($displayName) : null;
+        if ($label === '') {
+            $label = null;
+        }
+
+        $slot = $game->players()->count();
+
+        return $game->players()->create([
+            'user_id' => null,
+            'guest_key' => $guestUuid,
+            'display_name' => $label !== null ? Str::limit($label, 50, '') : null,
             'slot' => $slot,
             'color' => GameConstants::colorHex($slot),
         ]);
@@ -134,10 +171,12 @@ final class GameManager
 
         Redis::sadd(self::ACTIVE_SET, $game->uuid);
 
+        $game->load('players');
+
         foreach ($game->players as $player) {
             broadcast(new GameInitialized(
                 $game,
-                $player->user_id,
+                $player->broadcastConnection(),
                 $player->slot,
                 $environment->getTerrainInfo(),
             ));
@@ -149,14 +188,17 @@ final class GameManager
     /**
      * @param  array{0: list<array{0: int, 1: list<array{0: float, 1: float}>}>, 1: list<array{0: int, 1: list<array{0: float, 1: float}>}>}  $orders
      */
-    public function submitOrders(Game $game, User $user, array $orders): void
+    public function submitOrders(Game $game, GamePlayer $player, array $orders): void
     {
         if ($game->status !== GameStatus::Playing) {
             abort(422, 'Orders can only be submitted during a live match.');
         }
 
+        if ($player->game_id !== $game->id) {
+            abort(403);
+        }
+
         $state = $this->getLiveState($game);
-        $player = $game->players()->where('user_id', $user->id)->firstOrFail();
         $slot = $player->slot;
 
         [$troopOrders, $cityOrders] = $orders;
@@ -166,14 +208,17 @@ final class GameManager
         $this->storeLiveState($game, $state);
     }
 
-    public function togglePause(Game $game, User $user, bool $paused): void
+    public function togglePause(Game $game, GamePlayer $player, bool $paused): void
     {
         if ($game->status !== GameStatus::Playing) {
             abort(422, 'Pause can only be toggled during a live match.');
         }
 
+        if ($player->game_id !== $game->id) {
+            abort(403);
+        }
+
         $state = $this->getLiveState($game);
-        $player = $game->players()->where('user_id', $user->id)->firstOrFail();
 
         $state['pauseRequests'][$player->slot] = $paused;
         $player->update(['pause_requested' => $paused]);
@@ -193,6 +238,7 @@ final class GameManager
         $game->update([
             'status' => GameStatus::Finished,
             'winner_user_id' => $winner?->user_id,
+            'winner_slot' => $winnerSlot,
             'finished_at' => now(),
         ]);
 
@@ -201,7 +247,14 @@ final class GameManager
 
         $game->load('players');
 
-        broadcast(new GameEnded($game, $winner?->user_id));
+        $winnerName = $winner?->displayLabel() ?? 'Unknown';
+
+        broadcast(new GameEnded(
+            $game,
+            $winner?->user_id,
+            $winner?->slot,
+            $winnerName,
+        ));
     }
 
     /**
@@ -249,7 +302,7 @@ final class GameManager
         foreach ($game->players as $player) {
             broadcast(new GameStateUpdated(
                 $game,
-                $player->user_id,
+                $player->broadcastConnection(),
                 $environment->drawInfo($player->slot),
             ));
         }
@@ -263,9 +316,9 @@ final class GameManager
     /**
      * @return array<string, mixed>
      */
-    public function snapshotPayloadForPlayer(Game $game, int $userId): array
+    public function snapshotPayloadForSlot(Game $game, int $slot): array
     {
-        $player = $game->players()->where('user_id', $userId)->firstOrFail();
+        $player = $game->players()->where('slot', $slot)->firstOrFail();
         $state = $this->getLiveState($game);
         $environment = $this->environmentFromState($state);
         $terrainInfo = $environment->getTerrainInfo();
@@ -284,5 +337,25 @@ final class GameManager
             ],
             'state' => $environment->drawInfo($player->slot),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function snapshotPayloadForPlayer(Game $game, int $userId): array
+    {
+        $player = $game->players()->where('user_id', $userId)->firstOrFail();
+
+        return $this->snapshotPayloadForSlot($game, $player->slot);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function snapshotPayloadForGuest(Game $game, string $guestUuid): array
+    {
+        $player = $game->players()->where('guest_key', $guestUuid)->firstOrFail();
+
+        return $this->snapshotPayloadForSlot($game, $player->slot);
     }
 }

@@ -4,6 +4,7 @@ use App\Game\GameSpecs;
 use App\Http\Controllers\Admin\OverviewController;
 use App\Http\Controllers\Games\GameController;
 use App\Http\Controllers\Maps\MapController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -16,7 +17,24 @@ Route::get('maps/explore', [MapController::class, 'explore'])->name('maps.explor
 // Published maps are viewable in the builder without auth (see MapPolicy::view). Bare /map-builder requires login.
 Route::get('map-builder/{map?}', [MapController::class, 'builder'])->name('map-builder');
 
+Route::get('leaderboard', [ProfileController::class, 'leaderboard'])->name('leaderboard.index');
+Route::get('profiles/{profile:profile_uuid}', [ProfileController::class, 'show'])->name('profiles.show');
+
 Route::middleware(['auth', 'admin'])->get('admin', OverviewController::class)->name('admin.overview');
+
+Route::middleware(['guest.game'])->group(function () {
+    Route::get('lobbies', [GameController::class, 'lobbies'])->name('lobbies.index');
+    Route::get('matches/ongoing', [GameController::class, 'ongoing'])->name('matches.ongoing');
+    Route::post('games/join', [GameController::class, 'joinByCode'])->name('games.join-code');
+    Route::get('games/{game}', [GameController::class, 'show'])->name('games.show');
+    Route::post('games/{game}/join', [GameController::class, 'join'])->name('games.join');
+    Route::get('games/{game}/spectate', [GameController::class, 'spectate'])->name('games.spectate');
+    Route::get('games/{game}/spectate-snapshot', [GameController::class, 'spectateSnapshot'])->name('games.spectate-snapshot');
+    Route::get('games/{game}/play', [GameController::class, 'play'])->name('games.play');
+    Route::get('games/{game}/snapshot', [GameController::class, 'snapshot'])->name('games.snapshot');
+    Route::post('games/{game}/orders', [GameController::class, 'submitOrders'])->name('games.orders');
+    Route::post('games/{game}/pause', [GameController::class, 'togglePause'])->name('games.pause');
+});
 
 Route::middleware(['auth'])->group(function () {
     Route::get('maps', [MapController::class, 'index'])->name('maps.index');
@@ -28,18 +46,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('maps/{map}', [MapController::class, 'update'])->name('maps.update');
     Route::delete('maps/{map}', [MapController::class, 'destroy'])->name('maps.destroy');
 
-    Route::get('lobbies', [GameController::class, 'lobbies'])->name('lobbies.index');
-    Route::get('matches/ongoing', [GameController::class, 'ongoing'])->name('matches.ongoing');
     Route::get('matches/past', [GameController::class, 'past'])->name('matches.past');
     Route::post('games', [GameController::class, 'store'])->name('games.store');
-    Route::post('games/join', [GameController::class, 'joinByCode'])->name('games.join-code');
-    Route::get('games/{game}', [GameController::class, 'show'])->name('games.show');
-    Route::post('games/{game}/join', [GameController::class, 'join'])->name('games.join');
     Route::post('games/{game}/start', [GameController::class, 'start'])->name('games.start');
-    Route::get('games/{game}/snapshot', [GameController::class, 'snapshot'])->name('games.snapshot');
-    Route::get('games/{game}/play', [GameController::class, 'play'])->name('games.play');
-    Route::post('games/{game}/orders', [GameController::class, 'submitOrders'])->name('games.orders');
-    Route::post('games/{game}/pause', [GameController::class, 'togglePause'])->name('games.pause');
 });
 
 require __DIR__.'/settings.php';

@@ -7,6 +7,7 @@ import {
     Globe2,
     History,
     Map,
+    Trophy,
     Users,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -28,20 +29,29 @@ import { home, mapBuilder, wiki } from '@/routes';
 import { index as lobbies } from '@/routes/lobbies';
 import { explore as mapsExplore } from '@/routes/maps';
 import { ongoing, past } from '@/routes/matches';
+import { index as leaderboard } from '@/routes/leaderboard';
 import type { NavItem } from '@/types';
 
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const { isCurrentOrParentUrl } = useCurrentUrl();
 
-const navItems = computed<NavItem[]>(() => [
-    { title: 'Wiki', href: wiki().url, icon: BookOpen },
-    { title: 'Explore', href: mapsExplore().url, icon: Globe2 },
-    { title: 'Map Builder', href: mapBuilder().url, icon: Map },
-    { title: 'Lobbies', href: lobbies().url, icon: Users },
-    { title: 'Ongoing', href: ongoing().url, icon: Clock3 },
-    { title: 'Past Matches', href: past().url, icon: History },
-]);
+const navItems = computed<NavItem[]>(() => {
+    const items: NavItem[] = [
+        { title: 'Wiki', href: wiki().url, icon: BookOpen },
+        { title: 'Explore', href: mapsExplore().url, icon: Globe2 },
+        { title: 'Map Builder', href: mapBuilder().url, icon: Map },
+        { title: 'Lobbies', href: lobbies().url, icon: Users },
+        { title: 'Leaderboard', href: leaderboard().url, icon: Trophy },
+        { title: 'Ongoing', href: ongoing().url, icon: Clock3 },
+    ];
+
+    if (auth.value.user) {
+        items.push({ title: 'Past Matches', href: past().url, icon: History });
+    }
+
+    return items;
+});
 </script>
 
 <template>
