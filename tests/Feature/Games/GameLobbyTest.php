@@ -184,8 +184,6 @@ class GameLobbyTest extends TestCase
                 'world',
                 'state',
                 'terrainCells',
-                'pauseRequests',
-                'allPlayersPaused',
             ]);
 
         $this->assertSame($expectedCells, $response->json('terrainCells'));

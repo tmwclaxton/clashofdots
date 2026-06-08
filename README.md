@@ -247,7 +247,11 @@ cp .env.example .env   # first time only; then: php artisan key:generate (host o
 
 [`compose.yaml`](compose.yaml) brings up **app** (nginx + PHP), **pgsql**, **redis**, **reverb** (port **8080** on the host by default), **`game-tick`** (`php artisan game:tick --daemon`), **queue-worker**, and **scheduler**. Postgres and Redis use **health checks** before the app container is considered ready; PHP services get **`REDIS_HOST=redis`**, **`REVERB_HOST=reverb`**, and **`VITE_REVERB_HOST=localhost`** so Redis, server-side broadcasting, and Vite all resolve correctly inside Docker.
 
-Open **`APP_URL`** (often `http://localhost` with `APP_PORT=80`). Rebuild the image after Dockerfile changes: `./vendor/bin/sail build --no-cache`.
+Open **`APP_URL`** (often `http://localhost` with `APP_PORT=80`).
+
+If **`reverb`** keeps **Restarting** (`./vendor/bin/sail ps`), read `./vendor/bin/sail logs reverb`. Often the Sail **image is stale** (PHP without **pcntl**): run `./vendor/bin/sail build` then `./vendor/bin/sail up -d`. Check with `./vendor/bin/sail exec laravel.test php -r "var_export(extension_loaded('pcntl'));"` — expect `true`.
+
+Rebuild the image after Dockerfile changes: `./vendor/bin/sail build --no-cache`.
 
 ### Run without Sail
 
@@ -265,8 +269,7 @@ Submitted orders are stored in **Redis**, but **units only advance when `php art
 
 1. **Redis** — `REDIS_*` must match a running instance (Sail: `redis` host).
 2. **Tick worker** — start `game:tick` or use `composer run dev` / full Sail stack.
-3. **Pause** — if **every** commander has pause on, ticks skip simulation until someone resumes (**P** in play).
-4. **Reverb** — optional for movement; the play page still **polls JSON snapshots every ~1.8s** so you see positions without websockets. Reverb adds lower-latency `GameStateUpdated` pushes.
+3. **Reverb** — optional for movement; the play page still **polls JSON snapshots every ~1.8s** so you see positions without websockets. Reverb adds lower-latency `GameStateUpdated` pushes.
 
 Regression: `php artisan test tests/Feature/Games/GameTickOrdersTest.php` (requires Redis; skipped otherwise).
 

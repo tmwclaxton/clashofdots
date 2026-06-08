@@ -29,7 +29,7 @@ Key systems to mirror:
 | **Troops** | Follow paths, fight nearby enemies, heal near friendly cities; contribute to vision and borders |
 | **Vision / fog** | Enemy units hidden until scouted; terrain and cities always visible |
 | **Borders** | Territory influence; encirclement applies healing debuffs to enemies |
-| **Controls** | Draw paths (left-click drag), pan (right-click), zoom (scroll), confirm (Space), clear (C), pause (P - all players must pause) |
+| **Controls** | Draw paths (left-click drag), pan (right-click), zoom (scroll), confirm (Space), clear (C) |
 
 ## Multiplayer & scope
 
@@ -53,7 +53,7 @@ Reference thumbnails described a style with:
 
 - Public **landing page** - “Command. Conquer. Dominate.”, explain rules briefly, CTA to play
 - **Lobby** - create/join by code, waiting room with slot grid
-- **Battlefield** - full-screen canvas game view with HUD for execute / clear / pause
+- **Battlefield** - full-screen canvas game view with HUD for execute / clear
 
 ## Technical direction (agreed in planning)
 

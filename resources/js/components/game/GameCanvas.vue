@@ -555,10 +555,6 @@ function onKeyDown(e: KeyboardEvent) {
         store.clearDrafts();
         draw();
     }
-
-    if (e.key.toLowerCase() === 'p') {
-        store.togglePause(store.gameUuid);
-    }
 }
 
 onMounted(() => {

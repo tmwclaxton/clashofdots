@@ -44,7 +44,7 @@ const toast = useToastStore();
 /** How often we pull JSON snapshots during a live match (backs up Reverb / shows tick progress). */
 const MATCH_SNAPSHOT_POLL_MS = 1800;
 
-/** Consecutive polls with no `worldTick` advance ⇒ likely tick worker missing (not all-paused). */
+/** Consecutive polls with no `worldTick` advance ⇒ likely tick worker missing. */
 const SIMULATION_STALL_POLL_THRESHOLD = 5;
 
 const spectatePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
@@ -102,12 +102,7 @@ const showSimulationStallHint = computed(
         !props.spectatorMode
         && store.initialized
         && !store.matchEnded
-        && !store.serverAllPlayersPaused
         && simulationStallPolls.value >= SIMULATION_STALL_POLL_THRESHOLD,
-);
-
-const showGlobalPauseHint = computed(
-    () => !props.spectatorMode && store.initialized && store.serverAllPlayersPaused,
 );
 
 const myArmyCount = computed(() => {
@@ -219,12 +214,6 @@ onMounted(() => {
             await store.pullSnapshot(props.snapshotUrl);
 
             if (store.matchEnded) {
-                return;
-            }
-
-            if (store.serverAllPlayersPaused) {
-                simulationStallPolls.value = 0;
-
                 return;
             }
 
@@ -368,25 +357,6 @@ onUnmounted(() => {
                 >
                     Execute (Space)
                 </Button>
-                <Button
-                    size="sm"
-                    variant="outline"
-                    class="min-w-0 flex-1 sm:flex-none"
-                    @click="store.togglePause(game.uuid)"
-                >
-                    Pause (P)
-                </Button>
-            </div>
-
-            <div
-                v-if="showGlobalPauseHint"
-                class="rounded-md border border-amber-500/60 bg-amber-500/10 px-2 py-1.5 text-[0.7rem] text-amber-950 dark:text-amber-100"
-                role="status"
-            >
-                Match is paused: every commander has pause on. Press
-                <span class="font-mono">P</span>
-                (or use Pause) so at least one side unpauses — the simulation does not advance while
-                all pause toggles are on.
             </div>
 
             <div
@@ -409,8 +379,7 @@ onUnmounted(() => {
                     composer run dev
                 </code>
                 (~{{ TICK_RATE }}&nbsp;Hz). Reloading this page re-registers the match if Redis lost the
-                active-game list. If everyone has Pause (P) on, unpause at least one side — time
-                stays frozen while all pauses are on.
+                active-game list.
             </div>
             <p
                 v-if="!spectatorMode"

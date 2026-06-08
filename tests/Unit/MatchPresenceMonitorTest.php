@@ -11,7 +11,7 @@ class MatchPresenceMonitorTest extends TestCase
     public function test_everyone_idle_when_all_timestamps_are_old(): void
     {
         $state = [
-            'pauseRequests' => [false, false],
+            'environment' => ['players' => [[], []]],
             'lastPlayerActivityAt' => [
                 microtime(true) - GameConstants::MATCH_ALL_PLAYERS_INACTIVE_SECONDS - 10,
                 microtime(true) - GameConstants::MATCH_ALL_PLAYERS_INACTIVE_SECONDS - 10,
@@ -27,7 +27,7 @@ class MatchPresenceMonitorTest extends TestCase
     public function test_not_everyone_idle_when_one_player_was_active_recently(): void
     {
         $state = [
-            'pauseRequests' => [false, false],
+            'environment' => ['players' => [[], []]],
             'lastPlayerActivityAt' => [
                 microtime(true) - GameConstants::MATCH_ALL_PLAYERS_INACTIVE_SECONDS - 10,
                 microtime(true) - 5,

@@ -93,7 +93,7 @@ class GameTickOrdersTest extends TestCase
         }
     }
 
-    public function test_tick_does_not_advance_when_all_players_paused(): void
+    public function test_tick_advances_even_when_legacy_pause_flags_present_in_state(): void
     {
         $host = User::factory()->create();
         $guest = User::factory()->create();
@@ -116,18 +116,18 @@ class GameTickOrdersTest extends TestCase
 
         try {
             $state = $manager->getLiveState($game);
-            $posBefore = $state['environment']['players'][0]['troops'][0]['position'];
-
+            $tickBefore = (int) ($state['worldTick'] ?? 0);
             $state['pauseRequests'] = [true, true];
             $manager->storeLiveState($game, $state);
 
             $tickService->tick($game, $manager);
 
             $stateAfter = $manager->getLiveState($game);
-            $posAfter = $stateAfter['environment']['players'][0]['troops'][0]['position'];
-
-            $this->assertSame($posBefore[0], $posAfter[0]);
-            $this->assertSame($posBefore[1], $posAfter[1]);
+            $this->assertGreaterThan(
+                $tickBefore,
+                (int) ($stateAfter['worldTick'] ?? 0),
+                'Simulation should advance each tick; battle pause was removed.',
+            );
         } finally {
             Redis::del('game:live:'.$game->uuid);
             Redis::srem('games:active', $game->uuid);

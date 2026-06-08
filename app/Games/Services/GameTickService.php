@@ -37,10 +37,6 @@ final class GameTickService
 
         $environment = $manager->environmentFromState($state);
 
-        if ($this->allPlayersPaused($state)) {
-            return;
-        }
-
         $worldTick = (int) ($state['worldTick'] ?? 0);
 
         $cityPaths = [];
@@ -99,25 +95,5 @@ final class GameTickService
         }
 
         $state['economy'] = $economy;
-    }
-
-    /**
-     * @param  array<string, mixed>  $state
-     */
-    private function allPlayersPaused(array $state): bool
-    {
-        $pauseRequests = $state['pauseRequests'] ?? [];
-
-        if ($pauseRequests === []) {
-            return false;
-        }
-
-        foreach ($pauseRequests as $paused) {
-            if (! $paused) {
-                return false;
-            }
-        }
-
-        return true;
     }
 }

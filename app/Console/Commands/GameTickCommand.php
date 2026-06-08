@@ -3,12 +3,15 @@
 namespace App\Console\Commands;
 
 use App\Games\GameConstants;
+use App\Games\Logging\GameSimLog;
 use App\Games\Services\GameManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class GameTickCommand extends Command
 {
+    private static float $lastEmptyActiveLogAt = 0.0;
+
     private static float $lastLobbySweepAt = 0.0;
 
     protected $signature = 'game:tick {--daemon : Run continuously}';
@@ -28,7 +31,17 @@ class GameTickCommand extends Command
                 self::$lastLobbySweepAt = $now;
             }
 
-            foreach ($gameManager->activeGameUuids() as $uuid) {
+            $activeUuids = $gameManager->activeGameUuids();
+
+            if ($activeUuids === [] && GameSimLog::enabled()) {
+                $nowLoop = microtime(true);
+                if ($nowLoop - self::$lastEmptyActiveLogAt >= 10.0) {
+                    self::$lastEmptyActiveLogAt = $nowLoop;
+                    GameSimLog::info('game.tick.loop_no_active_games', []);
+                }
+            }
+
+            foreach ($activeUuids as $uuid) {
                 $game = $gameManager->findByUuid($uuid);
 
                 if ($game) {

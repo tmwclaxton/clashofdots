@@ -10,14 +10,41 @@ namespace App\Games\Services;
 final class MatchPresenceMonitor
 {
     /**
-     * Ensures {@see $state} has a per-slot `lastPlayerActivityAt` array aligned with `pauseRequests`.
+     * Commander count for arrays keyed by slot (environment first, then economy, then legacy pause flags).
+     *
+     * @param  array<string, mixed>  $state
+     */
+    public static function commanderSlotCount(array $state): int
+    {
+        $env = $state['environment'] ?? null;
+        if (is_array($env) && isset($env['players']) && is_array($env['players'])) {
+            $n = count($env['players']);
+            if ($n > 0) {
+                return $n;
+            }
+        }
+
+        $economy = $state['economy'] ?? null;
+        if (is_array($economy)) {
+            $n = count($economy);
+            if ($n > 0) {
+                return $n;
+            }
+        }
+
+        $legacyPause = $state['pauseRequests'] ?? null;
+
+        return is_array($legacyPause) ? count($legacyPause) : 0;
+    }
+
+    /**
+     * Ensures {@see $state} has a per-slot `lastPlayerActivityAt` array aligned with commander slots.
      *
      * @param  array<string, mixed>  $state
      */
     public static function normalizeLastActivity(array &$state): bool
     {
-        $pauseRequests = $state['pauseRequests'] ?? [];
-        $count = count($pauseRequests);
+        $count = self::commanderSlotCount($state);
         if ($count === 0) {
             return false;
         }

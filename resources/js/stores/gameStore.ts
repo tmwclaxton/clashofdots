@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/vue3';
 import { defineStore } from 'pinia';
 import { createGameEcho } from '@/lib/echo';
-import { orders, pause as pauseRoute, recruit as recruitRoute } from '@/routes/games';
+import { orders, recruit as recruitRoute } from '@/routes/games';
 import { useToastStore } from '@/stores/toastStore';
 
 type Point = [number, number];
@@ -124,16 +124,11 @@ export const useGameStore = defineStore('game', {
         camX: 0,
         camY: 0,
         zoom: 1,
-        paused: false,
         winnerUserId: null as number | null,
         winnerSlot: null as number | null,
         winnerName: null as string | null,
         matchEnded: false,
         echo: null as ReturnType<typeof createGameEcho> | null,
-        /** Per-commander pause flags from the server (matches Redis `pauseRequests`). */
-        serverPauseRequests: [] as boolean[],
-        /** When true, the simulation tick intentionally does not advance the world. */
-        serverAllPlayersPaused: false,
     }),
     actions: {
         reset() {
@@ -155,13 +150,10 @@ export const useGameStore = defineStore('game', {
             this.camX = 0;
             this.camY = 0;
             this.zoom = 1;
-            this.paused = false;
             this.winnerUserId = null;
             this.winnerSlot = null;
             this.winnerName = null;
             this.matchEnded = false;
-            this.serverPauseRequests = [];
-            this.serverAllPlayersPaused = false;
         },
         connect(gameUuid: string, broadcastConnection: string, slot: number, color: string) {
             this.disconnect();
@@ -188,14 +180,6 @@ export const useGameStore = defineStore('game', {
 
                     if (payload.worldTick !== undefined && payload.worldTick !== null) {
                         this.worldTick = Number(payload.worldTick);
-                    }
-
-                    if (Array.isArray(payload.pauseRequests)) {
-                        this.serverPauseRequests = (payload.pauseRequests as unknown[]).map((p) => Boolean(p));
-                    }
-
-                    if (typeof payload.allPlayersPaused === 'boolean') {
-                        this.serverAllPlayersPaused = payload.allPlayersPaused;
                     }
                 })
                 .listen('.GameEnded', (payload: Record<string, unknown>) => {
@@ -242,14 +226,6 @@ export const useGameStore = defineStore('game', {
 
             if (payload.worldTick !== undefined && payload.worldTick !== null) {
                 this.worldTick = Number(payload.worldTick);
-            }
-
-            if (Array.isArray(payload.pauseRequests)) {
-                this.serverPauseRequests = (payload.pauseRequests as unknown[]).map((p) => Boolean(p));
-            }
-
-            if (typeof payload.allPlayersPaused === 'boolean') {
-                this.serverAllPlayersPaused = payload.allPlayersPaused;
             }
 
             this.initialized = true;
@@ -404,14 +380,6 @@ export const useGameStore = defineStore('game', {
                         }
                     },
                 },
-            );
-        },
-        togglePause(gameUuid: string) {
-            this.paused = !this.paused;
-            router.post(
-                pauseRoute(gameUuid).url,
-                { paused: this.paused },
-                { preserveScroll: true },
             );
         },
         recruitInfantry(gameUuid: string) {

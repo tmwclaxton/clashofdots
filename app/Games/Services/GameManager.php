@@ -10,6 +10,7 @@ use App\Games\Engine\City;
 use App\Games\Engine\Environment;
 use App\Games\Engine\Player;
 use App\Games\GameConstants;
+use App\Games\Logging\GameSimLog;
 use App\Maps\MapMarkers;
 use App\Models\Game;
 use App\Models\GamePlayer;
@@ -179,7 +180,6 @@ final class GameManager
             'environment' => $environment->toArray(),
             'playerInputs' => array_fill(0, $playerCount, []),
             'playerCityInputs' => array_fill(0, $playerCount, []),
-            'pauseRequests' => array_fill(0, $playerCount, false),
             'lastPlayerActivityAt' => array_fill(0, $playerCount, $now),
             'worldTick' => 0,
             'economy' => array_fill(0, $playerCount, [
@@ -266,26 +266,28 @@ final class GameManager
         $this->storeLiveState($game, $state);
 
         $game->loadMissing('players');
+
+        GameSimLog::info('game.orders.accepted', [
+            'game_uuid' => $game->uuid,
+            'slot' => $slot,
+            'world_tick' => (int) ($state['worldTick'] ?? 0),
+            'troop_order_rows' => count($troopOrders),
+            'city_order_rows' => count($cityOrders),
+            'troop_orders' => array_map(static function ($row): array {
+                if (! is_array($row) || $row === []) {
+                    return ['entity_id' => null, 'path_points' => 0];
+                }
+
+                $path = $row[1] ?? [];
+
+                return [
+                    'entity_id' => is_numeric($row[0] ?? null) ? (int) $row[0] : null,
+                    'path_points' => is_array($path) ? count($path) : 0,
+                ];
+            }, $troopOrders),
+        ]);
+
         $this->broadcastState($game, $environment, $state);
-    }
-
-    public function togglePause(Game $game, GamePlayer $player, bool $paused): void
-    {
-        if ($game->status !== GameStatus::Playing) {
-            abort(422, 'Pause can only be toggled during a live match.');
-        }
-
-        if ($player->game_id !== $game->id) {
-            abort(403);
-        }
-
-        $state = $this->getLiveState($game);
-
-        $state['pauseRequests'][$player->slot] = $paused;
-        $player->update(['pause_requested' => $paused]);
-
-        $this->touchPlayerActivityInState($state, $player->slot);
-        $this->storeLiveState($game, $state);
     }
 
     /**
@@ -438,7 +440,14 @@ final class GameManager
             return;
         }
 
-        Redis::sadd(self::ACTIVE_SET, $game->uuid);
+        $added = (int) Redis::sadd(self::ACTIVE_SET, $game->uuid);
+
+        if ($added > 0) {
+            GameSimLog::info('game.active_set.repaired', [
+                'game_uuid' => $game->uuid,
+                'added_members' => $added,
+            ]);
+        }
     }
 
     /**
@@ -459,7 +468,7 @@ final class GameManager
      */
     public function repairLiveStateEconomy(Game $game, array &$state): bool
     {
-        $slotCount = count($state['pauseRequests'] ?? []);
+        $slotCount = MatchPresenceMonitor::commanderSlotCount($state);
         if ($slotCount < 1) {
             return false;
         }
@@ -554,10 +563,6 @@ final class GameManager
 
         $game->loadMissing('players');
 
-        $pauseRequestsRaw = $state['pauseRequests'] ?? [];
-        $pauseRequests = is_array($pauseRequestsRaw) ? array_values($pauseRequestsRaw) : [];
-        $allPlayersPaused = $this->allPlayersPausedFromState($pauseRequests);
-
         foreach ($game->players as $player) {
             $this->broadcastIgnoringTransportFailure(new GameStateUpdated(
                 $game,
@@ -565,28 +570,8 @@ final class GameManager
                 $environment->drawInfo($player->slot, $worldTick),
                 is_array($economy) ? $economy : null,
                 $worldTick,
-                $pauseRequests,
-                $allPlayersPaused,
             ));
         }
-    }
-
-    /**
-     * @param  array<int|string, mixed>  $pauseRequests
-     */
-    private function allPlayersPausedFromState(array $pauseRequests): bool
-    {
-        if ($pauseRequests === []) {
-            return false;
-        }
-
-        foreach ($pauseRequests as $paused) {
-            if (! $paused) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private function findOwnedCapitalCity(Environment $environment, Player $player): ?City
@@ -706,8 +691,7 @@ final class GameManager
      */
     private function touchPlayerActivityInState(array &$state, int $slot): void
     {
-        $pauseRequests = $state['pauseRequests'] ?? [];
-        $count = count($pauseRequests);
+        $count = MatchPresenceMonitor::commanderSlotCount($state);
         if ($slot < 0 || $slot >= $count) {
             return;
         }
@@ -741,10 +725,6 @@ final class GameManager
         $terrainInfo = $environment->getTerrainInfo();
         $terrainCells = $this->terrainCellsForSnapshot($game->map_data, $terrainInfo['terrain']);
 
-        $pauseRequestsRaw = $state['pauseRequests'] ?? [];
-        $pauseRequests = is_array($pauseRequestsRaw) ? array_values($pauseRequestsRaw) : [];
-        $allPlayersPaused = $this->allPlayersPausedFromState($pauseRequests);
-
         return [
             'gameUuid' => $game->uuid,
             'slot' => $player->slot,
@@ -756,8 +736,6 @@ final class GameManager
             'state' => $environment->drawInfo($player->slot, $worldTick),
             'economy' => $state['economy'] ?? [],
             'worldTick' => $worldTick,
-            'pauseRequests' => $pauseRequests,
-            'allPlayersPaused' => $allPlayersPaused,
             ...($terrainCells !== null ? ['terrainCells' => $terrainCells] : []),
         ];
     }

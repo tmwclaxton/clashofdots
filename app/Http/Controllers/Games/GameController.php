@@ -281,21 +281,6 @@ class GameController extends Controller
         return back();
     }
 
-    public function togglePause(Request $request, Game $game, GameManager $gameManager): RedirectResponse
-    {
-        $request->validate(['paused' => ['required', 'boolean']]);
-
-        $player = $this->actingPlayer($request, $game);
-
-        if ($player === null) {
-            abort(403);
-        }
-
-        $gameManager->togglePause($game, $player, $request->boolean('paused'));
-
-        return back();
-    }
-
     public function recruit(RecruitTroopRequest $request, Game $game, GameManager $gameManager): RedirectResponse
     {
         $player = $this->actingPlayer($request, $game);

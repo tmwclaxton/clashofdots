@@ -34,7 +34,6 @@ Route::middleware(['guest.game'])->group(function () {
     Route::get('games/{game}/snapshot', [GameController::class, 'snapshot'])->name('games.snapshot');
     Route::post('games/{game}/orders', [GameController::class, 'submitOrders'])->name('games.orders');
     Route::post('games/{game}/recruit', [GameController::class, 'recruit'])->name('games.recruit');
-    Route::post('games/{game}/pause', [GameController::class, 'togglePause'])->name('games.pause');
 });
 
 Route::middleware(['auth'])->group(function () {
