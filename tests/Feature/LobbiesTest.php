@@ -46,4 +46,10 @@ class LobbiesTest extends TestCase
             ->get(route('matches.past'))
             ->assertOk();
     }
+
+    public function test_guests_cannot_visit_past_matches(): void
+    {
+        $this->get(route('matches.past'))
+            ->assertRedirect(route('login'));
+    }
 }

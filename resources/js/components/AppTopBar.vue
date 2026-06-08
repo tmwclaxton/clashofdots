@@ -33,7 +33,8 @@ import { index as leaderboard } from '@/routes/leaderboard';
 import type { NavItem } from '@/types';
 
 const page = usePage();
-const auth = computed(() => page.props.auth);
+/** Logged-in WorkOS user only (guest play uses session, not this object). */
+const user = computed(() => page.props.auth.user);
 const { isCurrentOrParentUrl } = useCurrentUrl();
 
 const navItems = computed<NavItem[]>(() => {
@@ -46,7 +47,7 @@ const navItems = computed<NavItem[]>(() => {
         { title: 'Ongoing', href: ongoing().url, icon: Clock3 },
     ];
 
-    if (auth.value.user) {
+    if (user.value !== null) {
         items.push({ title: 'Past Matches', href: past().url, icon: History });
     }
 
@@ -59,8 +60,11 @@ const navItems = computed<NavItem[]>(() => {
         <div
             class="relative flex w-full flex-wrap items-center justify-between gap-4 px-6 py-3"
         >
-            <div class="flex items-center gap-5">
-                <Link :href="home().url" class="flex items-center gap-2.5">
+            <div class="flex min-w-0 flex-1 items-center gap-3 sm:gap-5">
+                <Link
+                    :href="home().url"
+                    class="flex shrink-0 items-center gap-2.5"
+                >
                     <GameLogoMark />
                     <div class="hidden sm:block">
                         <p class="font-display text-base font-bold leading-tight">
@@ -70,31 +74,36 @@ const navItems = computed<NavItem[]>(() => {
                     </div>
                 </Link>
 
-                <FactionSwatches class="hidden sm:grid" />
+                <FactionSwatches class="hidden shrink-0 sm:grid" />
 
-                <nav class="hidden items-center gap-1 md:flex">
-                    <Button
-                        v-for="item in navItems"
-                        :key="item.title"
-                        variant="ghost"
-                        size="sm"
-                        as-child
-                        :class="[
-                            'wod-nav-ghost',
-                            isCurrentOrParentUrl(item.href)
-                                ? 'wod-nav-active'
-                                : '',
-                        ]"
-                    >
-                        <Link :href="item.href">
-                            <component :is="item.icon" class="size-4" />
-                            {{ item.title }}
-                        </Link>
-                    </Button>
+                <nav
+                    class="hidden min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:flex sm:[&::-webkit-scrollbar]:hidden"
+                    aria-label="Main"
+                >
+                    <div class="flex w-max items-center gap-1 pr-1">
+                        <Button
+                            v-for="item in navItems"
+                            :key="item.title"
+                            variant="ghost"
+                            size="sm"
+                            as-child
+                            :class="[
+                                'wod-nav-ghost shrink-0',
+                                isCurrentOrParentUrl(item.href)
+                                    ? 'wod-nav-active'
+                                    : '',
+                            ]"
+                        >
+                            <Link :href="item.href">
+                                <component :is="item.icon" class="size-4" />
+                                {{ item.title }}
+                            </Link>
+                        </Button>
+                    </div>
                 </nav>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex shrink-0 items-center gap-2">
                 <ThemeToggle />
                 <Button
                     variant="ghost"
@@ -111,7 +120,7 @@ const navItems = computed<NavItem[]>(() => {
                         <Github class="size-4" />
                     </a>
                 </Button>
-                <DropdownMenu v-if="auth.user">
+                <DropdownMenu v-if="user">
                     <DropdownMenuTrigger as-child>
                         <Button
                             variant="ghost"
@@ -122,27 +131,28 @@ const navItems = computed<NavItem[]>(() => {
                                 class="size-8 overflow-hidden rounded-md border-2 border-foreground"
                             >
                                 <AvatarImage
-                                    v-if="auth.user.avatar"
-                                    :src="auth.user.avatar"
-                                    :alt="auth.user.name"
+                                    v-if="user.avatar"
+                                    :src="user.avatar"
+                                    :alt="user.name"
                                 />
                                 <AvatarFallback
                                     class="rounded-md bg-card text-xs font-bold"
                                 >
-                                    {{ getInitials(auth.user.name) }}
+                                    {{ getInitials(user.name) }}
                                 </AvatarFallback>
                             </Avatar>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" class="w-56">
-                        <UserMenuContent :user="auth.user" />
+                        <UserMenuContent :user="user" />
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
         </div>
 
         <nav
-            class="flex w-full gap-1 overflow-x-auto border-t border-foreground/25 px-6 py-2 md:hidden"
+            class="flex w-full gap-1 overflow-x-auto border-t border-foreground/25 px-6 py-2 sm:hidden"
+            aria-label="Main"
         >
             <Button
                 v-for="item in navItems"
