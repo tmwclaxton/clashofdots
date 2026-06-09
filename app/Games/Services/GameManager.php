@@ -16,6 +16,7 @@ use App\Models\Game;
 use App\Models\GamePlayer;
 use App\Models\Map;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
@@ -23,6 +24,12 @@ use Illuminate\Support\Str;
 final class GameManager
 {
     private const string ACTIVE_SET = 'games:active';
+
+    /**
+     * Refreshed by {@see \App\Console\Commands\GameTickCommand} each loop iteration while the daemon runs.
+     * Used to avoid double-ticking when {@see maybeAdvanceTickIfDaemonAbsent()} runs from HTTP snapshots.
+     */
+    public const string TICK_DAEMON_HEARTBEAT_KEY = 'games:tick:daemon-heartbeat';
 
     public function __construct(
         private GameCodeGenerator $codeGenerator,
@@ -341,6 +348,44 @@ final class GameManager
         $this->tickService->tick($game, $this);
     }
 
+    /**
+     * When the dedicated tick worker is not running, live matches would stay at worldTick 0.
+     * A single tick before serving JSON snapshots keeps local/dev stacks usable without running `game:tick --daemon`.
+     * Skipped while the heartbeat key exists (daemon is alive) or during PHPUnit.
+     */
+    public function maybeAdvanceTickIfDaemonAbsent(Game $game): void
+    {
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        if ($game->status !== GameStatus::Playing) {
+            return;
+        }
+
+        if (Redis::exists(self::TICK_DAEMON_HEARTBEAT_KEY)) {
+            return;
+        }
+
+        $lock = Cache::lock('game-tick-snapshot-assist:'.$game->uuid, 2);
+
+        if (! $lock->get()) {
+            return;
+        }
+
+        try {
+            $this->tickService->tick($game, $this);
+        } catch (\Throwable $e) {
+            Log::warning('Snapshot tick assist failed; returning current state.', [
+                'game_uuid' => $game->uuid,
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+            ]);
+        } finally {
+            $lock->release();
+        }
+    }
+
     public function finish(Game $game, int $winnerSlot): void
     {
         $winner = $game->players()->where('slot', $winnerSlot)->first();
@@ -406,6 +451,40 @@ final class GameManager
     public function activeGameUuids(): array
     {
         return Redis::smembers(self::ACTIVE_SET) ?: [];
+    }
+
+    /**
+     * Remove UUIDs from the tick set when the row is gone or the match is no longer Playing.
+     */
+    public function pruneStaleActiveGameUuids(): void
+    {
+        foreach ($this->activeGameUuids() as $uuid) {
+            $game = $this->findByUuid($uuid);
+            if ($game === null || $game->status !== GameStatus::Playing) {
+                Redis::srem(self::ACTIVE_SET, $uuid);
+            }
+        }
+    }
+
+    /**
+     * Re-add every Playing game that still has live Redis JSON so {@see GameTickCommand} keeps
+     * advancing world time even if {@see self::ACTIVE_SET} was cleared or never written.
+     */
+    public function syncActiveSetWithPlayingMatches(): void
+    {
+        $games = Game::query()
+            ->where('status', GameStatus::Playing)
+            ->whereNotNull('started_at')
+            ->where('started_at', '>=', now()->subDays(30))
+            ->orderByDesc('id')
+            ->limit(500)
+            ->cursor();
+
+        foreach ($games as $game) {
+            if (Redis::exists($this->redisKey($game))) {
+                Redis::sadd(self::ACTIVE_SET, $game->uuid);
+            }
+        }
     }
 
     public function findByUuid(string $uuid): ?Game

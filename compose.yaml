@@ -8,6 +8,7 @@
 x-laravel-sail-connectivity: &laravel-sail-connectivity
     WWWUSER: '${WWWUSER:-1337}'
     LARAVEL_SAIL: 1
+    DB_HOST: pgsql
     REDIS_HOST: redis
     REVERB_HOST: reverb
 
@@ -144,6 +145,7 @@ services:
         command: 'php artisan game:tick --daemon'
         environment:
             <<: *laravel-sail-connectivity
+            LOG_CHANNEL: stderr
         volumes:
             - '.:/var/www/html:z'
         networks:

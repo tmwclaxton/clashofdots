@@ -24,6 +24,7 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            appDebug: boolean;
             auth: Auth;
             guestBroadcast: string | null;
             sidebarOpen: boolean;

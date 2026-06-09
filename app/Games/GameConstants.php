@@ -18,6 +18,12 @@ final class GameConstants
 
     public const int TICK_RATE = 30;
 
+    /**
+     * Per-tick step along a move order: {@code terrainSpeed * this} world units at {@see self::TICK_RATE} Hz.
+     * Plains baseline uses {@see self::TERRAIN_SPEEDS} (plains = 1.0); raise this for faster marches.
+     */
+    public const float TROOP_MOVEMENT_PER_TICK_SCALE = 0.15;
+
     /** Ticks (~seconds×30) fresh troops get an attack “adrenaline” bonus that decays to neutral. */
     public const int TROOP_WARMUP_TICKS = 120;
 

@@ -7,12 +7,15 @@ use App\Games\Logging\GameSimLog;
 use App\Games\Services\GameManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class GameTickCommand extends Command
 {
     private static float $lastEmptyActiveLogAt = 0.0;
 
     private static float $lastLobbySweepAt = 0.0;
+
+    private static float $lastActiveSetSyncAt = 0.0;
 
     protected $signature = 'game:tick {--daemon : Run continuously}';
 
@@ -25,10 +28,40 @@ class GameTickCommand extends Command
         do {
             $started = microtime(true);
 
+            Redis::set(GameManager::TICK_DAEMON_HEARTBEAT_KEY, '1', 'EX', 2);
+
             $now = microtime(true);
             if ($now - self::$lastLobbySweepAt >= 15.0) {
-                $gameManager->expireStaleLobbies();
+                try {
+                    $gameManager->expireStaleLobbies();
+                } catch (\Throwable $e) {
+                    Log::warning('Lobby expiry sweep failed; continuing tick loop.', [
+                        'exception' => $e::class,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
                 self::$lastLobbySweepAt = $now;
+            }
+
+            if ($now - self::$lastActiveSetSyncAt >= 5.0) {
+                try {
+                    $gameManager->syncActiveSetWithPlayingMatches();
+                } catch (\Throwable $e) {
+                    Log::warning('Active tick set sync failed; continuing tick loop.', [
+                        'exception' => $e::class,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+                self::$lastActiveSetSyncAt = $now;
+            }
+
+            try {
+                $gameManager->pruneStaleActiveGameUuids();
+            } catch (\Throwable $e) {
+                Log::warning('Active tick set prune failed; continuing tick loop.', [
+                    'exception' => $e::class,
+                    'message' => $e->getMessage(),
+                ]);
             }
 
             $activeUuids = $gameManager->activeGameUuids();

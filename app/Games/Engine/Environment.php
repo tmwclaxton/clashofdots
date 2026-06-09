@@ -651,15 +651,16 @@ final class Environment
             return;
         }
 
-        $troopIds = array_column($pairs, 0);
-        $troopPaths = array_column($pairs, 1);
+        /** Last row wins when the same entity id appears more than once in one batch. */
+        $pathByTroopId = [];
+        foreach ($pairs as [$id, $path]) {
+            $pathByTroopId[$id] = $path;
+        }
 
         foreach ($this->players as $player) {
             foreach ($player->troops as $troop) {
-                $tidx = array_search($troop->id, $troopIds, true);
-
-                if ($tidx !== false) {
-                    $troop->path = $troopPaths[$tidx];
+                if (array_key_exists($troop->id, $pathByTroopId)) {
+                    $troop->path = $pathByTroopId[$troop->id];
                 }
             }
         }
@@ -690,14 +691,15 @@ final class Environment
             return;
         }
 
-        $cityIds = array_column($pairs, 0);
-        $cityPaths = array_column($pairs, 1);
+        /** Last row wins when the same city id appears more than once in one batch. */
+        $pathByCityId = [];
+        foreach ($pairs as [$id, $path]) {
+            $pathByCityId[$id] = $path;
+        }
 
         foreach ($this->cities as $city) {
-            $cidx = array_search($city->id, $cityIds, true);
-
-            if ($cidx !== false) {
-                $city->path = $cityPaths[$cidx];
+            if (array_key_exists($city->id, $pathByCityId)) {
+                $city->path = $pathByCityId[$city->id];
             }
         }
     }
@@ -807,7 +809,7 @@ final class Environment
                     $target = $troop->path[0];
                     $terrainSpeed = GameConstants::TERRAIN_SPEEDS[$onTerrain];
                     [$dir] = GameMath::xyToDirDis([$target[0] - $oldPos[0], $target[1] - $oldPos[1]]);
-                    $distance = $terrainSpeed * 0.1;
+                    $distance = $terrainSpeed * GameConstants::TROOP_MOVEMENT_PER_TICK_SCALE;
                     [$newOffX, $newOffY] = GameMath::dirDisToXy($dir, $distance);
                     $newPos = [$oldPos[0] + $newOffX, $oldPos[1] + $newOffY];
 
@@ -1021,7 +1023,11 @@ final class Environment
                 $gx = max(0, min($this->gridMaxX, $troop->position[0] / GameConstants::CELL_SIZE));
                 $gy = max(0, min($this->gridMaxY, $troop->position[1] / GameConstants::CELL_SIZE));
 
-                if ($player->vision->getGridValue($gx, $gy) >= GameConstants::THRESHOLD) {
+                $lit = $player->vision->getGridValue($gx, $gy) >= GameConstants::THRESHOLD;
+                /** Always return your own army — vision sampling can sit below {@see GameConstants::THRESHOLD} where brushes pull toward 0. */
+                $isOwnTroop = $troop->owner->slot === $playerSlot;
+
+                if ($isOwnTroop || $lit) {
                     $warmup = $this->troopWarmupMultiplier($troop, $worldTick);
                     $moraleFac = max(0.25, $troop->morale / 100.0);
                     $troops[] = [

@@ -268,10 +268,10 @@ composer run dev
 Submitted orders are stored in **Redis**, but **units only advance when `php artisan game:tick --daemon` is running** (included in Sail’s `game-tick` service and `composer run dev`). If troops never move after you press **Space**:
 
 1. **Redis** — `REDIS_*` must match a running instance (Sail: `redis` host).
-2. **Tick worker** — start `game:tick` or use `composer run dev` / full Sail stack.
+2. **Tick worker** — start `game:tick` or use `composer run dev` / full Sail stack. If `worldTick` never moves, run `./vendor/bin/sail logs game-tick --tail 50`: a failing **lobby expiry** DB query used to abort the whole daemon before ticks ran; that is now isolated, and **`compose.yaml` injects `DB_HOST=pgsql`** into PHP workers so Postgres resolves on the Sail network. The tick loop also **re-syncs `games:active` from the database** periodically so matches are not stuck if Redis dropped the set. **Without the daemon**, the first JSON snapshot in each poll cycle can still advance the sim by **one tick** (heartbeat key `games:tick:daemon-heartbeat` is absent), so the HUD is not stuck at 0; for real-time play you still want `game:tick --daemon` at full tick rate.
 3. **Reverb** — optional for movement; the play page still **polls JSON snapshots every ~1.8s** so you see positions without websockets. Reverb adds lower-latency `GameStateUpdated` pushes.
 
-Regression: `php artisan test tests/Feature/Games/GameTickOrdersTest.php` (requires Redis; skipped otherwise).
+Regression: `php artisan test tests/Feature/Games/GameTickOrdersTest.php` (requires Redis; skipped otherwise). Inspect tick registration: `./vendor/bin/sail artisan game:active-set` (add `--repair` to re-sync from the DB). **Raw `redis-cli SMEMBERS games:active` is often empty** because Laravel prefixes keys with `slug(APP_NAME)-database-`; use the command output or `redis-cli KEYS "*games:active*"`. **Match snapshots must not be cached** — if the HUD still claims time is frozen after Redis looks healthy, hard-refresh the play page once (we send `Cache-Control: no-store` on `/games/{game}/snapshot` and `fetch(..., { cache: 'no-store' })` in the client).
 
 If you prefer to run pieces yourself:
 

@@ -55,6 +55,60 @@ class EnvironmentTest extends TestCase
         ];
     }
 
+    public function test_assign_troop_paths_from_orders_sets_each_troop_in_one_batch(): void
+    {
+        $environment = Environment::create(777, 2);
+        $troopIdA = $environment->players[0]->troops[0]->id;
+        $troopIdB = $environment->players[1]->troops[0]->id;
+        $this->assertNotSame($troopIdA, $troopIdB);
+
+        $pathA = [[110.0, 120.0], [210.0, 220.0]];
+        $pathB = [[310.0, 320.0], [410.0, 420.0]];
+
+        $environment->assignTroopPathsFromOrders([
+            [$troopIdA, $pathA],
+            [$troopIdB, $pathB],
+        ]);
+
+        $this->assertSame($pathA, $environment->players[0]->troops[0]->path);
+        $this->assertSame($pathB, $environment->players[1]->troops[0]->path);
+    }
+
+    public function test_assign_troop_paths_from_orders_last_row_wins_duplicate_id(): void
+    {
+        $environment = Environment::create(778, 2);
+        $troopIdA = $environment->players[0]->troops[0]->id;
+        $first = [[10.0, 10.0], [20.0, 20.0]];
+        $second = [[30.0, 30.0], [40.0, 40.0]];
+
+        $environment->assignTroopPathsFromOrders([
+            [$troopIdA, $first],
+            [$troopIdA, $second],
+        ]);
+
+        $this->assertSame($second, $environment->players[0]->troops[0]->path);
+    }
+
+    public function test_draw_info_always_includes_own_troops_even_when_vision_is_dark(): void
+    {
+        $environment = Environment::create(321, 2);
+        $player = $environment->players[0];
+        $maxX = $environment->gridMaxX;
+        $maxY = $environment->gridMaxY;
+
+        for ($x = 0; $x <= $maxX; $x++) {
+            $player->vision->grid[$x] = array_fill(0, $maxY + 1, 0.0);
+        }
+
+        $info = $environment->drawInfo(0, 0);
+        $ownTroops = array_values(array_filter(
+            $info['troops'],
+            static fn (array $t): bool => ($t['ownerSlot'] ?? -1) === 0,
+        ));
+
+        $this->assertNotEmpty($ownTroops, 'Own troops must be visible to the owning player regardless of fog sampling.');
+    }
+
     public function test_from_array_skips_procedural_generation_and_round_trips(): void
     {
         $original = Environment::create(4242, 2);

@@ -18,6 +18,7 @@ class WikiTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('Wiki')
+            ->has('appDebug')
             ->has('troops', 2)
             ->has('settlements', 2)
             ->has('terrain', count(TerrainCatalog::IDS))

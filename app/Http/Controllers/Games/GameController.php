@@ -238,19 +238,25 @@ class GameController extends Controller
     {
         abort_unless($game->status === GameStatus::Playing, 404);
 
-        return response()->json($gameManager->snapshotPayloadForSlot($game, 0));
+        $gameManager->maybeAdvanceTickIfDaemonAbsent($game);
+
+        $payload = $gameManager->snapshotPayloadForSlot($game, 0);
+
+        return $this->jsonSnapshotNoStore($payload);
     }
 
     public function snapshot(Request $request, Game $game, GameManager $gameManager): JsonResponse
     {
         abort_unless($game->status === GameStatus::Playing, 404);
 
+        $gameManager->maybeAdvanceTickIfDaemonAbsent($game);
+
         if ($request->user() !== null) {
             $player = $game->players()->where('user_id', $request->user()->id)->firstOrFail();
             $payload = $gameManager->snapshotPayloadForPlayer($game, $request->user()->id);
             $gameManager->touchPlayerActivity($game, $player->slot);
 
-            return response()->json($payload);
+            return $this->jsonSnapshotNoStore($payload);
         }
 
         $guestKey = $this->guestKeyFromSession($request);
@@ -262,7 +268,7 @@ class GameController extends Controller
         $payload = $gameManager->snapshotPayloadForGuest($game, $guestKey);
         $gameManager->touchPlayerActivity($game, $player->slot);
 
-        return response()->json($payload);
+        return $this->jsonSnapshotNoStore($payload);
     }
 
     public function submitOrders(SubmitOrdersRequest $request, Game $game, GameManager $gameManager): RedirectResponse
@@ -387,6 +393,19 @@ class GameController extends Controller
             'winnerName' => $winnerName,
             'isWinner' => $isWinner,
         ];
+    }
+
+    /**
+     * Live match JSON must not be cached by browsers or proxies; stale snapshots freeze the HUD worldTick.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function jsonSnapshotNoStore(array $payload): JsonResponse
+    {
+        return response()->json($payload)->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+        ]);
     }
 
     /**

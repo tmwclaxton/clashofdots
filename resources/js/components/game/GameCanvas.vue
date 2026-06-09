@@ -411,6 +411,10 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
     const troopPickR = Math.max(12, 22 / z);
     const cityPickR = Math.max(14, 22 / z);
 
+    type PickHit = { id: number; kind: 'troop' | 'city'; dist: number };
+
+    const hits: PickHit[] = [];
+
     for (const troop of state.troops) {
         if (troop.ownerSlot !== store.slot) {
             continue;
@@ -418,9 +422,10 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
 
         const dx = troop.position[0] - world[0];
         const dy = troop.position[1] - world[1];
+        const dist = Math.hypot(dx, dy);
 
-        if (Math.hypot(dx, dy) < troopPickR) {
-            return { id: troop.id, kind: 'troop' };
+        if (dist < troopPickR) {
+            hits.push({ id: troop.id, kind: 'troop', dist });
         }
     }
 
@@ -431,13 +436,22 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
 
         const dx = city.position[0] - world[0];
         const dy = city.position[1] - world[1];
+        const dist = Math.hypot(dx, dy);
 
-        if (Math.hypot(dx, dy) < cityPickR) {
-            return { id: city.id, kind: 'city' };
+        if (dist < cityPickR) {
+            hits.push({ id: city.id, kind: 'city', dist });
         }
     }
 
-    return null;
+    if (hits.length === 0) {
+        return null;
+    }
+
+    hits.sort((a, b) => a.dist - b.dist);
+
+    const best = hits[0];
+
+    return { id: best.id, kind: best.kind };
 }
 
 function onMouseDown(e: MouseEvent) {

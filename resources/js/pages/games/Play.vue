@@ -17,6 +17,9 @@ const MAX_ARMY = 24;
 /** Mirrors {@see GameConstants::TICK_RATE} — used only for credits/sec hint in the HUD. */
 const TICK_RATE = 30;
 
+/** Vite build mode; exposed for Dev HUD (cannot use `import.meta` inside Vue templates). */
+const viteMode = import.meta.env.MODE;
+
 type GamePayload = {
     uuid: string;
     code: string;
@@ -54,6 +57,74 @@ const showSlowLoadHint = ref(false);
 const lastCityOwners = ref<Record<number, number | null>>({});
 const simulationStallPolls = ref(0);
 let slowLoadHintTimer: ReturnType<typeof setTimeout> | null = null;
+
+const devHudOpen = ref(false);
+
+function hasDevQuery(url: string): boolean {
+    const i = url.indexOf('?');
+    if (i === -1) {
+        return false;
+    }
+
+    try {
+        return new URLSearchParams(url.slice(i + 1)).get('dev') === '1';
+    } catch {
+        return false;
+    }
+}
+
+const devHudEligible = computed((): boolean => {
+    if (page.props.appDebug === true) {
+        return true;
+    }
+
+    if (import.meta.env.DEV) {
+        return true;
+    }
+
+    return hasDevQuery(page.url);
+});
+
+const snapshotPath = computed((): string => {
+    const u = props.snapshotUrl;
+
+    if (u.startsWith('http://') || u.startsWith('https://')) {
+        try {
+            const parsed = new URL(u);
+
+            return parsed.pathname + parsed.search;
+        } catch {
+            return u;
+        }
+    }
+
+    return u;
+});
+
+function formatTickTime(ms: number | null): string {
+    if (ms === null) {
+        return '—';
+    }
+
+    try {
+        return new Date(ms).toLocaleTimeString(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+        });
+    } catch {
+        return '—';
+    }
+}
+
+watch(devHudOpen, (open) => {
+    if (typeof sessionStorage === 'undefined') {
+        return;
+    }
+
+    sessionStorage.setItem('wod_dev_hud_open', open ? '1' : '0');
+});
 
 const broadcastConnection = computed(() => {
     const uid = page.props.auth.user?.id;
@@ -165,6 +236,10 @@ watch(
 );
 
 onMounted(() => {
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wod_dev_hud_open') === '1') {
+        devHudOpen.value = true;
+    }
+
     if (props.spectatorMode) {
         store.disconnect();
         void store.pullSnapshot(props.snapshotUrl, { treat404AsEnded: true });
@@ -302,6 +377,18 @@ onUnmounted(() => {
             </div>
 
             <div
+                v-if="store.initialized"
+                class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
+            >
+                <span
+                    class="wod-chip shrink-0 font-mono text-foreground"
+                    title="Server simulation tick (last JSON snapshot or Reverb GameStateUpdated)"
+                >
+                    Tick {{ store.worldTick }}
+                </span>
+            </div>
+
+            <div
                 v-if="!spectatorMode"
                 class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
             >
@@ -379,7 +466,19 @@ onUnmounted(() => {
                     composer run dev
                 </code>
                 (~{{ TICK_RATE }}&nbsp;Hz). Reloading this page re-registers the match if Redis lost the
-                active-game list.
+                active-game list. If
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.65rem] text-foreground">
+                    redis-cli SMEMBERS games:active
+                </code>
+                looks empty, Laravel is probably using a
+                <span class="font-medium">prefixed</span>
+                key — run
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.65rem] text-foreground">
+                    ./vendor/bin/sail artisan game:active-set
+                </code>
+                (add
+                <code class="rounded bg-muted px-1 py-px font-mono text-[0.65rem] text-foreground">--repair</code>
+                ) from the project root.
             </div>
             <p
                 v-if="!spectatorMode"
@@ -400,6 +499,89 @@ onUnmounted(() => {
                 Watching via timed refresh · Commander 1 fog-of-war view
             </p>
         </header>
+
+        <template v-if="devHudEligible">
+            <Button
+                v-if="!devHudOpen"
+                type="button"
+                size="sm"
+                variant="secondary"
+                class="fixed bottom-20 right-3 z-20 font-mono text-[0.65rem] shadow-md sm:bottom-24 sm:right-4"
+                @click="devHudOpen = true"
+            >
+                Dev HUD
+            </Button>
+            <div
+                v-else
+                class="fixed bottom-16 right-3 z-20 max-h-[min(24rem,58vh)] w-[min(22rem,calc(100vw-1.5rem))] overflow-auto rounded-md border border-border bg-background/95 p-3 font-mono text-[0.65rem] shadow-xl backdrop-blur-sm sm:bottom-20 sm:right-4"
+                role="complementary"
+                aria-label="Developer diagnostics"
+            >
+                <div class="mb-2 flex items-center justify-between gap-2 border-b border-border pb-2">
+                    <span class="font-semibold text-foreground">Sim / net</span>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        class="h-7 px-2 text-xs"
+                        @click="devHudOpen = false"
+                    >
+                        Close
+                    </Button>
+                </div>
+                <dl class="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-x-2 gap-y-1.5 text-muted-foreground">
+                    <dt class="text-foreground/80">worldTick</dt>
+                    <dd>{{ store.worldTick }}</dd>
+                    <dt class="text-foreground/80">stall polls</dt>
+                    <dd>{{ simulationStallPolls }} / {{ SIMULATION_STALL_POLL_THRESHOLD }}</dd>
+                    <dt class="text-foreground/80">snapshot poll</dt>
+                    <dd>{{ MATCH_SNAPSHOT_POLL_MS }} ms</dd>
+                    <dt class="text-foreground/80">Echo</dt>
+                    <dd>{{ store.connected ? 'connected' : 'offline' }}</dd>
+                    <dt class="text-foreground/80">initialized</dt>
+                    <dd>{{ store.initialized }}</dd>
+                    <dt class="text-foreground/80">matchEnded</dt>
+                    <dd>{{ store.matchEnded }}</dd>
+                    <dt class="text-foreground/80">game</dt>
+                    <dd class="break-all">{{ game.uuid }}</dd>
+                    <dt class="text-foreground/80">broadcast</dt>
+                    <dd class="break-all">{{ broadcastConnection ?? '—' }}</dd>
+                    <dt class="text-foreground/80">snapshot</dt>
+                    <dd class="break-all">{{ snapshotPath }}</dd>
+                    <dt class="text-foreground/80">snap Δtick</dt>
+                    <dd>{{ store.devDiagnostics.lastWorldTickDeltaViaSnapshot ?? '—' }}</dd>
+                    <dt class="text-foreground/80">snap RTT</dt>
+                    <dd>
+                        {{
+                            store.devDiagnostics.lastSnapshotDurationMs !== null
+                                ? `${store.devDiagnostics.lastSnapshotDurationMs} ms`
+                                : '—'
+                        }}
+                    </dd>
+                    <dt class="text-foreground/80">snap HTTP</dt>
+                    <dd>{{ store.devDiagnostics.lastSnapshotHttpStatus ?? '—' }}</dd>
+                    <dt class="text-foreground/80">snap @</dt>
+                    <dd>{{ formatTickTime(store.devDiagnostics.lastSnapshotAt) }}</dd>
+                    <dt class="text-foreground/80">snap err</dt>
+                    <dd class="break-words text-destructive">
+                        {{ store.devDiagnostics.lastSnapshotError ?? '—' }}
+                    </dd>
+                    <dt class="text-foreground/80">echo Δtick</dt>
+                    <dd>{{ store.devDiagnostics.lastEchoWorldTickDelta ?? '—' }}</dd>
+                    <dt class="text-foreground/80">echo @</dt>
+                    <dd>{{ formatTickTime(store.devDiagnostics.lastEchoPushAt) }}</dd>
+                    <dt class="text-foreground/80">Vite</dt>
+                    <dd>{{ viteMode }}</dd>
+                    <dt class="text-foreground/80">appDebug</dt>
+                    <dd>{{ page.props.appDebug === true }}</dd>
+                </dl>
+                <p class="mt-2 border-t border-border pt-2 text-[0.6rem] leading-snug text-muted-foreground">
+                    Open with
+                    <code class="rounded bg-muted px-1 text-foreground">?dev=1</code>
+                    or local Vite dev / APP_DEBUG. Panel state persists in sessionStorage.
+                </p>
+            </div>
+        </template>
 
         <div class="relative min-h-0 flex-1 border-y-2 border-foreground">
             <div

@@ -43,13 +43,17 @@ final class MarchingSquares
         $maxX = max(0, count($this->grid) - 1);
         $maxY = max(0, count($this->grid[0] ?? []) - 1);
 
-        $x1 = (int) $x;
-        $y1 = (int) $y;
+        /** Clamp before indexing — callers may pass world coords outside the scalar field. */
+        $xf = max(0.0, min($x, (float) $maxX));
+        $yf = max(0.0, min($y, (float) $maxY));
+
+        $x1 = (int) floor($xf);
+        $y1 = (int) floor($yf);
         $x2 = min($x1 + 1, $maxX);
         $y2 = min($y1 + 1, $maxY);
 
-        $dx = $x - $x1;
-        $dy = $y - $y1;
+        $dx = $xf - (float) $x1;
+        $dy = $yf - (float) $y1;
 
         $p11 = $this->grid[$x1][$y1];
         $p21 = $this->grid[$x2][$y1];

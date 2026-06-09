@@ -48,6 +48,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'appDebug' => (bool) config('app.debug'),
             'auth' => [
                 'user' => $user,
                 'isAdmin' => $user?->isAdmin() ?? false,

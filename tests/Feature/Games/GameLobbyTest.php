@@ -174,6 +174,7 @@ class GameLobbyTest extends TestCase
             ->getJson(route('games.snapshot', $game));
 
         $response->assertOk()
+            ->assertHeader('Cache-Control')
             ->assertJsonStructure([
                 'gameUuid',
                 'slot',
@@ -187,6 +188,10 @@ class GameLobbyTest extends TestCase
             ]);
 
         $this->assertSame($expectedCells, $response->json('terrainCells'));
+        $this->assertStringContainsStringIgnoringCase(
+            'no-store',
+            (string) $response->headers->get('Cache-Control'),
+        );
     }
 
     public function test_submit_orders_rejected_when_game_is_lobby(): void

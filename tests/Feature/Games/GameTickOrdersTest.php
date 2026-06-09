@@ -168,4 +168,43 @@ class GameTickOrdersTest extends TestCase
             Redis::srem('games:active', $game->uuid);
         }
     }
+
+    public function test_sync_active_set_restores_playing_match_removed_from_tick_set(): void
+    {
+        $host = User::factory()->create();
+        $guest = User::factory()->create();
+        $owner = User::factory()->create();
+        $map = Map::factory()->for($owner)->playablePublishedTwoTeam()->create();
+
+        $this->actingAs($host)
+            ->post(route('games.store'), ['map_uuid' => $map->uuid]);
+        $game = Game::query()->firstOrFail();
+
+        $this->actingAs($guest)
+            ->post(route('games.join', $game));
+
+        $this->actingAs($host)
+            ->post(route('games.start', $game));
+
+        $game->refresh();
+        $manager = app(GameManager::class);
+
+        try {
+            $manager->getLiveState($game);
+            Redis::srem('games:active', $game->uuid);
+            $this->assertNotContains($game->uuid, Redis::smembers('games:active') ?: []);
+
+            $manager->syncActiveSetWithPlayingMatches();
+
+            $members = Redis::smembers('games:active') ?: [];
+            $this->assertContains(
+                $game->uuid,
+                $members,
+                'Periodic sync should re-register Playing matches that still have live Redis state.',
+            );
+        } finally {
+            Redis::del('game:live:'.$game->uuid);
+            Redis::srem('games:active', $game->uuid);
+        }
+    }
 }

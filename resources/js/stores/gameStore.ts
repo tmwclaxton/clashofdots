@@ -45,6 +45,28 @@ type DraftPath = {
     kind: 'troop' | 'city';
 };
 
+export type GameDevDiagnostics = {
+    lastSnapshotAt: number | null;
+    lastSnapshotDurationMs: number | null;
+    lastSnapshotHttpStatus: number | null;
+    lastWorldTickDeltaViaSnapshot: number | null;
+    lastSnapshotError: string | null;
+    lastEchoPushAt: number | null;
+    lastEchoWorldTickDelta: number | null;
+};
+
+function emptyDevDiagnostics(): GameDevDiagnostics {
+    return {
+        lastSnapshotAt: null,
+        lastSnapshotDurationMs: null,
+        lastSnapshotHttpStatus: null,
+        lastWorldTickDeltaViaSnapshot: null,
+        lastSnapshotError: null,
+        lastEchoPushAt: null,
+        lastEchoWorldTickDelta: null,
+    };
+}
+
 function initialWorld() {
     return { width: 1280, height: 700, cellSize: 20 };
 }
@@ -129,6 +151,7 @@ export const useGameStore = defineStore('game', {
         winnerName: null as string | null,
         matchEnded: false,
         echo: null as ReturnType<typeof createGameEcho> | null,
+        devDiagnostics: emptyDevDiagnostics(),
     }),
     actions: {
         reset() {
@@ -154,6 +177,7 @@ export const useGameStore = defineStore('game', {
             this.winnerSlot = null;
             this.winnerName = null;
             this.matchEnded = false;
+            this.devDiagnostics = emptyDevDiagnostics();
         },
         connect(gameUuid: string, broadcastConnection: string, slot: number, color: string) {
             this.disconnect();
@@ -171,6 +195,7 @@ export const useGameStore = defineStore('game', {
                     this.applySnapshotPayload(payload);
                 })
                 .listen('.GameStateUpdated', (payload: Record<string, unknown>) => {
+                    const prevTick = this.worldTick;
                     this.latestState = payload.state as GameState;
                     const eco = parseEconomy(payload.economy);
 
@@ -180,6 +205,8 @@ export const useGameStore = defineStore('game', {
 
                     if (payload.worldTick !== undefined && payload.worldTick !== null) {
                         this.worldTick = Number(payload.worldTick);
+                        this.devDiagnostics.lastEchoPushAt = Date.now();
+                        this.devDiagnostics.lastEchoWorldTickDelta = this.worldTick - prevTick;
                     }
                 })
                 .listen('.GameEnded', (payload: Record<string, unknown>) => {
@@ -238,12 +265,16 @@ export const useGameStore = defineStore('game', {
             await this.pullSnapshot(url);
         },
         async pullSnapshot(url: string, options?: { treat404AsEnded?: boolean }) {
+            const prevTick = this.worldTick;
+            const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+
             try {
                 const raw = document.cookie
                     .split('; ')
                     .find((row) => row.startsWith('XSRF-TOKEN='))
                     ?.split('=')[1];
                 const res = await fetch(url, {
+                    cache: 'no-store',
                     credentials: 'same-origin',
                     headers: {
                         Accept: 'application/json',
@@ -256,18 +287,35 @@ export const useGameStore = defineStore('game', {
                     },
                 });
 
+                const elapsedMs =
+                    typeof performance !== 'undefined' ? Math.round(performance.now() - t0) : null;
+
                 if (!res.ok) {
                     if (options?.treat404AsEnded && res.status === 404) {
                         this.matchEnded = true;
                     }
+
+                    this.devDiagnostics.lastSnapshotAt = Date.now();
+                    this.devDiagnostics.lastSnapshotDurationMs = elapsedMs;
+                    this.devDiagnostics.lastSnapshotHttpStatus = res.status;
+                    this.devDiagnostics.lastWorldTickDeltaViaSnapshot = null;
+                    this.devDiagnostics.lastSnapshotError = `HTTP ${res.status}`;
 
                     return;
                 }
 
                 const data = (await res.json()) as Record<string, unknown>;
                 this.applySnapshotPayload(data);
-            } catch {
-                // Echo may still deliver GameInitialized
+
+                this.devDiagnostics.lastSnapshotAt = Date.now();
+                this.devDiagnostics.lastSnapshotDurationMs = elapsedMs;
+                this.devDiagnostics.lastSnapshotHttpStatus = res.status;
+                this.devDiagnostics.lastWorldTickDeltaViaSnapshot = this.worldTick - prevTick;
+                this.devDiagnostics.lastSnapshotError = null;
+            } catch (e) {
+                this.devDiagnostics.lastSnapshotAt = Date.now();
+                this.devDiagnostics.lastSnapshotError =
+                    e instanceof Error ? e.message : 'Snapshot fetch failed';
             }
         },
         disconnect() {
@@ -276,6 +324,13 @@ export const useGameStore = defineStore('game', {
             this.reset();
         },
         beginPath(entityId: number, kind: 'troop' | 'city', start: Point) {
+            if (
+                this.activeDraft !== null &&
+                (this.activeDraft.entityId !== entityId || this.activeDraft.kind !== kind)
+            ) {
+                this.finishPath();
+            }
+
             this.activeDraft = {
                 entityId,
                 kind,
