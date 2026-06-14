@@ -3,11 +3,14 @@
 namespace Tests\Feature\Games;
 
 use App\Enums\GameStatus;
+use App\Games\Services\GameManager;
 use App\Games\Services\GuestGameIdentity;
+use App\Jobs\LaunchLobbyJob;
 use App\Models\Game;
 use App\Models\Map;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Predis\Client;
 use Tests\TestCase;
@@ -25,6 +28,19 @@ class GameLobbyTest extends TestCase
         }
     }
 
+    protected function tearDown(): void
+    {
+        // Flush game-related Redis keys so tests don't bleed state into each other.
+        $keys = Redis::keys('game:*');
+        if (! empty($keys)) {
+            Redis::del(...$keys);
+        }
+
+        Redis::del('games:active');
+
+        parent::tearDown();
+    }
+
     public function test_guest_can_view_lobbies_without_login(): void
     {
         $this->get(route('lobbies.index'))
@@ -35,6 +51,8 @@ class GameLobbyTest extends TestCase
 
     public function test_guest_can_join_lobby_with_browser_session(): void
     {
+        Queue::fake();
+
         $host = User::factory()->create();
         $owner = User::factory()->create();
         $map = Map::factory()->for($owner)->playablePublishedTwoTeam()->create();
@@ -43,6 +61,9 @@ class GameLobbyTest extends TestCase
             ->post(route('games.store'), ['map_uuid' => $map->uuid]);
 
         $game = Game::query()->firstOrFail();
+
+        // Reset auth so subsequent requests are made as a guest browser session.
+        $this->app['auth']->forgetGuards();
 
         $this->get(route('lobbies.index'));
         $guestKey = session(GuestGameIdentity::SESSION_KEY);
@@ -93,6 +114,8 @@ class GameLobbyTest extends TestCase
 
     public function test_host_can_start_a_two_player_game(): void
     {
+        Queue::fake();
+
         $host = User::factory()->create();
         $guest = User::factory()->create();
         $owner = User::factory()->create();
@@ -106,9 +129,19 @@ class GameLobbyTest extends TestCase
         $this->actingAs($guest)
             ->post(route('games.join', $game));
 
+        // Host starts the countdown — now redirects to the lobby (not play) while countdown runs.
         $this->actingAs($host)
             ->post(route('games.start', $game))
-            ->assertRedirect(route('games.play', $game));
+            ->assertRedirect(route('games.show', $game));
+
+        $game->refresh();
+
+        $this->assertSame(GameStatus::Lobby, $game->status);
+        $this->assertNotNull($game->countdown_started_at);
+
+        // Simulate the job firing after the countdown elapses.
+        Queue::assertPushed(LaunchLobbyJob::class);
+        (new LaunchLobbyJob($game->id))->handle(app(GameManager::class));
 
         $game->refresh();
 
@@ -119,6 +152,8 @@ class GameLobbyTest extends TestCase
 
     public function test_create_lobby_snapshots_map_data_and_survives_map_deletion(): void
     {
+        Queue::fake();
+
         $host = User::factory()->create();
         $guest = User::factory()->create();
         $owner = User::factory()->create();
@@ -142,15 +177,24 @@ class GameLobbyTest extends TestCase
         $this->assertNull($game->map_id);
         $this->assertIsArray($game->map_data);
 
+        // Start begins the countdown and redirects to the lobby page.
         $this->actingAs($host)
             ->post(route('games.start', $game))
-            ->assertRedirect(route('games.play', $game));
+            ->assertRedirect(route('games.show', $game));
+
+        // Map data is preserved in the snapshot even after the map is deleted.
+        $game->refresh();
+        $this->assertNotNull($game->countdown_started_at);
+
+        (new LaunchLobbyJob($game->id))->handle(app(GameManager::class));
 
         $this->assertSame(GameStatus::Playing, $game->fresh()->status);
     }
 
     public function test_snapshot_endpoint_returns_json_for_playing_participant(): void
     {
+        Queue::fake();
+
         $host = User::factory()->create();
         $guest = User::factory()->create();
         $owner = User::factory()->create();
@@ -165,6 +209,9 @@ class GameLobbyTest extends TestCase
 
         $this->actingAs($host)
             ->post(route('games.start', $game));
+
+        // Simulate the launch job firing after the countdown.
+        (new LaunchLobbyJob($game->id))->handle(app(GameManager::class));
 
         $game->refresh();
         $expectedCells = $game->map_data['data']['cells'] ?? null;
@@ -209,7 +256,7 @@ class GameLobbyTest extends TestCase
                 'troop_orders' => [],
                 'city_orders' => [],
             ])
-            ->assertStatus(422);
+            ->assertStatus(403);
     }
 
     public function test_store_requires_map_uuid(): void
