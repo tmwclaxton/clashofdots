@@ -43,6 +43,13 @@ final class GameConstants
     /** Morale drain applied when a troop is encircled (in enemy territory). */
     public const float TROOP_SUPPLY_CUT_MORALE_DRAIN = 0.5;
 
+    /**
+     * Minimum border-brush influence a player must have at a grid cell to claim it as
+     * their territory.  Cells where no player reaches this threshold are neutral and
+     * render without fills or border lines.
+     */
+    public const float TERRITORY_CLAIM_THRESHOLD = 0.01;
+
     /** Starting credits per commander (spent on recruits). */
     public const int ECONOMY_STARTING_CREDITS = 220;
 

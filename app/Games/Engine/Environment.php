@@ -578,53 +578,30 @@ final class Environment
     /**
      * Returns true if the troop's grid cell is owned by the given player (or a teammate).
      *
-     * Territory ownership mirrors the scoring used in drawInfo(): each cell belongs to
-     * whichever player has the highest combined score of border-brush influence (×5) and
-     * Voronoi proximity to their nearest anchor (start position or owned city).
+     * Mirrors the territory calculation in drawInfo(): ownership is determined purely
+     * by border-brush influence above TERRITORY_CLAIM_THRESHOLD.  Neutral cells (below
+     * threshold for all players) are not considered own territory.
      */
     private function isInOwnTerritory(Player $player, array $troopPosition): bool
     {
         $cs = GameConstants::CELL_SIZE;
         $gx = (int) ($troopPosition[0] / $cs);
         $gy = (int) ($troopPosition[1] / $cs);
-        $cx = ($gx + 0.5) * $cs;
-        $cy = ($gy + 0.5) * $cs;
 
-        $mapW = ($this->gridMaxX + 1) * $cs;
-        $mapH = ($this->gridMaxY + 1) * $cs;
-        $voronoiScale = (float) max($mapW, $mapH);
-        $scaleSq = $voronoiScale * $voronoiScale;
-
-        $bestScore = -1.0;
-        $bestPlayer = $this->players[0];
+        $bestInfluence = GameConstants::TERRITORY_CLAIM_THRESHOLD;
+        $bestPlayer = null;
 
         foreach ($this->players as $p) {
             $influence = $p->border->grid[$gx][$gy] ?? 0.0;
 
-            $anchors = [[$p->startPos[0], $p->startPos[1]]];
-            foreach ($this->cities as $city) {
-                if ($city->owner === $p) {
-                    $anchors[] = $city->position;
-                }
-            }
-
-            $minDistSq = PHP_FLOAT_MAX;
-            foreach ($anchors as [$ax, $ay]) {
-                $dx = $ax - $cx;
-                $dy = $ay - $cy;
-                $distSq = $dx * $dx + $dy * $dy;
-                if ($distSq < $minDistSq) {
-                    $minDistSq = $distSq;
-                }
-            }
-
-            $proximity = $scaleSq / ($scaleSq + $minDistSq);
-            $score = $influence * 5.0 + $proximity;
-
-            if ($score > $bestScore) {
-                $bestScore = $score;
+            if ($influence > $bestInfluence) {
+                $bestInfluence = $influence;
                 $bestPlayer = $p;
             }
+        }
+
+        if ($bestPlayer === null) {
+            return false; // neutral cell — neither own nor enemy territory
         }
 
         if ($bestPlayer === $player) {
@@ -1152,71 +1129,29 @@ final class Environment
         // 2. Voronoi proximity to the player's nearest anchor (owned city or
         //    start position).  This divides the whole map even in areas where no
         //    unit has yet reached, giving every cell an owner from tick one.
+        // Territory is determined purely by border-brush influence.
         //
-        // Score for player p at cell (gx,gy):
-        //   score = influence(p) × 3  +  scaleSq / (scaleSq + minDistSq(p))
-        //
-        // Combining the two signals means gameplay control dominates near
-        // units while distance-based Voronoi fills the rest of the map.
-
-        // Pre-compute anchor positions per player (owned cities + start pos).
-        // We use squared distances to avoid sqrt in the hot loop.
-        $cs = GameConstants::CELL_SIZE;
-        $mapW = ($this->gridMaxX + 1) * $cs;
-        $mapH = ($this->gridMaxY + 1) * $cs;
-        $voronoiScale = (float) max($mapW, $mapH);
-        $scaleSq = $voronoiScale * $voronoiScale;
-
-        /** @var array<int, list<array{0: float, 1: float}>> $anchorsBySlot */
-        $anchorsBySlot = [];
-        foreach ($this->players as $p) {
-            $anchors = [[$p->startPos[0], $p->startPos[1]]];
-            foreach ($this->cities as $city) {
-                if ($city->owner === $p) {
-                    $anchors[] = [$city->position[0], $city->position[1]];
-                }
-            }
-            $anchorsBySlot[$p->slot] = $anchors;
-        }
+        // Each cell is owned by whichever player has the highest brush influence
+        // at that cell, provided it exceeds TERRITORY_CLAIM_THRESHOLD.  Cells
+        // where no player reaches the threshold are neutral (slot = -1) and
+        // render without fills or border lines.  This produces War-of-Dots-style
+        // blobs that form around troops and cities rather than a static Voronoi
+        // split across the whole map.
 
         $territory = [];
 
         for ($gx = 0; $gx < $gridW; $gx++) {
             $col = [];
-            $cx = ($gx + 0.5) * $cs;
 
             for ($gy = 0; $gy < $gridH; $gy++) {
-                $cy = ($gy + 0.5) * $cs;
-
-                $bestSlot = $this->players[0]->slot;
-                $bestScore = -1.0;
+                $bestSlot = -1;
+                $bestInfluence = GameConstants::TERRITORY_CLAIM_THRESHOLD;
 
                 foreach ($this->players as $p) {
-                    // Signal 1: actual border-brush influence at this cell.
                     $influence = $p->border->grid[$gx][$gy] ?? 0.0;
 
-                    // Signal 2: Voronoi proximity to nearest anchor.
-                    $minDistSq = PHP_FLOAT_MAX;
-                    foreach ($anchorsBySlot[$p->slot] as [$ax, $ay]) {
-                        $dx = $ax - $cx;
-                        $dy = $ay - $cy;
-                        $distSq = $dx * $dx + $dy * $dy;
-                        if ($distSq < $minDistSq) {
-                            $minDistSq = $distSq;
-                        }
-                    }
-                    $proximity = $scaleSq / ($scaleSq + $minDistSq);
-
-                    // Border-brush influence is multiplied by 5 so that a supply
-                    // line of troops (each contributing a 40 px brush radius) can
-                    // meaningfully push the border forward.  A lone isolated unit
-                    // deep in enemy territory (influence ≈ 0.02–0.05) barely
-                    // overcomes the Voronoi pull toward the enemy capital, so
-                    // troops must maintain connected lines to hold territory.
-                    $score = $influence * 5.0 + $proximity;
-
-                    if ($score > $bestScore) {
-                        $bestScore = $score;
+                    if ($influence > $bestInfluence) {
+                        $bestInfluence = $influence;
                         $bestSlot = $p->slot;
                     }
                 }

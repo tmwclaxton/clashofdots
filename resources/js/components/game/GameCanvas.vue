@@ -381,6 +381,19 @@ function drawTerritory(
         return cx * cH + cy;
     }
 
+    // ── 0. Fill territory cells with the owning player's color ──────────────
+    ctx.save();
+    for (let gx = 0; gx < w; gx++) {
+        for (let gy = 0; gy < h; gy++) {
+            const slot = territory[gx][gy];
+            const color = playerColors[slot];
+            if (!color) continue;
+            ctx.fillStyle = `rgba(${color[0]},${color[1]},${color[2]},0.18)`;
+            ctx.fillRect(gx * cellSize, gy * cellSize, cellSize, cellSize);
+        }
+    }
+    ctx.restore();
+
     // ── 1. Build per-player boundary-edge adjacency graphs ──────────────────
     // Each boundary edge is assigned to the player whose cell we are currently
     // iterating, so every edge belongs to exactly one player's graph.
@@ -400,13 +413,18 @@ function drawTerritory(
     for (let gx = 0; gx < w; gx++) {
         for (let gy = 0; gy < h; gy++) {
             const owner = territory[gx][gy];
-            // horizontal edge: boundary below this cell — assigned to current cell's owner
+            // horizontal edge: boundary below this cell
             if (gy + 1 < h && territory[gx][gy + 1] !== owner) {
-                playerLink(owner, gx, gy + 1, gx + 1, gy + 1);
+                const other = territory[gx][gy + 1];
+                // Assign to the real player's slot; neutral (-1) cells have no color of their own.
+                const edgeSlot = owner >= 0 ? owner : other;
+                if (edgeSlot >= 0) playerLink(edgeSlot, gx, gy + 1, gx + 1, gy + 1);
             }
-            // vertical edge: boundary to the right — assigned to current cell's owner
+            // vertical edge: boundary to the right
             if (gx + 1 < w && territory[gx + 1][gy] !== owner) {
-                playerLink(owner, gx + 1, gy, gx + 1, gy + 1);
+                const other = territory[gx + 1][gy];
+                const edgeSlot = owner >= 0 ? owner : other;
+                if (edgeSlot >= 0) playerLink(edgeSlot, gx + 1, gy, gx + 1, gy + 1);
             }
         }
     }
@@ -423,12 +441,12 @@ function drawTerritory(
     }
 
     ctx.save();
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.globalAlpha = 0.75;
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 3;
+    ctx.globalAlpha = 0.9;
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 4;
 
     for (const [slot, adj] of playerAdj) {
         const color = playerColors[slot];
