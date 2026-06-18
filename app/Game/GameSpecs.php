@@ -164,9 +164,9 @@ final class GameSpecs
             'dense_forest' => 'Thick woodland. Infantry penalty is mild; tanks are severely hampered.',
             'hill' => 'High ground. Tanks move slowly but keep full damage - strong on hilltops above forest.',
             'mountain' => 'Impassable peaks. Units cannot cross; no combat occurs here.',
-            'water' => 'Shallow lakes. Slows all units, weakens attacks, and deals damage over time.',
-            'deep_water' => 'Open ocean. Worse penalties than shallow water - cross only in desperation.',
-            'river' => 'Narrow waterways. Same risks as water; a defended river stops most pushes cold.',
+            'water' => 'Shallow lakes. When a drafted path crosses water you choose Wade (instant, continuous HP drain, cannot enter deep water) or Embark (3 s shore conversion to a ship — faster on water, no drain, can cross deep water).',
+            'deep_water' => 'Open ocean. Ships only — wading troops are blocked here. Embark before entering or route around.',
+            'river' => 'Narrow waterways. Wading works for short crossings; embark if the river is wide or connects to open water.',
             'swamp' => 'Boggy wetland. Mud-like penalties slow everyone and reduce damage output.',
             'desert' => 'Sandy dunes. Tanks move as fast as infantry - the best heavy-unit terrain.',
             'beach' => 'Coastal sand. Minor slowdown; still favorable for tanks approaching landings.',
@@ -279,6 +279,11 @@ final class GameSpecs
                 'title' => 'Encirclement',
                 'icon' => 'radar',
                 'body' => 'Cut off from friendly settlements, a pocket army depends only on cities inside the encirclement. Isolate enemy groups to starve them without fighting.',
+            ],
+            [
+                'title' => 'Water crossing',
+                'icon' => 'waves',
+                'body' => 'When a drafted path crosses water a prompt lets you choose Wade or Embark. Wade is instant but drains HP every tick and cannot enter deep water. Embark spends ~3 s converting the unit to a ship at the shore — ships move faster, take no water damage, and can cross deep water freely. The ship reverts to a troop the moment it reaches dry land.',
             ],
         ];
     }

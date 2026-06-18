@@ -132,6 +132,19 @@ Thirteen brush types paint the vertex grid in the Map Builder and appear on the 
 
 Infantry generally keeps speed in forests and hills; tanks excel on plains, desert, and beach but bog down in woodland, water, and snow. Snow slows all units and chills attack output—tanks are hit hardest. Full speed, attack, and defense multipliers for every tile are on the wiki terrain table.
 
+### Water crossing — Wade vs Embark
+
+Whenever a drafted path crosses **water**, **river**, or **deep water** tiles a modal prompts you to pick a crossing mode before the orders are submitted.
+
+| Mode | How it works | HP drain | Deep water | Visual cue |
+|------|-------------|----------|-----------|------------|
+| **Wade** | Unit moves through water immediately as a normal troop | 1 HP / tick while in water | Blocked — troops are halted at the deep-water boundary | None |
+| **Embark** | Unit pauses at the shore for ~3 s (90 ticks) while converting to a ship | No drain once converted; damage applies during the conversion window | Accessible — ships can cross deep water freely | Pulsing dashed ring during conversion; pointed-oval (boat) hull once converted |
+
+Ships revert to troops the moment they step back onto dry land, resetting the `waterTicks` counter and `isShip` flag.
+
+**Tactical summary:** Use **Wade** for short river crossings where speed matters and you can afford the attrition. **Embark** for ocean or deep-water crossings, island-hopping, or any route where you need to keep the unit at full health.
+
 ### Map generation previews
 
 Procedural **Map Builder** styles (deterministic previews, same seed). These match the **Map generation styles** section on the wiki.

@@ -17,6 +17,7 @@ import {
     Swords,
     UserPlus,
     Wallet,
+    Waves,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
@@ -89,6 +90,7 @@ const economyIconMap: Record<string, LucideIcon> = {
     package: Package,
     'user-plus': UserPlus,
     radar: Radar,
+    waves: Waves,
 };
 
 function economyIcon(slug: string): LucideIcon {
@@ -349,7 +351,10 @@ function speedClass(speed: number, impassable: boolean): string {
                         Speed and attack use the War of Dots scale (plains infantry
                         speed&nbsp;=&nbsp;0.5, attack&nbsp;=&nbsp;0.08). The pixel
                         under a unit’s center determines which terrain applies. Mountains are
-                        impassable; water tiles deal damage over time.
+                        impassable. When a drafted path crosses water a prompt lets you choose
+                        <strong>Wade</strong> (instant, continuous HP drain, blocked from deep
+                        water) or <strong>Embark</strong> (~3&nbsp;s shore conversion to a
+                        ship — faster on water, no drain, can cross deep water).
                     </p>
                 </div>
             </div>
