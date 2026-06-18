@@ -13,6 +13,7 @@ type Profile = {
     name: string;
     playerTag: string;
     avatar: string;
+    avatarStyle: string;
     profileUuid: string;
     memberSince: string | null;
 };
@@ -63,7 +64,7 @@ function formatDate(iso: string | null): string {
             <div class="flex items-start gap-4">
                 <Avatar class="size-20 border-2 border-foreground bg-black">
                     <AvatarImage
-                        :src="avatarUrl(profile.profileUuid)"
+                        :src="avatarUrl(profile.profileUuid, profile.avatarStyle)"
                         :alt="profile.playerTag"
                     />
                     <AvatarFallback class="text-lg font-bold">

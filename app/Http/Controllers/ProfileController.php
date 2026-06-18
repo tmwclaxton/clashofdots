@@ -73,6 +73,7 @@ class ProfileController extends Controller
                 'name' => $profile->name,
                 'playerTag' => $profile->game_display_name ?: $profile->name,
                 'avatar' => $profile->avatar,
+                'avatarStyle' => $profile->avatar_style ?? 'pixel-art',
                 'profileUuid' => $profile->profile_uuid,
                 'memberSince' => $profile->created_at?->toIso8601String(),
             ],
@@ -92,6 +93,7 @@ class ProfileController extends Controller
                 'profileUuid' => $user->profile_uuid,
                 'name' => $user->game_display_name ?: $user->name,
                 'avatar' => $user->avatar,
+                'avatarStyle' => $user->avatar_style ?? 'pixel-art',
             ],
             $this->statsFromUserCounts($user),
         );

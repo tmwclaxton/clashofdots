@@ -4,6 +4,7 @@ export type User = {
     game_display_name: string | null;
     email: string;
     avatar?: string;
+    avatar_style?: string;
     profile_uuid?: string;
     email_verified_at: string | null;
     created_at: string;

@@ -244,7 +244,7 @@ const rightNavItems: NavItem[] = [
                                 >
                                     <AvatarImage
                                         v-if="auth.user.profile_uuid"
-                                        :src="avatarUrl(auth.user.profile_uuid)"
+                                        :src="avatarUrl(auth.user.profile_uuid, auth.user.avatar_style as string)"
                                         :alt="auth.user.game_display_name ?? auth.user.name"
                                     />
                                     <AvatarFallback

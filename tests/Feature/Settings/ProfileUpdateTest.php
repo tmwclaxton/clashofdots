@@ -40,6 +40,57 @@ class ProfileUpdateTest extends TestCase
         $this->assertSame('Updated Name', $user->name);
     }
 
+    public function test_avatar_style_can_be_updated()
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/settings/profile', [
+                'name' => $user->name,
+                'avatar_style' => 'lorelei',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('profile.edit'));
+
+        $user->refresh();
+
+        $this->assertSame('lorelei', $user->avatar_style);
+    }
+
+    public function test_avatar_style_defaults_to_pixel_art_when_omitted()
+    {
+        $user = User::factory()->create(['avatar_style' => 'bottts']);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/settings/profile', [
+                'name' => $user->name,
+            ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $user->refresh();
+
+        $this->assertSame('pixel-art', $user->avatar_style);
+    }
+
+    public function test_avatar_style_must_be_a_valid_style()
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/settings/profile', [
+                'name' => $user->name,
+                'avatar_style' => 'invalid-style',
+            ]);
+
+        $response->assertSessionHasErrors(['avatar_style']);
+    }
+
     public function test_user_can_delete_their_account()
     {
         $user = User::factory()->create();

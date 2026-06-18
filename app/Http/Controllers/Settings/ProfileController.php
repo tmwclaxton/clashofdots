@@ -31,6 +31,7 @@ class ProfileController extends Controller
         $request->user()->update([
             'name' => $request->name,
             'game_display_name' => $request->input('game_display_name') ?: null,
+            'avatar_style' => $request->input('avatar_style') ?: 'pixel-art',
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);

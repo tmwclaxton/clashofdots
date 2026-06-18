@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<Props>(), {
 const { getInitials } = useInitials();
 
 const avatarSrc = computed(() =>
-    props.user.profile_uuid ? avatarUrl(props.user.profile_uuid) : null,
+    props.user.profile_uuid ? avatarUrl(props.user.profile_uuid, props.user.avatar_style as string) : null,
 );
 </script>
 

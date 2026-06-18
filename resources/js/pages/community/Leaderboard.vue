@@ -13,6 +13,7 @@ type Row = {
     profileUuid: string;
     name: string;
     avatar: string;
+    avatarStyle: string;
     wins: number;
     losses: number;
     matchesPlayed: number;
@@ -70,7 +71,7 @@ defineProps<{
                             >
                                 <Avatar class="size-9 border-2 border-foreground bg-black">
                                     <AvatarImage
-                                        :src="avatarUrl(row.profileUuid)"
+                                        :src="avatarUrl(row.profileUuid, row.avatarStyle)"
                                         :alt="row.name"
                                     />
                                     <AvatarFallback class="text-xs font-bold">

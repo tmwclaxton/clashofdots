@@ -133,7 +133,7 @@ const navItems = computed<NavItem[]>(() => {
                             >
                                 <AvatarImage
                                     v-if="user.profile_uuid"
-                                    :src="avatarUrl(user.profile_uuid)"
+                                    :src="avatarUrl(user.profile_uuid, user.avatar_style as string)"
                                     :alt="user.game_display_name ?? user.name"
                                 />
                                 <AvatarFallback
