@@ -132,6 +132,47 @@ Thirteen brush types paint the vertex grid in the Map Builder and appear on the 
 
 Infantry generally keeps speed in forests and hills; tanks excel on plains, desert, and beach but bog down in woodland, water, and snow. Snow slows all units and chills attack output—tanks are hit hardest. Full speed, attack, and defense multipliers for every tile are on the wiki terrain table.
 
+### Planning & executing orders
+
+Clash of Dots uses a **draw-then-commit** order system. Nothing moves until you press **Space**; you can revise paths freely before committing.
+
+#### Drawing paths
+
+| Action | What happens |
+|--------|-------------|
+| **Click + drag from a unit** | Begins a movement path for that troop or city rally point. Drag to the destination and release. |
+| **Re-drag the same unit** | Replaces its existing draft path. |
+| **Click + drag on empty ground** | Draws a lasso rectangle. All own troops inside are selected as a group. |
+| **Drag from any selected troop** | Extends draft paths for every troop in the group simultaneously. |
+| **Right-click + drag** (or two-finger drag on touch) | Pans the camera without affecting drafts. |
+| **Scroll / pinch** | Zooms. |
+
+Drafted paths are shown as coloured lines from each unit to its destination. The path is stored locally in the `draftStore` — it has **not** reached the server yet.
+
+#### Committing orders
+
+| Input | Effect |
+|-------|--------|
+| **Space** | Submits all drafted paths to the server via `POST /games/{uuid}/orders`. Paths are cleared from the draft store on success. |
+| **C** | Clears all local drafts without submitting anything. |
+| **S** | Halts all own troops immediately — sends an empty-path order for every unit you own. |
+
+#### What happens on the server
+
+1. `SubmitOrdersRequest` validates the payload (path point arrays, optional water-mode strings).
+2. `GameManager::submitOrders` merges the incoming orders with any previously stored orders for that player in Redis — a second submit for the same troop *replaces* that troop's path.
+3. The merged paths are written back to Redis without running any simulation.
+4. The `game:tick --daemon` process (running at **30 Hz**) picks up the new paths on the next tick, advances the simulation, and broadcasts a `GameStateUpdated` event via **Reverb**.
+
+#### Seeing the result
+
+The Vue canvas receives state in two ways:
+
+- **Reverb / Echo push** — `GameStateUpdated` events arrive in ~33 ms for the lowest latency.
+- **HTTP snapshot polling** — if WebSockets are unavailable the canvas polls `GET /games/{uuid}/snapshot` every ~1.8 s as a fallback.
+
+Both paths call `applySnapshotPayload` in `gameStore`, which updates the Pinia state and triggers the RAF render loop to redraw troop positions, paths, health bars, and territory.
+
 ### Water crossing — Wade vs Embark
 
 Whenever a drafted path crosses **water**, **river**, or **deep water** tiles a modal prompts you to pick a crossing mode before the orders are submitted.
