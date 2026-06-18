@@ -505,7 +505,7 @@ final class Environment
             return 'forest';
         }
 
-        $name = 'forest';
+        $name = 'water';
         foreach (array_reverse(GameConstants::TERRAIN_VALUES, true) as $terrainName => $threshold) {
             if ($value > $threshold) {
                 return $terrainName;

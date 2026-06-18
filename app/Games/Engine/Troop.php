@@ -17,6 +17,12 @@ final class Troop
     /** True when waterTicks has reached {@see GameConstants::SHIP_CONVERSION_TICKS}. */
     public bool $isShip = false;
 
+    /**
+     * 'wade'   = cross water as a troop (takes damage, no ship conversion, blocked from deep_water).
+     * 'embark' = convert to a ship after {@see GameConstants::SHIP_CONVERSION_TICKS} ticks.
+     */
+    public string $waterMode = 'embark';
+
     /** 0–100; affects attack effectiveness when fatigued. */
     public int $morale = 100;
 
@@ -67,6 +73,7 @@ final class Troop
             'type' => $this->type,
             'waterTicks' => $this->waterTicks,
             'isShip' => $this->isShip,
+            'waterMode' => $this->waterMode,
         ];
     }
 

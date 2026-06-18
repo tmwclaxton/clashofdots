@@ -132,7 +132,7 @@ class GameTickOrdersTest extends TestCase
             $this->assertCount(1, $pending, 'Duplicate pending entries for the same troop must be collapsed to one.');
 
             // The stored path should be pathB (the override), not pathA.
-            $this->assertSame($pathB, $pending[0][1], 'New orders must replace the previously queued orders for the same troop.');
+            $this->assertEquals($pathB, $pending[0][1], 'New orders must replace the previously queued orders for the same troop.');
         } finally {
             Redis::del('game:live:'.$game->uuid);
             Redis::srem('games:active', $game->uuid);

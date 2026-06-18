@@ -286,4 +286,50 @@ class QuickStartAutoCreateTest extends TestCase
         // No suitable map fits; no game created.
         $this->assertDatabaseCount('games', 0);
     }
+
+    public function test_falls_back_to_next_best_map_if_first_map_fails_creation(): void
+    {
+        // Create an invalid map with high likes_count (will be selected first but fail validation).
+        $invalidMap = Map::factory()->playablePublishedTwoTeam()->create([
+            'likes_count' => 100,
+            'data' => [
+                'teamCount' => 2,
+                'width' => 100,
+                'height' => 100,
+                'markers' => [
+                    [
+                        'type' => 'troop',
+                        'team' => 0,
+                        'row' => 1,
+                        'col' => 1,
+                        'index' => 0,
+                    ],
+                    [
+                        'type' => 'flag',
+                        'team' => 0,
+                        'row' => 1,
+                        'col' => 2, // too close to troop spawn
+                        'index' => 1,
+                    ],
+                ],
+            ],
+        ]);
+
+        // Create a valid map with lower likes_count.
+        $validMap = Map::factory()->playablePublishedTwoTeam()->create(['likes_count' => 10]);
+
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $this->enqueueUserReady($userA);
+        $this->enqueueUserReady($userB);
+
+        app(GameManager::class)->runQuickStart();
+
+        // A game should be created using the valid map, not the invalid one.
+        $this->assertDatabaseCount('games', 1);
+        $game = Game::first();
+        $this->assertEquals($validMap->id, $game->map_id);
+        $this->assertDatabaseHas('quick_start_entries', ['user_id' => $userA->id, 'status' => 'matched', 'game_id' => $game->id]);
+        $this->assertDatabaseHas('quick_start_entries', ['user_id' => $userB->id, 'status' => 'matched', 'game_id' => $game->id]);
+    }
 }

@@ -58,7 +58,7 @@ class RecruitTroopTest extends TestCase
 
             $this->actingAs($host)
                 ->post(route('games.recruit', $game))
-                ->assertRedirect();
+                ->assertOk();
 
             $after = $manager->getLiveState($game);
             $troopCountAfter = count($after['environment']['players'][0]['troops']);

@@ -53,7 +53,7 @@ class CreateGameRequest extends FormRequest
                 return;
             }
 
-            foreach (MapMarkers::validate($data) as $message) {
+            foreach (MapMarkers::validateCapitalsReachable($data) as $message) {
                 $validator->errors()->add('map_uuid', $message);
             }
         });

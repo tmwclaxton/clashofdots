@@ -29,6 +29,9 @@ final class GameManager
 {
     private const string ACTIVE_SET = 'games:active';
 
+    /** @var array<string, array<string, mixed>|null> */
+    private static array $mapCache = [];
+
     /**
      * Seconds a quick-start player must wait before the system creates a new
      * game on their behalf (when no existing lobby is available to fill).
@@ -53,7 +56,7 @@ final class GameManager
             abort(422, 'This map has invalid data.');
         }
 
-        $errors = MapMarkers::validate($data);
+        $errors = MapMarkers::validateCapitalsReachable($data);
         if ($errors !== []) {
             abort(422, implode(' ', $errors));
         }
@@ -442,7 +445,7 @@ final class GameManager
             // then largest teamCount that fits within the ready count, both
             // ordered by likes_count descending to prefer popular maps.
             // Sorting is done in PHP to remain database-agnostic (data is a JSON column).
-            $map = Map::query()
+            $maps = Map::query()
                 ->where('published', true)
                 ->orderByDesc('likes_count')
                 ->get()
@@ -458,28 +461,38 @@ final class GameManager
                     // Then prefer larger team counts (negate for ascending sort).
                     // likes_count already sorted descending by the DB query.
                     return [($teamCount === $playerCount) ? 0 : 1, -$teamCount];
-                })
-                ->first();
+                });
 
-            if ($map === null) {
+            if ($maps->isEmpty()) {
                 break; // No suitable published map available.
             }
 
-            $mapTeamCount = (int) ($map->data['teamCount'] ?? 0);
-            if ($mapTeamCount < GameConstants::MIN_PLAYERS) {
-                break;
+            $game = null;
+            $selectedMap = null;
+            $mapTeamCount = 0;
+
+            foreach ($maps as $map) {
+                $teamCount = (int) ($map->data['teamCount'] ?? 0);
+                if ($teamCount < GameConstants::MIN_PLAYERS) {
+                    continue;
+                }
+
+                $batch = $ready->take($teamCount);
+                $hostEntry = $batch->first(fn (QuickStartEntry $e) => $e->user_id !== null);
+                $host = $hostEntry !== null ? User::find($hostEntry->user_id) : null;
+
+                try {
+                    $game = $this->createForQuickStart($host, $map);
+                    $selectedMap = $map;
+                    $mapTeamCount = $teamCount;
+                    break; // Successfully created a game, stop trying other maps.
+                } catch (\Throwable) {
+                    // Try the next map if this one fails validation or creation.
+                }
             }
 
-            $batch = $ready->take($mapTeamCount);
-
-            // Use the first authenticated user as host if one exists; guests can play without one.
-            $hostEntry = $batch->first(fn (QuickStartEntry $e) => $e->user_id !== null);
-            $host = $hostEntry !== null ? User::find($hostEntry->user_id) : null;
-
-            try {
-                $game = $this->createForQuickStart($host, $map);
-            } catch (\Throwable) {
-                break;
+            if ($game === null || $selectedMap === null) {
+                break; // All suitable maps failed to create a game.
             }
 
             // Join all batch members and mark them as matched.
@@ -521,7 +534,7 @@ final class GameManager
             abort(422, 'This map has invalid data.');
         }
 
-        $errors = MapMarkers::validate($data);
+        $errors = MapMarkers::validateCapitalsReachable($data);
         if ($errors !== []) {
             abort(422, implode(' ', $errors));
         }
@@ -599,6 +612,16 @@ final class GameManager
         [$troopOrders, $cityOrders] = $orders;
         $state['playerInputs'][$slot] = $this->mergeOrdersById($state['playerInputs'][$slot] ?? [], $troopOrders);
         $state['playerCityInputs'][$slot] = $this->mergeOrdersById($state['playerCityInputs'][$slot] ?? [], $cityOrders);
+
+        $environment = $this->environmentFromState($state);
+        $mergedTroopPaths = [];
+        foreach ($state['playerInputs'] as $inputs) {
+            if (is_array($inputs)) {
+                $mergedTroopPaths = array_merge($mergedTroopPaths, $inputs);
+            }
+        }
+        $environment->assignTroopPathsFromOrders($mergedTroopPaths);
+        $state['environment'] = $environment->toArray();
 
         $this->touchPlayerActivityInState($state, $slot);
         $this->storeLiveState($game, $state);
@@ -950,10 +973,14 @@ final class GameManager
         // If terrain was stripped (split format), re-inject static map data so that
         // Environment::fromArray() can reconstruct the full simulation object.
         if (isset($state['environment']) && ! isset($state['environment']['terrain'])) {
-            $mapRaw = Redis::get($this->redisMapKey($game));
-            if ($mapRaw) {
+            $mapKey = $this->redisMapKey($game);
+            if (! isset(self::$mapCache[$mapKey])) {
+                $mapRaw = Redis::get($mapKey);
+                self::$mapCache[$mapKey] = $mapRaw ? json_decode($mapRaw, true, flags: JSON_THROW_ON_ERROR) : null;
+            }
+            if (self::$mapCache[$mapKey] !== null) {
                 $state['environment'] = array_merge(
-                    json_decode($mapRaw, true, flags: JSON_THROW_ON_ERROR),
+                    self::$mapCache[$mapKey],
                     $state['environment'],
                 );
             }

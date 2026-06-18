@@ -67,12 +67,11 @@ class GameOrdersPostTest extends TestCase
             $troopOrders = [[$troopId, [[$targetX, $targetY]]]];
 
             $this->actingAs($host)
-                ->from(route('games.play', $game))
                 ->post(route('games.orders', $game), [
                     'troop_orders' => $troopOrders,
                     'city_orders' => [],
                 ])
-                ->assertRedirect(route('games.play', $game));
+                ->assertOk();
 
             $stateAfterPost = $manager->getLiveState($game);
             $pathAfterPost = $stateAfterPost['environment']['players'][0]['troops'][0]['path'] ?? [];

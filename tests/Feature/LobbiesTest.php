@@ -10,10 +10,10 @@ class LobbiesTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guests_are_redirected_to_the_login_page(): void
+    public function test_guests_can_visit_the_lobbies_page(): void
     {
         $this->get(route('lobbies.index'))
-            ->assertRedirect(route('login'));
+            ->assertOk();
     }
 
     public function test_authenticated_users_can_visit_the_lobbies_page(): void

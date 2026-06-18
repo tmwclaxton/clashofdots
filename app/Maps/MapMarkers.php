@@ -564,6 +564,95 @@ final class MapMarkers
     }
 
     /**
+     * Validate that every team has exactly one capital and all capitals are mutually reachable.
+     *
+     * @param  array<string, mixed>  $data  Full map data (version 2)
+     * @return list<string> Human-readable errors (empty if valid)
+     */
+    public static function validateCapitalsReachable(array $data): array
+    {
+        $teamCount = $data['teamCount'] ?? null;
+        if (! is_int($teamCount) && ! (is_numeric($teamCount) && (string) (int) $teamCount === (string) $teamCount)) {
+            return ['teamCount must be an integer.'];
+        }
+        $teamCount = (int) $teamCount;
+
+        $markers = $data['markers'] ?? null;
+        if (! is_array($markers)) {
+            return ['markers must be an array.'];
+        }
+
+        $cellRows = (int) ($data['cellRows'] ?? 0);
+        $cellCols = (int) ($data['cellCols'] ?? 0);
+        $cells = $data['cells'] ?? null;
+        if (! is_array($cells)) {
+            return ['cells must be an array for marker validation.'];
+        }
+
+        $capitalsByTeam = [];
+        $capitalCoords = [];
+
+        foreach ($markers as $index => $marker) {
+            if (! is_array($marker)) {
+                continue;
+            }
+
+            $type = $marker['type'] ?? null;
+            if ($type !== self::TYPE_CAPITAL) {
+                continue;
+            }
+
+            $team = $marker['team'] ?? null;
+            if (! is_int($team) && ! (is_numeric($team) && (string) (int) $team === (string) $team)) {
+                continue;
+            }
+            $team = (int) $team;
+            if ($team < 0 || $team >= $teamCount) {
+                continue;
+            }
+
+            $row = $marker['row'] ?? null;
+            $col = $marker['col'] ?? null;
+            if (! is_int($row) && ! (is_numeric($row) && (string) (int) $row === (string) $row)) {
+                continue;
+            }
+            if (! is_int($col) && ! (is_numeric($col) && (string) (int) $col === (string) $col)) {
+                continue;
+            }
+            $row = (int) $row;
+            $col = (int) $col;
+
+            if ($row < 0 || $row >= $cellRows || $col < 0 || $col >= $cellCols) {
+                continue;
+            }
+
+            if (isset($capitalsByTeam[$team])) {
+                return ["Team {$team} has more than one capital."];
+            }
+            $capitalsByTeam[$team] = true;
+            $capitalCoords[] = ['row' => $row, 'col' => $col, 'team' => $team];
+        }
+
+        $missingCapitals = [];
+        for ($t = 0; $t < $teamCount; $t++) {
+            if (! isset($capitalsByTeam[$t])) {
+                $missingCapitals[] = "team {$t}";
+            }
+        }
+        if ($missingCapitals !== []) {
+            return ['Each team needs exactly one capital; missing capital for: '.implode(', ', $missingCapitals).'.'];
+        }
+
+        if (count($capitalCoords) === $teamCount) {
+            if (! self::allMarkerSitesMutuallyAccessible($cells, $cellRows, $cellCols, $capitalCoords)) {
+                return ['Capitals must all be mutually reachable: you cannot seal a team behind an unbroken wall of mountains.'];
+            }
+        }
+
+        return [];
+    }
+
+    /**
      * @param  list<array{row: int, col: int}>  $sites
      */
     private static function allMarkerSitesMutuallyAccessible(
