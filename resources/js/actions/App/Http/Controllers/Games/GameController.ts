@@ -252,10 +252,11 @@ joinByCode.form = joinByCodeForm;
  */
 export const show = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: show.url(args, options),
@@ -274,10 +275,11 @@ show.definition = {
  */
 show.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -314,10 +316,11 @@ show.url = (
  */
 show.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: show.url(args, options),
@@ -331,10 +334,11 @@ show.get = (
  */
 show.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: show.url(args, options),
@@ -348,10 +352,11 @@ show.head = (
  */
 const showForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
@@ -365,10 +370,11 @@ const showForm = (
  */
 showForm.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
@@ -382,10 +388,11 @@ showForm.get = (
  */
 showForm.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
@@ -406,10 +413,11 @@ show.form = showForm;
  */
 export const join = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: join.url(args, options),
@@ -428,10 +436,11 @@ join.definition = {
  */
 join.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -468,10 +477,11 @@ join.url = (
  */
 join.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: join.url(args, options),
@@ -485,10 +495,11 @@ join.post = (
  */
 const joinForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: join.url(args, options),
@@ -502,10 +513,11 @@ const joinForm = (
  */
 joinForm.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: join.url(args, options),
@@ -521,10 +533,11 @@ join.form = joinForm;
  */
 export const leave = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'delete'> => ({
     url: leave.url(args, options),
@@ -543,10 +556,11 @@ leave.definition = {
  */
 leave.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -583,10 +597,11 @@ leave.url = (
  */
 leave.delete = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'delete'> => ({
     url: leave.url(args, options),
@@ -600,10 +615,11 @@ leave.delete = (
  */
 const leaveForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: leave.url(args, {
@@ -622,10 +638,11 @@ const leaveForm = (
  */
 leaveForm.delete = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: leave.url(args, {
@@ -646,10 +663,11 @@ leave.form = leaveForm;
  */
 export const spectate = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: spectate.url(args, options),
@@ -668,10 +686,11 @@ spectate.definition = {
  */
 spectate.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -708,10 +727,11 @@ spectate.url = (
  */
 spectate.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: spectate.url(args, options),
@@ -725,10 +745,11 @@ spectate.get = (
  */
 spectate.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: spectate.url(args, options),
@@ -742,10 +763,11 @@ spectate.head = (
  */
 const spectateForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: spectate.url(args, options),
@@ -759,10 +781,11 @@ const spectateForm = (
  */
 spectateForm.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: spectate.url(args, options),
@@ -776,10 +799,11 @@ spectateForm.get = (
  */
 spectateForm.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: spectate.url(args, {
@@ -800,10 +824,11 @@ spectate.form = spectateForm;
  */
 export const spectateSnapshot = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: spectateSnapshot.url(args, options),
@@ -822,10 +847,11 @@ spectateSnapshot.definition = {
  */
 spectateSnapshot.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -862,10 +888,11 @@ spectateSnapshot.url = (
  */
 spectateSnapshot.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: spectateSnapshot.url(args, options),
@@ -879,10 +906,11 @@ spectateSnapshot.get = (
  */
 spectateSnapshot.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: spectateSnapshot.url(args, options),
@@ -896,10 +924,11 @@ spectateSnapshot.head = (
  */
 const spectateSnapshotForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: spectateSnapshot.url(args, options),
@@ -913,10 +942,11 @@ const spectateSnapshotForm = (
  */
 spectateSnapshotForm.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: spectateSnapshot.url(args, options),
@@ -930,10 +960,11 @@ spectateSnapshotForm.get = (
  */
 spectateSnapshotForm.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: spectateSnapshot.url(args, {
@@ -954,10 +985,11 @@ spectateSnapshot.form = spectateSnapshotForm;
  */
 export const play = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: play.url(args, options),
@@ -976,10 +1008,11 @@ play.definition = {
  */
 play.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -1016,10 +1049,11 @@ play.url = (
  */
 play.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: play.url(args, options),
@@ -1033,10 +1067,11 @@ play.get = (
  */
 play.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: play.url(args, options),
@@ -1050,10 +1085,11 @@ play.head = (
  */
 const playForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: play.url(args, options),
@@ -1067,10 +1103,11 @@ const playForm = (
  */
 playForm.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: play.url(args, options),
@@ -1084,10 +1121,11 @@ playForm.get = (
  */
 playForm.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: play.url(args, {
@@ -1108,10 +1146,11 @@ play.form = playForm;
  */
 export const snapshot = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: snapshot.url(args, options),
@@ -1130,10 +1169,11 @@ snapshot.definition = {
  */
 snapshot.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -1170,10 +1210,11 @@ snapshot.url = (
  */
 snapshot.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: snapshot.url(args, options),
@@ -1187,10 +1228,11 @@ snapshot.get = (
  */
 snapshot.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: snapshot.url(args, options),
@@ -1204,10 +1246,11 @@ snapshot.head = (
  */
 const snapshotForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: snapshot.url(args, options),
@@ -1221,10 +1264,11 @@ const snapshotForm = (
  */
 snapshotForm.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: snapshot.url(args, options),
@@ -1238,10 +1282,11 @@ snapshotForm.get = (
  */
 snapshotForm.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: snapshot.url(args, {
@@ -1262,10 +1307,11 @@ snapshot.form = snapshotForm;
  */
 export const submitOrders = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: submitOrders.url(args, options),
@@ -1284,10 +1330,11 @@ submitOrders.definition = {
  */
 submitOrders.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -1324,10 +1371,11 @@ submitOrders.url = (
  */
 submitOrders.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: submitOrders.url(args, options),
@@ -1341,10 +1389,11 @@ submitOrders.post = (
  */
 const submitOrdersForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: submitOrders.url(args, options),
@@ -1358,10 +1407,11 @@ const submitOrdersForm = (
  */
 submitOrdersForm.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: submitOrders.url(args, options),
@@ -1377,10 +1427,11 @@ submitOrders.form = submitOrdersForm;
  */
 export const setCityRecruitment = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: setCityRecruitment.url(args, options),
@@ -1399,10 +1450,11 @@ setCityRecruitment.definition = {
  */
 setCityRecruitment.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -1439,10 +1491,11 @@ setCityRecruitment.url = (
  */
 setCityRecruitment.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: setCityRecruitment.url(args, options),
@@ -1456,10 +1509,11 @@ setCityRecruitment.post = (
  */
 const setCityRecruitmentForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: setCityRecruitment.url(args, options),
@@ -1473,10 +1527,11 @@ const setCityRecruitmentForm = (
  */
 setCityRecruitmentForm.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: setCityRecruitment.url(args, options),
@@ -1492,10 +1547,11 @@ setCityRecruitment.form = setCityRecruitmentForm;
  */
 export const setPlayerProduction = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: setPlayerProduction.url(args, options),
@@ -1514,10 +1570,11 @@ setPlayerProduction.definition = {
  */
 setPlayerProduction.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -1554,10 +1611,11 @@ setPlayerProduction.url = (
  */
 setPlayerProduction.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: setPlayerProduction.url(args, options),
@@ -1571,10 +1629,11 @@ setPlayerProduction.post = (
  */
 const setPlayerProductionForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: setPlayerProduction.url(args, options),
@@ -1588,10 +1647,11 @@ const setPlayerProductionForm = (
  */
 setPlayerProductionForm.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: setPlayerProduction.url(args, options),
@@ -1607,10 +1667,11 @@ setPlayerProduction.form = setPlayerProductionForm;
  */
 export const sendChat = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: sendChat.url(args, options),
@@ -1629,10 +1690,11 @@ sendChat.definition = {
  */
 sendChat.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -1669,10 +1731,11 @@ sendChat.url = (
  */
 sendChat.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: sendChat.url(args, options),
@@ -1686,10 +1749,11 @@ sendChat.post = (
  */
 const sendChatForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: sendChat.url(args, options),
@@ -1703,10 +1767,11 @@ const sendChatForm = (
  */
 sendChatForm.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: sendChat.url(args, options),
@@ -1722,10 +1787,11 @@ sendChat.form = sendChatForm;
  */
 export const replay = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: replay.url(args, options),
@@ -1744,10 +1810,11 @@ replay.definition = {
  */
 replay.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -1784,10 +1851,11 @@ replay.url = (
  */
 replay.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: replay.url(args, options),
@@ -1801,10 +1869,11 @@ replay.get = (
  */
 replay.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: replay.url(args, options),
@@ -1818,10 +1887,11 @@ replay.head = (
  */
 const replayForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: replay.url(args, options),
@@ -1835,10 +1905,11 @@ const replayForm = (
  */
 replayForm.get = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: replay.url(args, options),
@@ -1852,10 +1923,11 @@ replayForm.get = (
  */
 replayForm.head = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: replay.url(args, {
@@ -2019,10 +2091,11 @@ store.form = storeForm;
  */
 export const start = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: start.url(args, options),
@@ -2041,10 +2114,11 @@ start.definition = {
  */
 start.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -2081,10 +2155,11 @@ start.url = (
  */
 start.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: start.url(args, options),
@@ -2098,10 +2173,11 @@ start.post = (
  */
 const startForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: start.url(args, options),
@@ -2115,10 +2191,11 @@ const startForm = (
  */
 startForm.post = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: start.url(args, options),
@@ -2134,10 +2211,11 @@ start.form = startForm;
  */
 export const updatePlayerProfile = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'patch'> => ({
     url: updatePlayerProfile.url(args, options),
@@ -2156,10 +2234,11 @@ updatePlayerProfile.definition = {
  */
 updatePlayerProfile.url = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -2196,10 +2275,11 @@ updatePlayerProfile.url = (
  */
 updatePlayerProfile.patch = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'patch'> => ({
     url: updatePlayerProfile.url(args, options),
@@ -2213,10 +2293,11 @@ updatePlayerProfile.patch = (
  */
 const updatePlayerProfileForm = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: updatePlayerProfile.url(args, {
@@ -2235,10 +2316,11 @@ const updatePlayerProfileForm = (
  */
 updatePlayerProfileForm.patch = (
     args:
-        | { game: string | { uuid: string } }
-        | [game: string | { uuid: string }]
+        | { game: string | number | { uuid: string | number } }
+        | [game: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: updatePlayerProfile.url(args, {

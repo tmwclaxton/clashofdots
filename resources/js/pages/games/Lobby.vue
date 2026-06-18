@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm, usePage, usePoll } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { Loader2, Lock, Map, Tag, Users, Zap } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
@@ -42,9 +42,26 @@ const props = defineProps<{
     playerTag: string | null;
 }>();
 
-usePoll(2000, { only: ['lobbies'] });
-
 const page = usePage();
+
+let lobbiesPollTimer: ReturnType<typeof setInterval> | null = null;
+
+function startLobbiesPoll(): void {
+    if (lobbiesPollTimer !== null) {
+        return;
+    }
+
+    lobbiesPollTimer = setInterval(() => {
+        router.reload({ only: ['lobbies'] });
+    }, 2000);
+}
+
+function stopLobbiesPoll(): void {
+    if (lobbiesPollTimer !== null) {
+        clearInterval(lobbiesPollTimer);
+        lobbiesPollTimer = null;
+    }
+}
 
 const playerTagForm = useForm({
     player_tag: props.playerTag ?? '',
@@ -206,10 +223,12 @@ async function leaveQuickStart() {
 }
 
 onMounted(() => {
+    startLobbiesPoll();
     startQsIdlePoll();
 });
 
 onBeforeUnmount(() => {
+    stopLobbiesPoll();
     stopQsPoll();
     stopQsIdlePoll();
 });

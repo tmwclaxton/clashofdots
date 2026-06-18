@@ -101,10 +101,11 @@ leaderboard.form = leaderboardForm;
  */
 export const show = (
     args:
-        | { profile: string | { profile_uuid: string } }
-        | [profile: string | { profile_uuid: string }]
+        | { profile: string | number | { profile_uuid: string | number } }
+        | [profile: string | number | { profile_uuid: string | number }]
         | string
-        | { profile_uuid: string },
+        | number
+        | { profile_uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: show.url(args, options),
@@ -123,10 +124,11 @@ show.definition = {
  */
 show.url = (
     args:
-        | { profile: string | { profile_uuid: string } }
-        | [profile: string | { profile_uuid: string }]
+        | { profile: string | number | { profile_uuid: string | number } }
+        | [profile: string | number | { profile_uuid: string | number }]
         | string
-        | { profile_uuid: string },
+        | number
+        | { profile_uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -170,10 +172,11 @@ show.url = (
  */
 show.get = (
     args:
-        | { profile: string | { profile_uuid: string } }
-        | [profile: string | { profile_uuid: string }]
+        | { profile: string | number | { profile_uuid: string | number } }
+        | [profile: string | number | { profile_uuid: string | number }]
         | string
-        | { profile_uuid: string },
+        | number
+        | { profile_uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: show.url(args, options),
@@ -187,10 +190,11 @@ show.get = (
  */
 show.head = (
     args:
-        | { profile: string | { profile_uuid: string } }
-        | [profile: string | { profile_uuid: string }]
+        | { profile: string | number | { profile_uuid: string | number } }
+        | [profile: string | number | { profile_uuid: string | number }]
         | string
-        | { profile_uuid: string },
+        | number
+        | { profile_uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: show.url(args, options),
@@ -204,10 +208,11 @@ show.head = (
  */
 const showForm = (
     args:
-        | { profile: string | { profile_uuid: string } }
-        | [profile: string | { profile_uuid: string }]
+        | { profile: string | number | { profile_uuid: string | number } }
+        | [profile: string | number | { profile_uuid: string | number }]
         | string
-        | { profile_uuid: string },
+        | number
+        | { profile_uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
@@ -221,10 +226,11 @@ const showForm = (
  */
 showForm.get = (
     args:
-        | { profile: string | { profile_uuid: string } }
-        | [profile: string | { profile_uuid: string }]
+        | { profile: string | number | { profile_uuid: string | number } }
+        | [profile: string | number | { profile_uuid: string | number }]
         | string
-        | { profile_uuid: string },
+        | number
+        | { profile_uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
@@ -238,10 +244,11 @@ showForm.get = (
  */
 showForm.head = (
     args:
-        | { profile: string | { profile_uuid: string } }
-        | [profile: string | { profile_uuid: string }]
+        | { profile: string | number | { profile_uuid: string | number } }
+        | [profile: string | number | { profile_uuid: string | number }]
         | string
-        | { profile_uuid: string },
+        | number
+        | { profile_uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, {

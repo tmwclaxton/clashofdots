@@ -102,10 +102,11 @@ explore.form = exploreForm;
  */
 export const builder = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: builder.url(args, options),
@@ -124,10 +125,11 @@ builder.definition = {
  */
 builder.url = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -166,10 +168,11 @@ builder.url = (
  */
 builder.get = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: builder.url(args, options),
@@ -183,10 +186,11 @@ builder.get = (
  */
 builder.head = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: builder.url(args, options),
@@ -200,10 +204,11 @@ builder.head = (
  */
 const builderForm = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: builder.url(args, options),
@@ -217,10 +222,11 @@ const builderForm = (
  */
 builderForm.get = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: builder.url(args, options),
@@ -234,10 +240,11 @@ builderForm.get = (
  */
 builderForm.head = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: builder.url(args, {
@@ -403,10 +410,11 @@ store.form = storeForm;
  */
 export const publish = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: publish.url(args, options),
@@ -425,10 +433,11 @@ publish.definition = {
  */
 publish.url = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -465,10 +474,11 @@ publish.url = (
  */
 publish.post = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: publish.url(args, options),
@@ -482,10 +492,11 @@ publish.post = (
  */
 const publishForm = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: publish.url(args, options),
@@ -499,10 +510,11 @@ const publishForm = (
  */
 publishForm.post = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: publish.url(args, options),
@@ -518,10 +530,11 @@ publish.form = publishForm;
  */
 export const fork = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: fork.url(args, options),
@@ -540,10 +553,11 @@ fork.definition = {
  */
 fork.url = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -580,10 +594,11 @@ fork.url = (
  */
 fork.post = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: fork.url(args, options),
@@ -597,10 +612,11 @@ fork.post = (
  */
 const forkForm = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: fork.url(args, options),
@@ -614,10 +630,11 @@ const forkForm = (
  */
 forkForm.post = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: fork.url(args, options),
@@ -633,10 +650,11 @@ fork.form = forkForm;
  */
 export const vote = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: vote.url(args, options),
@@ -655,10 +673,11 @@ vote.definition = {
  */
 vote.url = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -695,10 +714,11 @@ vote.url = (
  */
 vote.post = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'post'> => ({
     url: vote.url(args, options),
@@ -712,10 +732,11 @@ vote.post = (
  */
 const voteForm = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: vote.url(args, options),
@@ -729,10 +750,11 @@ const voteForm = (
  */
 voteForm.post = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: vote.url(args, options),
@@ -748,10 +770,11 @@ vote.form = voteForm;
  */
 export const show = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: show.url(args, options),
@@ -770,10 +793,11 @@ show.definition = {
  */
 show.url = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -810,10 +834,11 @@ show.url = (
  */
 show.get = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: show.url(args, options),
@@ -827,10 +852,11 @@ show.get = (
  */
 show.head = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: show.url(args, options),
@@ -844,10 +870,11 @@ show.head = (
  */
 const showForm = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
@@ -861,10 +888,11 @@ const showForm = (
  */
 showForm.get = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, options),
@@ -878,10 +906,11 @@ showForm.get = (
  */
 showForm.head = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: show.url(args, {
@@ -902,10 +931,11 @@ show.form = showForm;
  */
 export const update = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
@@ -924,10 +954,11 @@ update.definition = {
  */
 update.url = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -964,10 +995,11 @@ update.url = (
  */
 update.patch = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
@@ -981,10 +1013,11 @@ update.patch = (
  */
 const updateForm = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
@@ -1003,10 +1036,11 @@ const updateForm = (
  */
 updateForm.patch = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: update.url(args, {
@@ -1027,10 +1061,11 @@ update.form = updateForm;
  */
 export const destroy = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
@@ -1049,10 +1084,11 @@ destroy.definition = {
  */
 destroy.url = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -1089,10 +1125,11 @@ destroy.url = (
  */
 destroy.delete = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'delete'> => ({
     url: destroy.url(args, options),
@@ -1106,10 +1143,11 @@ destroy.delete = (
  */
 const destroyForm = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: destroy.url(args, {
@@ -1128,10 +1166,11 @@ const destroyForm = (
  */
 destroyForm.delete = (
     args:
-        | { map: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'post'> => ({
     action: destroy.url(args, {

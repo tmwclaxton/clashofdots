@@ -68,6 +68,7 @@ ENV VITE_REVERB_PORT=${VITE_REVERB_PORT}
 ENV VITE_REVERB_SCHEME=${VITE_REVERB_SCHEME}
 
 RUN npm run build \
+    && npm run build:map-generator \
     && npm prune --omit=dev
 
 FROM php:8.5-cli-bookworm AS production
@@ -130,6 +131,7 @@ COPY --from=php_build /app/database ./database
 COPY --from=php_build /app/public ./public
 COPY --from=php_build /app/resources/views ./resources/views
 COPY --from=php_build /app/routes ./routes
+COPY --from=php_build /app/bootstrap/generate-map-data.cjs ./bootstrap/generate-map-data.cjs
 COPY --from=php_build /app/node_modules ./node_modules
 COPY --from=php_build /app/storage ./storage
 COPY --from=php_build /app/vendor ./vendor

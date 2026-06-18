@@ -18,7 +18,7 @@ class MapGenerator
         'jungle', 'volcanic', 'tundra', 'grassland',
     ];
 
-    private const SCRIPT_PATH = 'scripts/generate-map-data.mts';
+    private const SCRIPT_PATH = 'bootstrap/generate-map-data.cjs';
 
     /**
      * Generate a map with a random biome and the given team count.
@@ -43,10 +43,9 @@ class MapGenerator
     {
         $base = base_path();
         $script = $base.'/'.self::SCRIPT_PATH;
-        $config = $base.'/vite.config.ts';
 
         $result = Process::path($base)
-            ->run(['npx', 'vite-node', '--config', $config, $script, $type, (string) $teamCount]);
+            ->run(['node', $script, $type, (string) $teamCount]);
 
         $output = trim($result->output());
 

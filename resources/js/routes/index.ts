@@ -168,10 +168,11 @@ wiki.form = wikiForm;
  */
 export const mapBuilder = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: mapBuilder.url(args, options),
@@ -190,10 +191,11 @@ mapBuilder.definition = {
  */
 mapBuilder.url = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ) => {
     if (typeof args === 'string' || typeof args === 'number') {
@@ -232,10 +234,11 @@ mapBuilder.url = (
  */
 mapBuilder.get = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'get'> => ({
     url: mapBuilder.url(args, options),
@@ -249,10 +252,11 @@ mapBuilder.get = (
  */
 mapBuilder.head = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteDefinition<'head'> => ({
     url: mapBuilder.url(args, options),
@@ -266,10 +270,11 @@ mapBuilder.head = (
  */
 const mapBuilderForm = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: mapBuilder.url(args, options),
@@ -283,10 +288,11 @@ const mapBuilderForm = (
  */
 mapBuilderForm.get = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: mapBuilder.url(args, options),
@@ -300,10 +306,11 @@ mapBuilderForm.get = (
  */
 mapBuilderForm.head = (
     args?:
-        | { map?: string | { uuid: string } }
-        | [map: string | { uuid: string }]
+        | { map?: string | number | { uuid: string | number } }
+        | [map: string | number | { uuid: string | number }]
         | string
-        | { uuid: string },
+        | number
+        | { uuid: string | number },
     options?: RouteQueryOptions,
 ): RouteFormDefinition<'get'> => ({
     action: mapBuilder.url(args, {
