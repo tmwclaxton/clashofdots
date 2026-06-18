@@ -195,7 +195,8 @@ final class BattlefieldFromMap
     private static function editorTerrainToElevation(string $terrainId): float
     {
         return match ($terrainId) {
-            'water', 'river', 'deep_water' => GameConstants::TERRAIN_VALUES['water'] - 0.02,
+            'water', 'river' => GameConstants::TERRAIN_VALUES['water'] - 0.02,
+            'deep_water' => GameConstants::DEEP_WATER_ELEVATION,
             'swamp' => 0.04,   // Between swamp threshold (0.025) and beach (0.05) → 'swamp'
             'beach' => 0.065,  // Between beach threshold (0.05) and plains (0.1) → 'beach'
             'snow' => 0.32,     // Between snow threshold (0.30) and desert (0.55) → 'snow'

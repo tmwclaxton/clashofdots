@@ -505,14 +505,18 @@ final class Environment
             return 'forest';
         }
 
-        $name = 'water';
         foreach (array_reverse(GameConstants::TERRAIN_VALUES, true) as $terrainName => $threshold) {
             if ($value > $threshold) {
                 return $terrainName;
             }
         }
 
-        return $name;
+        // Below the water threshold: distinguish deep_water from shallow water.
+        if ($value <= GameConstants::DEEP_WATER_ELEVATION_THRESHOLD) {
+            return 'deep_water';
+        }
+
+        return 'water';
     }
 
     /**
@@ -615,7 +619,10 @@ final class Environment
     /**
      * Applies move orders to troop path fields (used by ticks and immediately after HTTP submit).
      *
-     * @param  list<array{0: mixed, 1: mixed}>  $pathsToApply
+     * Each order row is a tuple: [entityId, pathPoints, ?waterMode].
+     * waterMode is 'wade' or 'embark'; defaults to 'embark' when absent.
+     *
+     * @param  list<array{0: mixed, 1: mixed, 2?: mixed}>  $pathsToApply
      */
     public function assignTroopPathsFromOrders(array $pathsToApply): void
     {
@@ -630,7 +637,8 @@ final class Environment
                 continue;
             }
 
-            $pairs[] = [(int) $row[0], $row[1]];
+            $waterMode = isset($row[2]) && $row[2] === 'wade' ? 'wade' : 'embark';
+            $pairs[] = [(int) $row[0], $row[1], $waterMode];
         }
 
         if ($pairs === []) {
@@ -638,15 +646,17 @@ final class Environment
         }
 
         /** Last row wins when the same entity id appears more than once in one batch. */
-        $pathByTroopId = [];
-        foreach ($pairs as [$id, $path]) {
-            $pathByTroopId[$id] = $path;
+        $orderByTroopId = [];
+        foreach ($pairs as [$id, $path, $waterMode]) {
+            $orderByTroopId[$id] = [$path, $waterMode];
         }
 
         foreach ($this->players as $player) {
             foreach ($player->troops as $troop) {
-                if (array_key_exists($troop->id, $pathByTroopId)) {
-                    $troop->path = $pathByTroopId[$troop->id];
+                if (array_key_exists($troop->id, $orderByTroopId)) {
+                    [$path, $waterMode] = $orderByTroopId[$troop->id];
+                    $troop->path = $path;
+                    $troop->waterMode = $waterMode;
                 }
             }
         }
@@ -876,13 +886,19 @@ final class Environment
                 // Ship / water conversion logic.
                 $isWaterTerrain = in_array($onTerrain, ['water', 'deep_water', 'river']);
                 if ($isWaterTerrain) {
-                    $troop->waterTicks++;
-                    if ($troop->waterTicks >= GameConstants::SHIP_CONVERSION_TICKS && ! $troop->isShip) {
-                        $troop->isShip = true;
-                    }
-                    // Non-ships take HP damage each tick on water.
-                    if (! $troop->isShip) {
+                    if ($troop->waterMode === 'wade') {
+                        // Wade: troop takes damage each tick but never converts to a ship.
                         $troop->health -= GameConstants::WATER_DAMAGE_PER_TICK;
+                    } else {
+                        // Embark: accumulate water ticks toward ship conversion.
+                        $troop->waterTicks++;
+                        if ($troop->waterTicks >= GameConstants::SHIP_CONVERSION_TICKS && ! $troop->isShip) {
+                            $troop->isShip = true;
+                        }
+                        // Non-ships take HP damage each tick while embarking.
+                        if (! $troop->isShip) {
+                            $troop->health -= GameConstants::WATER_DAMAGE_PER_TICK;
+                        }
                     }
                 } else {
                     if ($troop->waterTicks > 0) {
@@ -966,7 +982,8 @@ final class Environment
             || $newPos[1] > $worldH
             || $newPos[1] < 0;
 
-        if ($newTerrain !== 'mountain' && ! $hitEnemy && ! $outOfWorld) {
+        $blockedForWade = $troop->waterMode === 'wade' && $newTerrain === 'deep_water';
+        if ($newTerrain !== 'mountain' && ! $hitEnemy && ! $outOfWorld && ! $blockedForWade) {
             $troop->position = $newPos;
             $onTerrain = $newTerrain;
         }
@@ -1094,6 +1111,8 @@ final class Environment
                         'type' => $troop->type,
                         'maxHealth' => $troop->maxHealth(),
                         'isShip' => $troop->isShip,
+                        'waterMode' => $troop->waterMode,
+                        'waterTicks' => $troop->waterTicks,
                         'warmupMultiplier' => round($warmup, 3),
                         'combatMultiplier' => round($warmup * $moraleFac, 3),
                     ];

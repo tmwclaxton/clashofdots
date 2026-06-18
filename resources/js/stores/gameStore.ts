@@ -42,6 +42,8 @@ type TroopState = {
     type?: 'infantry' | 'tank';
     maxHealth?: number;
     isShip?: boolean;
+    waterMode?: 'wade' | 'embark';
+    waterTicks?: number;
     warmupMultiplier?: number;
     combatMultiplier?: number;
 };
@@ -381,7 +383,7 @@ export const useGameStore = defineStore('game', {
 
             const troopOrders = drafts.draftPaths
                 .filter((p) => p.kind === 'troop')
-                .map((p) => [p.entityId, p.points] as [number, Point[]]);
+                .map((p) => [p.entityId, p.points, p.waterMode ?? 'embark'] as [number, Point[], string]);
             const cityOrders = drafts.draftPaths
                 .filter((p) => p.kind === 'city')
                 .map((p) => [p.entityId, p.points] as [number, Point[]]);

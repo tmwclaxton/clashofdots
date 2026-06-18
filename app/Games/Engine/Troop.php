@@ -95,6 +95,8 @@ final class Troop
         $troop->morale = (int) ($data['morale'] ?? 100);
         $troop->waterTicks = (int) ($data['waterTicks'] ?? 0);
         $troop->isShip = (bool) ($data['isShip'] ?? false);
+        $waterMode = $data['waterMode'] ?? 'embark';
+        $troop->waterMode = $waterMode === 'wade' ? 'wade' : 'embark';
 
         return $troop;
     }

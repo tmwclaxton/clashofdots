@@ -111,6 +111,7 @@ final class GameConstants
     /** @var array<string, float> */
     public const array TERRAIN_SPEEDS = [
         'water' => 0.6,
+        'deep_water' => 0.6,
         'forest' => 0.8,
         'plains' => 1.0,
         'hill' => 0.7,
@@ -125,6 +126,7 @@ final class GameConstants
     /** @var array<string, float> */
     public const array TERRAIN_ATTACKS = [
         'water' => 0.5,
+        'deep_water' => 0.5,
         'forest' => 0.75,
         'plains' => 1.0,
         'hill' => 1.5,
@@ -167,8 +169,20 @@ final class GameConstants
     // Ship / water conversion
     // -------------------------------------------------------------------------
 
-    /** Consecutive water ticks before a troop converts to a ship (150 ticks ≈ 5 s at 30 Hz). */
-    public const int SHIP_CONVERSION_TICKS = 150;
+    /**
+     * Elevation at or below which a water tile is classified as 'deep_water'.
+     * Map-editor deep_water cells are stored at {@see DEEP_WATER_ELEVATION}, which falls below
+     * this threshold; regular water and river tiles sit just above it.
+     */
+    public const float DEEP_WATER_ELEVATION_THRESHOLD = -0.2;
+
+    /**
+     * Elevation used for deep_water map-editor cells.  Must be ≤ {@see DEEP_WATER_ELEVATION_THRESHOLD}.
+     */
+    public const float DEEP_WATER_ELEVATION = -0.25;
+
+    /** Consecutive water ticks before a troop converts to a ship (90 ticks ≈ 3 s at 30 Hz). */
+    public const int SHIP_CONVERSION_TICKS = 90;
 
     /** Speed multiplier applied to ships on water terrain (faster than normal water movement). */
     public const float SHIP_WATER_SPEED_MULT = 3.0;
@@ -197,6 +211,7 @@ final class GameConstants
      */
     public const array TANK_TERRAIN_SPEEDS = [
         'water' => 0.50,
+        'deep_water' => 0.50,
         'forest' => 0.32,
         'plains' => 0.60,
         'hill' => 0.28,
@@ -216,6 +231,7 @@ final class GameConstants
      */
     public const array TANK_TERRAIN_ATTACKS = [
         'water' => 0.5,
+        'deep_water' => 0.5,
         'forest' => 0.75,
         'plains' => 2.0,
         'hill' => 3.0,

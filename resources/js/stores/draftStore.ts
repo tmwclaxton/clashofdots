@@ -7,6 +7,7 @@ export type DraftPath = {
     entityId: number;
     points: Point[];
     kind: 'troop' | 'city';
+    waterMode?: 'wade' | 'embark';
 };
 
 export const useDraftStore = defineStore('draft', {
@@ -77,6 +78,12 @@ export const useDraftStore = defineStore('draft', {
             }
 
             this.activeDraft = null;
+        },
+        setWaterMode(entityId: number, mode: 'wade' | 'embark') {
+            const draft = this.draftPaths.find((p) => p.entityId === entityId && p.kind === 'troop');
+            if (draft) {
+                draft.waterMode = mode;
+            }
         },
         clearDrafts() {
             this.draftPaths = [];

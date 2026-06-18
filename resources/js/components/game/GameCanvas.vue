@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import WaterModeModal from '@/components/game/WaterModeModal.vue';
 import { useIsDark } from '@/composables/useIsDark';
 import {
     drawCapitalAtPixel,
@@ -11,6 +12,7 @@ import {
     editorBlendedTerrainFillStyle,
     editorTerrainDimOverlayFill,
     ENGINE_FOREST_THRESHOLD,
+    ENGINE_TERRAIN_VALUES,
     engineCellFillStyle,
 } from '@/lib/terrainRender';
 import { GAME_VIEW_ZOOM_MAX, GAME_VIEW_ZOOM_MIN, useCameraStore } from '@/stores/cameraStore';
@@ -55,6 +57,51 @@ const troopTargetPositions = new Map<number, [number, number]>();
 /** Lasso selection state. */
 let lassoStart: [number, number] | null = null;
 let lassoCurrent: [number, number] | null = null;
+
+/** Water mode modal state. */
+const waterModalVisible = ref(false);
+let waterModalEntityId: number | null = null;
+
+/**
+ * Returns true if any point in the path lies on a water tile,
+ * using the engine numeric terrain grid available in the store.
+ */
+function pathCrossesWater(points: [number, number][]): boolean {
+    if (!store.terrain || !store.forest) {
+        return false;
+    }
+
+    const { cellSize } = store.world;
+    const waterThreshold = ENGINE_TERRAIN_VALUES.water ?? -0.1;
+
+    for (const [wx, wy] of points) {
+        const gx = Math.min(store.terrain.length - 1, Math.floor(wx / cellSize));
+        const gy = Math.min((store.terrain[0]?.length ?? 1) - 1, Math.floor(wy / cellSize));
+        const tv = store.terrain[gx]?.[gy] ?? 0;
+        const fv = store.forest[gx]?.[gy] ?? 0;
+
+        if (tv <= waterThreshold && fv <= ENGINE_FOREST_THRESHOLD) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function onWaterModeChosen(mode: 'wade' | 'embark') {
+    if (waterModalEntityId !== null) {
+        drafts.setWaterMode(waterModalEntityId, mode);
+    }
+
+    waterModalVisible.value = false;
+    waterModalEntityId = null;
+}
+
+function onWaterModalDismiss() {
+    // Default to embark (already the default on DraftPath, nothing to set).
+    waterModalVisible.value = false;
+    waterModalEntityId = null;
+}
 let lassoActive = false;
 
 /** Touch state for single-finger drafting and two-finger pan/pinch-zoom. */
@@ -218,7 +265,12 @@ function rafLoop(nowMs: number): void {
         }
     }
 
-    if (needsRedraw || anyMoving) {
+    // Also redraw when any unit is actively embarking so the pulsing ring animates.
+    const anyEmbarking = (store.latestState?.troops ?? []).some(
+        (t) => !t.isShip && t.waterMode === 'embark' && (t.waterTicks ?? 0) > 0,
+    );
+
+    if (needsRedraw || anyMoving || anyEmbarking) {
         needsRedraw = false;
         draw();
     }
@@ -564,8 +616,9 @@ type TroopDraw = {
     type?: 'infantry' | 'tank';
     maxHealth?: number;
     isShip?: boolean;
+    waterMode?: 'wade' | 'embark';
+    waterTicks?: number;
 };
-
 
 /** Radii that match the shared mapMarkers pixel-centre functions. */
 const TROOP_R_INFANTRY = 9;
@@ -577,6 +630,9 @@ function drawTroop(ctx: CanvasRenderingContext2D, troop: TroopDraw, selected = f
     const morale = troop.morale ?? 100;
     const isTank = troop.type === 'tank';
     const isShip = troop.isShip === true;
+    const waterMode = troop.waterMode ?? 'embark';
+    const waterTicks = troop.waterTicks ?? 0;
+    const isEmbarking = !isShip && waterMode === 'embark' && waterTicks > 0;
     const maxHp = troop.maxHealth ?? (isTank ? 200 : 100);
     const ink = canvasInk();
     const fillColor = rgb(troop.color);
@@ -584,9 +640,12 @@ function drawTroop(ctx: CanvasRenderingContext2D, troop: TroopDraw, selected = f
 
     if (isShip) {
         ctx.fillStyle = fillColor;
-        // Hull (ellipse)
+        // Hull: pointed oval (almond/boat shape) using two cubic bezier curves.
         ctx.beginPath();
-        ctx.ellipse(x, y + 1, 10, 6, 0, 0, Math.PI * 2);
+        ctx.moveTo(x - 13, y + 1);
+        ctx.bezierCurveTo(x - 8, y - 7, x + 8, y - 7, x + 13, y + 1);
+        ctx.bezierCurveTo(x + 8, y + 9, x - 8, y + 9, x - 13, y + 1);
+        ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = ink;
         ctx.lineWidth = 1.5;
@@ -612,6 +671,20 @@ function drawTroop(ctx: CanvasRenderingContext2D, troop: TroopDraw, selected = f
         drawTankAtPixel(ctx, x, y, fillColor, TROOP_R_TANK);
     } else {
         drawInfantryAtPixel(ctx, x, y, fillColor, TROOP_R_INFANTRY);
+    }
+
+    // Embarkation pulsing ring: shown while a unit is converting to a ship.
+    if (isEmbarking) {
+        const alpha = 0.35 + 0.3 * Math.sin(Date.now() / 250);
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = fillColor;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(x, y, unitR + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
     }
 
     if (selected) {
@@ -840,9 +913,22 @@ function onMouseUp() {
     }
 
     if (dragging) {
+        const entityIdBeforeFinish = drafts.activeDraft?.entityId ?? null;
         drafts.finishPath();
         dragging = false;
         scheduleRedraw();
+
+        // After finishing the path, check whether any segment crosses water and
+        // prompt the player to choose wade vs embark.
+        if (entityIdBeforeFinish !== null && !props.readOnly) {
+            const finished = drafts.draftPaths.find(
+                (p) => p.entityId === entityIdBeforeFinish && p.kind === 'troop',
+            );
+            if (finished && pathCrossesWater(finished.points)) {
+                waterModalEntityId = entityIdBeforeFinish;
+                waterModalVisible.value = true;
+            }
+        }
     }
 
     panning = false;
@@ -1094,18 +1180,25 @@ watch(isDark, () => {
 </script>
 
 <template>
-    <canvas
-        ref="canvasRef"
-        class="h-full w-full cursor-crosshair"
-        @contextmenu.prevent
-        @mousedown="onMouseDown"
-        @mousemove="onMouseMove"
-        @mouseup="onMouseUp"
-        @mouseleave="onMouseUp"
-        @wheel.prevent="onWheel"
-        @touchstart.prevent="onTouchStart"
-        @touchmove.prevent="onTouchMove"
-        @touchend.prevent="onTouchEnd"
-        @touchcancel.prevent="onTouchEnd"
-    />
+    <div class="relative h-full w-full">
+        <canvas
+            ref="canvasRef"
+            class="h-full w-full cursor-crosshair"
+            @contextmenu.prevent
+            @mousedown="onMouseDown"
+            @mousemove="onMouseMove"
+            @mouseup="onMouseUp"
+            @mouseleave="onMouseUp"
+            @wheel.prevent="onWheel"
+            @touchstart.prevent="onTouchStart"
+            @touchmove.prevent="onTouchMove"
+            @touchend.prevent="onTouchEnd"
+            @touchcancel.prevent="onTouchEnd"
+        />
+        <WaterModeModal
+            :visible="waterModalVisible"
+            @choose="onWaterModeChosen"
+            @dismiss="onWaterModalDismiss"
+        />
+    </div>
 </template>
