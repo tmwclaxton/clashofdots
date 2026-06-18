@@ -319,6 +319,30 @@
         @apply rounded-lg border-2 border-foreground bg-foreground text-card;
     }
 
+    .wod-panel-shine {
+        position: relative;
+    }
+
+    .wod-panel-shine::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background:
+            radial-gradient(
+                ellipse 70% 50% at 80% 15%,
+                rgba(255, 255, 255, 0.28) 0%,
+                rgba(255, 255, 255, 0.12) 30%,
+                transparent 65%
+            ),
+            radial-gradient(
+                ellipse 40% 30% at 20% 85%,
+                rgba(255, 255, 255, 0.07) 0%,
+                transparent 60%
+            );
+        pointer-events: none;
+    }
+
     .wod-swatch {
         @apply size-4 shrink-0 border-2 border-foreground;
     }

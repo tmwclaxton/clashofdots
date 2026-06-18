@@ -268,7 +268,7 @@ const steps = [
                 </article>
             </section>
 
-            <section class="wod-panel-dark mt-10 p-5 sm:mt-12 sm:p-8 md:p-10">
+            <section class="wod-panel-dark wod-panel-shine mt-10 p-5 sm:mt-12 sm:p-8 md:p-10">
                 <h2
                     class="font-display text-xl font-bold sm:text-2xl md:text-3xl"
                 >
