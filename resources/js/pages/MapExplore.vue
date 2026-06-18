@@ -638,9 +638,7 @@ const sortOptions = [
                     class="min-w-[5.5rem]"
                     as-child
                 >
-                    <Link :href="pagination.prev_url">
-                        Previous
-                    </Link>
+                    <Link :href="pagination.prev_url"> Previous </Link>
                 </Button>
                 <Button
                     v-else
@@ -670,9 +668,7 @@ const sortOptions = [
                     class="min-w-[5.5rem]"
                     as-child
                 >
-                    <Link :href="pagination.next_url">
-                        Next
-                    </Link>
+                    <Link :href="pagination.next_url"> Next </Link>
                 </Button>
                 <Button
                     v-else

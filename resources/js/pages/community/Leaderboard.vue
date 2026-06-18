@@ -102,14 +102,18 @@ onMounted(async () => {
                             :key="row.profileUuid"
                             class="border-b border-foreground/15 transition-colors"
                             :class="{
-                                'bg-amber-400/15 hover:bg-amber-400/25': row.rank === 1,
-                                'bg-zinc-400/25 hover:bg-zinc-400/40': row.rank === 2,
-                                'bg-orange-700/15 hover:bg-orange-700/25': row.rank === 3,
+                                'bg-amber-400/15 hover:bg-amber-400/25':
+                                    row.rank === 1,
+                                'bg-zinc-400/25 hover:bg-zinc-400/40':
+                                    row.rank === 2,
+                                'bg-orange-700/15 hover:bg-orange-700/25':
+                                    row.rank === 3,
                                 'hover:bg-muted/30': row.rank > 3,
                                 'outline outline-2 outline-foreground/30':
                                     highlightedUuid === row.profileUuid,
                                 'bg-wod-green-lt/40':
-                                    highlightedUuid === row.profileUuid && row.rank > 3,
+                                    highlightedUuid === row.profileUuid &&
+                                    row.rank > 3,
                             }"
                         >
                             <td class="px-4 py-3 font-mono font-bold">
@@ -117,17 +121,20 @@ onMounted(async () => {
                                     v-if="row.rank === 1"
                                     class="inline-flex size-6 items-center justify-center rounded-full bg-amber-400 text-xs text-amber-950"
                                     title="1st place"
-                                >1</span>
+                                    >1</span
+                                >
                                 <span
                                     v-else-if="row.rank === 2"
                                     class="inline-flex size-6 items-center justify-center rounded-full bg-zinc-400 text-xs text-zinc-950 ring-1 ring-zinc-500"
                                     title="2nd place"
-                                >2</span>
+                                    >2</span
+                                >
                                 <span
                                     v-else-if="row.rank === 3"
                                     class="inline-flex size-6 items-center justify-center rounded-full bg-orange-700 text-xs text-orange-100"
                                     title="3rd place"
-                                >3</span>
+                                    >3</span
+                                >
                                 <span v-else>{{ row.rank }}</span>
                             </td>
                             <td class="px-4 py-3">
@@ -145,10 +152,17 @@ onMounted(async () => {
                                         }"
                                     >
                                         <AvatarImage
-                                            :src="avatarUrl(row.avatarSeed, row.avatarStyle)"
+                                            :src="
+                                                avatarUrl(
+                                                    row.avatarSeed,
+                                                    row.avatarStyle,
+                                                )
+                                            "
                                             :alt="row.name"
                                         />
-                                        <AvatarFallback class="text-xs font-bold">
+                                        <AvatarFallback
+                                            class="text-xs font-bold"
+                                        >
                                             {{ getInitials(row.name) }}
                                         </AvatarFallback>
                                     </Avatar>
@@ -200,9 +214,7 @@ onMounted(async () => {
                             link.active
                                 ? 'border-foreground bg-foreground text-background'
                                 : 'hover:bg-muted/40',
-                            !link.url
-                                ? 'pointer-events-none opacity-40'
-                                : '',
+                            !link.url ? 'pointer-events-none opacity-40' : '',
                         ]"
                     >
                         <ChevronLeft

@@ -102,7 +102,11 @@ const activityColors: Record<string, string> = {
                         class="gap-2"
                     >
                         <Wand2 class="size-4" />
-                        {{ processing ? 'Generating…' : 'Generate fake accounts' }}
+                        {{
+                            processing
+                                ? 'Generating…'
+                                : 'Generate fake accounts'
+                        }}
                     </Button>
                     <p
                         v-if="wasSuccessful"

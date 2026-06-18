@@ -46,6 +46,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -54,6 +59,9 @@ jobs:
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install Node dependencies and build assets
+        run: npm ci && npm run build
 
       - name: Run tests
         run: php artisan test --compact

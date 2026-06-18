@@ -18,7 +18,10 @@ const { getInitials } = useInitials();
 
 const avatarSrc = computed(() =>
     props.user.profile_uuid
-        ? avatarUrl(resolveAvatarSeed(props.user), props.user.avatar_style as string)
+        ? avatarUrl(
+              resolveAvatarSeed(props.user),
+              props.user.avatar_style as string,
+          )
         : null,
 );
 </script>
