@@ -132,6 +132,97 @@ Thirteen brush types paint the vertex grid in the Map Builder and appear on the 
 
 Infantry generally keeps speed in forests and hills; tanks excel on plains, desert, and beach but bog down in woodland, water, and snow. Snow slows all units and chills attack output—tanks are hit hardest. Full speed, attack, and defense multipliers for every tile are on the wiki terrain table.
 
+### Win conditions
+
+#### Free-for-all (no teams)
+
+A player wins when **both** of the following are true at the same time:
+
+1. They own **all enemy capitals** — every opposing headquarters has been captured.
+2. They control **≥ 80 %** of all cities on the map (the `VICTORY_CITY_THRESHOLD`).
+
+The engine checks this every tick. The match ends immediately when the condition is met.
+
+#### Team mode
+
+When players are assigned to teams the conditions adjust:
+
+1. All players on the **opposing side** must have **zero troops and zero cities**.
+2. The winning team collectively holds **≥ 80 %** of all cities.
+
+#### No-winner draw
+
+If every commander is inactive (no orders submitted) for **120 seconds** (`MATCH_ALL_PLAYERS_INACTIVE_SECONDS`) the match is ended without a winner.
+
+---
+
+### Economy — credits & income
+
+Each commander has a credit balance tracked in Redis alongside the simulation state.
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| Starting credits | 220 | Credits each commander begins the match with |
+| Income per owned city per tick | 1 credit | Earned every 30 Hz tick for every flag or capital you hold |
+| Infantry recruit cost | 200 credits | One-time cost; deducted immediately |
+| Tank recruit cost | 400 credits | One-time cost; deducted immediately |
+| Army cap | 24 units | Hard upper limit per player across auto-spawns + manual recruits |
+
+**Income math:** at 30 Hz, 1 credit/tick/city ≈ **30 credits/second** per owned city (e.g. 3 cities → 90 credits/s). Holding more cities snowballs income quickly.
+
+There is **no upkeep mechanic** deducting credits per tick — the wiki describes upkeep as a narrative concept inherited from War of Dots community guides, but the engine has no recurring per-unit credit drain. Instead, oversized armies are punished via **supply starvation** (see below).
+
+---
+
+### Auto-spawn (city production)
+
+Every city owned by a player acts as a production facility that auto-spawns troops over time — no player action needed. The spawn formula:
+
+```
+baseThreshold = 45 × (30 × troopsPerCity)
+adjustedThreshold = baseThreshold × productionSpeedMultiplier
+```
+
+`troopsPerCity` is `(total own troops) / (owned cities)`. A city spawns a troop when its internal timer reaches `adjustedThreshold`, then resets. This naturally slows spawn rate as you accumulate troops and speeds it up when you are behind.
+
+- The production type (infantry / tank / none) can be set per city via the HUD.
+- A **tank ratio** (0–100) controls the probability a spawned unit is a tank vs infantry.
+- Captures reset a city's timer to 0.
+- Auto-spawns respect the 24-unit army cap.
+
+---
+
+### Manual recruitment
+
+You can bypass the auto-spawn queue and instantly place a unit near your **capital** for a credit cost:
+
+- **Infantry** — 200 credits. Requires: own capital controlled, army below cap, credits available, and a clear spawn point within 22 world units of the capital.
+- **Tank** — 400 credits. Same requirements.
+
+Newly recruited units spawn adjacent to the capital with any rally path the capital already has assigned.
+
+---
+
+### Supply & starvation
+
+Each owned city supplies **5 units** (`CITY_SUPPLY_CAP`). If your army exceeds `ownedCities × 5` the most recently spawned excess units lose **1 HP per tick** (starvation damage). Losing cities mid-battle can suddenly push you over the cap and start bleeding your newest units — capture more cities or let some troops die.
+
+---
+
+### Combat & morale
+
+Units fight automatically when within **32 world units** of an enemy (`TROOP_COMBAT_RANGE`).
+
+| Mechanic | Detail |
+|----------|--------|
+| **Base attack** | Terrain-dependent (see wiki terrain table); infantry baseline 0.08, tank up to 2.0 on plains |
+| **Warmup bonus** | Fresh units get up to **1.45× attack** for the first 120 ticks (~4 s), decaying linearly |
+| **Morale** | Ranges 15–100. Drains **0.35/tick** in combat and **0.5/tick** when supply-cut in enemy territory. Recovers **0.22/tick** when resting in own territory. Low morale directly reduces attack power (capped at 0.25× floor) |
+| **Healing** | 1 HP/tick when in own territory and not in combat; suppressed during active fighting |
+| **Mountains** | Impassable — no unit can enter; attack multiplier 0 |
+
+---
+
 ### Planning & executing orders
 
 Clash of Dots uses a **draw-then-commit** order system. Nothing moves until you press **Space**; you can revise paths freely before committing.
