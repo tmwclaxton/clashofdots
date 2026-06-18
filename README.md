@@ -38,8 +38,8 @@ The in-app **Game Wiki** (`/wiki`) is the live reference for balance and map rul
 |--------|----------------|
 | **Combat units** | Infantry vs tank—health, recruit cost, upkeep, defense, and role summaries |
 | **Settlements & economy** | Capitals and outposts (income, supply caps, healing), plus economy notes on income, upkeep, supply, recruitment, and encirclement |
-| **Terrain types** | All 12 editor terrains with color swatches, infantry/tank speed & attack stats, and tactical notes |
-| **Map generation styles** | Mixed, Islands, Desert, and Mountains—traits, descriptions, and deterministic preview renders |
+| **Terrain types** | All 13 editor terrains with color swatches, infantry/tank speed & attack stats, and tactical notes |
+| **Map generation styles** | Mixed, Islands, Desert, Mountains, Jungle, Volcanic, Tundra, and Grassland—traits, descriptions, and deterministic preview renders |
 
 Open the wiki from the landing page header, the app top bar, or directly at `/wiki` once the app is running. The Map Builder card at the top links straight into authoring.
 
@@ -47,7 +47,7 @@ Wiki and README preview images live under `public/images/wiki/` (terrain swatche
 
 ### Terrain palette
 
-Twelve brush types paint the vertex grid in the Map Builder and appear on the wiki terrain table. Swatches match the in-game editor colors.
+Thirteen brush types paint the vertex grid in the Map Builder and appear on the wiki terrain table. Swatches match the in-game editor colors.
 
 <div align="center">
 
@@ -118,11 +118,19 @@ Twelve brush types paint the vertex grid in the Map Builder and appear on the wi
       <sub>Boggy wetland</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center">
+      <img alt="Snow" width="56" height="56" src="public/images/wiki/terrain-snow.svg" /><br />
+      <strong>Snow</strong><br />
+      <sub>Frozen tundra</sub>
+    </td>
+    <td colspan="3" />
+  </tr>
 </table>
 
 </div>
 
-Infantry generally keeps speed in forests and hills; tanks excel on plains, desert, and beach but bog down in woodland and water. Full speed, attack, and defense multipliers for every tile are on the wiki terrain table.
+Infantry generally keeps speed in forests and hills; tanks excel on plains, desert, and beach but bog down in woodland, water, and snow. Snow slows all units and chills attack output—tanks are hit hardest. Full speed, attack, and defense multipliers for every tile are on the wiki terrain table.
 
 ### Map generation previews
 
@@ -147,6 +155,26 @@ Procedural **Map Builder** styles (deterministic previews, same seed). These mat
     <td align="center">
       <strong>Mountains</strong><br />
       <img src="public/images/wiki/map-generation-mountains.svg" alt="Mountains terrain preview" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Jungle</strong><br />
+      <img src="public/images/wiki/map-generation-jungle.svg" alt="Jungle terrain preview" width="100%" />
+    </td>
+    <td align="center">
+      <strong>Volcanic</strong><br />
+      <img src="public/images/wiki/map-generation-volcanic.svg" alt="Volcanic terrain preview" width="100%" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Tundra</strong><br />
+      <img src="public/images/wiki/map-generation-tundra.svg" alt="Tundra terrain preview" width="100%" />
+    </td>
+    <td align="center">
+      <strong>Grassland</strong><br />
+      <img src="public/images/wiki/map-generation-grassland.svg" alt="Grassland terrain preview" width="100%" />
     </td>
   </tr>
 </table>

@@ -15,7 +15,16 @@ import { editorBlendedTerrainFillStyle } from '@/lib/terrainRender';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outDir = join(__dirname, '..', 'public', 'images', 'wiki');
 
-const types: MapGenerationType[] = ['mix', 'islands', 'desert', 'mountains'];
+const types: MapGenerationType[] = [
+    'mix',
+    'islands',
+    'desert',
+    'mountains',
+    'jungle',
+    'volcanic',
+    'tundra',
+    'grassland',
+];
 const cellRows = 48;
 const cellCols = 56;
 const cellPx = 4;
