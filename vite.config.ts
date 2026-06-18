@@ -35,7 +35,7 @@ export default defineConfig({
             refresh: true,
             fonts: [
                 bunny('Kalam', {
-                    weights: [300, 400, 700],
+                    weights: [400, 700],
                 }),
             ],
         }),
