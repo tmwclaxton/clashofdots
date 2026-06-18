@@ -23,8 +23,13 @@ export const AVATAR_STYLES: { value: AvatarStyle; label: string; description: st
 
 /**
  * Returns a deterministic DiceBear avatar URL for a given seed and style.
- * The seed should be a stable unique identifier such as a profile_uuid.
+ * The seed should be a stable unique identifier such as a profile_uuid or avatar_seed.
  */
 export function avatarUrl(seed: string, style: AvatarStyle | string = 'pixel-art'): string {
     return `${BASE}/${style}/svg?seed=${encodeURIComponent(seed)}`;
+}
+
+/** Resolves the effective seed for a user, preferring avatar_seed over profile_uuid. */
+export function resolveAvatarSeed(user: { profile_uuid?: string | null; avatar_seed?: string | null }): string {
+    return user.avatar_seed ?? user.profile_uuid ?? 'default';
 }

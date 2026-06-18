@@ -5,6 +5,7 @@ export type User = {
     email: string;
     avatar?: string;
     avatar_style?: string;
+    avatar_seed?: string | null;
     profile_uuid?: string;
     email_verified_at: string | null;
     created_at: string;

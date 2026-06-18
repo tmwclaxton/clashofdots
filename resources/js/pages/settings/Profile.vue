@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, usePage } from '@inertiajs/vue3';
+import { Shuffle } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/DeleteUser.vue';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/profile';
-import { AVATAR_STYLES, avatarUrl, type AvatarStyle } from '@/composables/useAvatar';
+import { AVATAR_STYLES, avatarUrl, resolveAvatarSeed, type AvatarStyle } from '@/composables/useAvatar';
 
 type Props = {
     status?: string;
@@ -32,6 +33,11 @@ const page = usePage();
 const user = computed(() => page.props.auth.user);
 
 const selectedStyle = ref<AvatarStyle>((user.value?.avatar_style as AvatarStyle) ?? 'pixel-art');
+const previewSeed = ref<string>(resolveAvatarSeed(user.value ?? {}));
+
+function randomiseSeed(): void {
+    previewSeed.value = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+}
 </script>
 
 <template>
@@ -99,12 +105,27 @@ const selectedStyle = ref<AvatarStyle>((user.value?.avatar_style as AvatarStyle)
 
             <!-- Avatar style picker -->
             <div class="grid gap-3">
-                <Label>Avatar style</Label>
-                <p class="text-sm text-muted-foreground -mt-1">
-                    Choose how your avatar looks to other players.
-                </p>
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <Label>Avatar style</Label>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                            Choose how your avatar looks to other players.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        class="shrink-0 gap-2"
+                        @click="randomiseSeed"
+                    >
+                        <Shuffle class="size-3.5" />
+                        Randomise
+                    </Button>
+                </div>
 
                 <input type="hidden" name="avatar_style" :value="selectedStyle" />
+                <input type="hidden" name="avatar_seed" :value="previewSeed" />
 
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <button
@@ -121,7 +142,7 @@ const selectedStyle = ref<AvatarStyle>((user.value?.avatar_style as AvatarStyle)
                         :aria-pressed="selectedStyle === style.value"
                     >
                         <img
-                            :src="avatarUrl(user?.profile_uuid ?? 'preview', style.value)"
+                            :src="avatarUrl(previewSeed, style.value)"
                             :alt="style.label"
                             class="size-14 rounded-full"
                             loading="lazy"

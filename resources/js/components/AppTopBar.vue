@@ -22,7 +22,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import UserMenuContent from '@/components/UserMenuContent.vue';
-import { avatarUrl } from '@/composables/useAvatar';
+import { avatarUrl, resolveAvatarSeed } from '@/composables/useAvatar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { GITHUB_REPOSITORY_URL } from '@/lib/site';
@@ -36,6 +36,7 @@ import type { NavItem } from '@/types';
 const page = usePage();
 /** Logged-in WorkOS user only (guest play uses session, not this object). */
 const user = computed(() => page.props.auth.user);
+const loginHref = computed(() => login().url);
 const { isCurrentOrParentUrl } = useCurrentUrl();
 
 const navItems = computed<NavItem[]>(() => {
@@ -121,41 +122,44 @@ const navItems = computed<NavItem[]>(() => {
                         <Github class="size-4" />
                     </a>
                 </Button>
-                <DropdownMenu v-if="user">
-                    <DropdownMenuTrigger as-child>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            class="wod-nav-ghost rounded-md"
-                        >
-                            <Avatar
-                                class="size-8 overflow-hidden rounded-md border-2 border-foreground bg-black"
+                <template v-if="user">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger as-child>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="wod-nav-ghost rounded-md"
                             >
-                                <AvatarImage
-                                    v-if="user.profile_uuid"
-                                    :src="avatarUrl(user.profile_uuid, user.avatar_style as string)"
-                                    :alt="user.game_display_name ?? user.name"
-                                />
-                                <AvatarFallback
-                                    class="rounded-md bg-card text-xs font-bold"
+                                <Avatar
+                                    class="size-8 overflow-hidden rounded-md border-2 border-foreground bg-black"
                                 >
-                                    {{ getInitials(user.game_display_name ?? user.name) }}
-                                </AvatarFallback>
-                            </Avatar>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-56">
-                        <UserMenuContent :user="user" />
-                    </DropdownMenuContent>
-                </DropdownMenu>
-                <Button
-                    v-else
-                    variant="default"
-                    size="sm"
-                    as-child
-                >
-                    <Link :href="login().url">Sign in</Link>
-                </Button>
+                                    <AvatarImage
+                                        v-if="user.profile_uuid"
+                                        :src="avatarUrl(resolveAvatarSeed(user), user.avatar_style as string)"
+                                        :alt="user.game_display_name ?? user.name"
+                                    />
+                                    <AvatarFallback
+                                        class="rounded-md bg-card text-xs font-bold"
+                                    >
+                                        {{ getInitials(user.game_display_name ?? user.name) }}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" class="w-56">
+                            <UserMenuContent :user="user" />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </template>
+                <template v-else>
+                    <Button
+                        variant="default"
+                        size="sm"
+                        as-child
+                    >
+                        <Link :href="loginHref">Sign in</Link>
+                    </Button>
+                </template>
             </div>
         </div>
 

@@ -215,10 +215,11 @@ onBeforeUnmount(() => {
         <Heading
             title="Lobby Overview"
             description="Pick a published map — lobby size matches the map’s team count. Everyone must join before the host can start."
+            class="!mb-0"
         />
 
         <!-- Player tag -->
-        <div v-if="page.props.auth.user" class="wod-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:gap-4">
+        <div v-if="page.props.auth.user" class="wod-panel flex flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-4">
             <div class="flex items-center gap-2 sm:shrink-0">
                 <Tag class="size-4 text-muted-foreground" aria-hidden="true" />
                 <span class="font-bold">Your player tag</span>
