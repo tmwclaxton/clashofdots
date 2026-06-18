@@ -302,11 +302,16 @@ const sortOptions = [
     <Head title="Explore maps" />
 
     <div class="flex flex-col gap-8">
-        <h1
-            class="font-display text-xl font-bold tracking-tight sm:text-2xl md:text-3xl"
-        >
-            Explore maps
-        </h1>
+        <div class="flex items-center gap-4">
+            <h1
+                class="font-display text-xl font-bold tracking-tight sm:text-2xl md:text-3xl"
+            >
+                Explore maps
+            </h1>
+            <Button size="sm" as-child>
+                <Link :href="mapBuilder().url">Map Builder</Link>
+            </Button>
+        </div>
 
         <div
             v-if="hasUuidFilter"
