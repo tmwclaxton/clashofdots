@@ -8,6 +8,7 @@ import {
     Loader2,
     Lock,
     Monitor,
+    Plus,
     RectangleHorizontal,
     Redo2,
     Save,
@@ -44,6 +45,7 @@ import {
     validateMapMarkers,
 } from '@/lib/mapEditorGrid';
 import { login as loginRoute, mapBuilder } from '@/routes';
+import { store as createGame } from '@/routes/games';
 import { explore as mapsExplore, fork as forkMap, publish as publishMap } from '@/routes/maps';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -470,6 +472,7 @@ async function onSave(): Promise<void> {
 const publishBusy = ref(false);
 const publishConfirmOpen = ref(false);
 const duplicateBusy = ref(false);
+const createLobbyBusy = ref(false);
 
 function requestPublishConfirm(): void {
     const uuid = editor.currentUuid.value;
@@ -562,6 +565,24 @@ async function onDuplicatePublished(): Promise<void> {
     } finally {
         duplicateBusy.value = false;
     }
+}
+
+function onCreateLobby(): void {
+    const uuid = editor.currentUuid.value;
+
+    if (!uuid || !mapPublished.value) {
+        return;
+    }
+
+    createLobbyBusy.value = true;
+
+    router.visit(createGame.url(), {
+        method: 'post',
+        data: { map_uuid: uuid },
+        onFinish: () => {
+            createLobbyBusy.value = false;
+        },
+    });
 }
 
 function onMapsListUpdated(next: MapSummary[]): void {
@@ -686,12 +707,13 @@ onUnmounted(() => {
                 Fit view
             </Button>
             <Button
+                v-if="!editorLocked"
                 type="button"
                 size="sm"
                 variant="outline"
                 class="h-9 gap-1.5 border-2 border-foreground !bg-wod-blue px-3 text-xs font-bold !text-white shadow-[0_2px_0_0_var(--wod-shadow)] hover:!bg-wod-blue/90 hover:!text-white active:!bg-wod-blue/80 dark:!bg-wod-blue dark:hover:!bg-wod-blue/85"
                 title="Replace the map with procedurally generated terrain (runs locally in your browser)"
-                :disabled="editorLocked || mapGenerationPending"
+                :disabled="mapGenerationPending"
                 @click="openGenerateDialog"
             >
                 <Loader2 v-if="mapGenerationPending" class="size-4 shrink-0 animate-spin" />
@@ -699,24 +721,23 @@ onUnmounted(() => {
                 {{ mapGenerationPending ? 'Generating…' : 'Generate Map' }}
             </Button>
             <Button
+                v-if="!editorLocked"
                 type="button"
                 size="sm"
                 variant="outline"
                 class="h-8 gap-1 px-2 text-xs"
                 title="Change vertex grid size (rows × columns)"
-                :disabled="editorLocked"
                 @click="openNewMapSizeDialog"
             >
                 Grid {{ editor.gridRows }}×{{ editor.gridCols }}
             </Button>
-            <div class="flex items-center gap-1.5">
+            <div v-if="!editorLocked" class="flex items-center gap-1.5">
                 <label class="text-xs font-semibold text-muted-foreground" for="map-builder-teams">
                     Teams
                 </label>
                 <select
                     id="map-builder-teams"
                     class="wod-field h-8 w-auto min-w-[3.5rem] px-2 font-mono text-xs"
-                    :disabled="editorLocked"
                     :value="headerTeamCount"
                     @change="onTeamCountChange"
                 >
@@ -735,10 +756,11 @@ onUnmounted(() => {
                     <Link :href="publishedMapExploreUrl">Explore</Link>
                 </Button>
                 <Button
+                    v-if="!editorLocked"
                     type="button"
                     size="sm"
                     variant="outline"
-                    :disabled="!editor.canUndo || editorLocked"
+                    :disabled="!editor.canUndo"
                     class="gap-1"
                     @click="editor.undo()"
                 >
@@ -746,10 +768,11 @@ onUnmounted(() => {
                     Undo
                 </Button>
                 <Button
+                    v-if="!editorLocked"
                     type="button"
                     size="sm"
                     variant="outline"
-                    :disabled="!editor.canRedo || editorLocked"
+                    :disabled="!editor.canRedo"
                     class="gap-1"
                     @click="editor.redo()"
                 >
@@ -757,10 +780,11 @@ onUnmounted(() => {
                     Redo
                 </Button>
                 <Button
+                    v-if="!editorLocked"
                     type="button"
                     size="sm"
                     class="gap-1"
-                    :disabled="saving || autoSaving || editorLocked"
+                    :disabled="saving || autoSaving"
                     @click="onSave"
                 >
                     <Save class="size-3.5" />
@@ -791,6 +815,18 @@ onUnmounted(() => {
                 >
                     <Copy class="size-3.5" />
                     {{ duplicateBusy ? 'Duplicating…' : 'Duplicate' }}
+                </Button>
+                <Button
+                    v-if="editorLocked && hasSavedMap"
+                    type="button"
+                    size="sm"
+                    class="gap-1"
+                    :disabled="createLobbyBusy"
+                    title="Create a lobby using this map"
+                    @click="onCreateLobby"
+                >
+                    <Plus class="size-3.5" />
+                    {{ createLobbyBusy ? 'Creating…' : 'Create Lobby' }}
                 </Button>
             </div>
         </div>
