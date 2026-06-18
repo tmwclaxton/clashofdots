@@ -26,7 +26,7 @@ final class GameTickService
             $manager->finishWithoutWinner(
                 $game,
                 GameConstants::ABORTED_MATCH_INACTIVITY,
-                'Match ended — all commanders inactive for over two minutes.',
+                'Match ended - all commanders inactive for over two minutes.',
             );
 
             return;

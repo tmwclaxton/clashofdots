@@ -198,7 +198,7 @@ final class GameConstants
     /** Max health for infantry units. */
     public const int INFANTRY_MAX_HEALTH = 100;
 
-    /** Max health for tank units — twice as durable as infantry. */
+    /** Max health for tank units - twice as durable as infantry. */
     public const int TANK_MAX_HEALTH = 200;
 
     /** Cost to spawn one tank from an owned city. */

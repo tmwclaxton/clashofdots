@@ -43,7 +43,7 @@ final class MarchingSquares
         $maxX = max(0, count($this->grid) - 1);
         $maxY = max(0, count($this->grid[0] ?? []) - 1);
 
-        /** Clamp before indexing — callers may pass world coords outside the scalar field. */
+        /** Clamp before indexing - callers may pass world coords outside the scalar field. */
         $xf = max(0.0, min($x, (float) $maxX));
         $yf = max(0.0, min($y, (float) $maxY));
 

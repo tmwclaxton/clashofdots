@@ -99,7 +99,7 @@ class RecruitmentTest extends TestCase
             $this->markTestSkipped('Fixture has no capital city.');
         }
 
-        // Park a troop directly on the city — this will populate playersInCities via updateTroops.
+        // Park a troop directly on the city - this will populate playersInCities via updateTroops.
         $env->players[0]->troops[0]->position = $capital->position;
 
         // Run updateTroops to populate playersInCities.

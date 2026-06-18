@@ -100,7 +100,7 @@ function rgbToHex(r: number, g: number, b: number): string {
     return `#${clamp255(r).toString(16).padStart(2, '0')}${clamp255(g).toString(16).padStart(2, '0')}${clamp255(b).toString(16).padStart(2, '0')}`;
 }
 
-/** Light mode dim alpha — shared with map editor and in-game terrain bake. */
+/** Light mode dim alpha - shared with map editor and in-game terrain bake. */
 export const EDITOR_TERRAIN_DIM_ALPHA_LIGHT = 0.08;
 
 /**

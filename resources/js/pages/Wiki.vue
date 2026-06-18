@@ -374,7 +374,7 @@ function speedClass(speed: number, impassable: boolean): string {
                         <strong>Wade</strong> (instant, continuous HP drain,
                         blocked from deep water) or
                         <strong>Embark</strong> (~3&nbsp;s shore conversion to a
-                        ship — faster on water, no drain, can cross deep water).
+                        ship - faster on water, no drain, can cross deep water).
                     </p>
                 </div>
             </div>

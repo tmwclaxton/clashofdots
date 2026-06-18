@@ -412,7 +412,7 @@ function draw() {
 }
 
 /**
- * Fog of war — dims cells outside the viewing player's vision.
+ * Fog of war - dims cells outside the viewing player's vision.
  *
  * Drawn BEFORE territory lines so the battle-front stays readable even at
  * the edge of visibility.  Uses a medium-opacity fill adapted to dark/light
@@ -439,7 +439,7 @@ function _drawFog(
 
     for (let gx = 0; gx < w; gx++) {
         for (let gy = 0; gy < h; gy++) {
-            // Only fog cells that are in enemy territory — own backfield stays clear.
+            // Only fog cells that are in enemy territory - own backfield stays clear.
             const owner = territory?.[gx]?.[gy] ?? -1;
 
             if (owner !== mySlot && vision[gx][gy] < ENGINE_FOREST_THRESHOLD) {
@@ -456,7 +456,7 @@ function _drawFog(
  * player's borders rendered in their own player color.
  *
  * Every cell is owned by whoever has the highest border influence
- * (no threshold — the whole map is always fully divided).  Only the
+ * (no threshold - the whole map is always fully divided).  Only the
  * boundary lines are drawn; no fill, so the terrain stays fully visible.
  *
  * Algorithm
@@ -464,12 +464,12 @@ function _drawFog(
  * 1. For each cell, collect boundary edges (shared sides with differently-owned
  *    neighbours) and assign each edge to the owning player (the cell we are
  *    currently iterating).  This keeps each edge in exactly one player's set.
- * 2. Per player: build a corner adjacency graph, then walk it greedily —
- *    preferring straight continuation at junctions — to assemble edges into
+ * 2. Per player: build a corner adjacency graph, then walk it greedily -
+ *    preferring straight continuation at junctions - to assemble edges into
  *    the longest possible polylines.
  * 3. Render each player's polylines using quadratic-Bézier midpoint smoothing
  *    in that player's color:  straight stretches stay perfectly straight;
- *    direction-changes become smooth arcs — the "marker-pen on a map" aesthetic.
+ *    direction-changes become smooth arcs - the "marker-pen on a map" aesthetic.
  */
 function drawTerritory(
     ctx: CanvasRenderingContext2D,
@@ -997,7 +997,7 @@ function onMouseDown(e: MouseEvent) {
             drafts.beginPath(entity.id, world);
         }
     } else {
-        // No entity hit — start lasso selection (clears existing selection first).
+        // No entity hit - start lasso selection (clears existing selection first).
         drafts.clearSelection();
         lassoStart = [sx, sy];
         lassoCurrent = [sx, sy];

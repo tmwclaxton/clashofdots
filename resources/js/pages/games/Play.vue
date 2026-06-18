@@ -114,7 +114,7 @@ const snapshotPath = computed((): string => {
 
 function formatTickTime(ms: number | null): string {
     if (ms === null) {
-        return '—';
+        return '-';
     }
 
     try {
@@ -125,7 +125,7 @@ function formatTickTime(ms: number | null): string {
             hour12: false,
         });
     } catch {
-        return '—';
+        return '-';
     }
 }
 
@@ -194,7 +194,7 @@ const chatInput = ref('');
 /** ID of the city currently hovered in the recruitment panel (for canvas highlight). */
 const hoveredCityId = ref<number | null>(null);
 
-/** Global production sliders — local copies to avoid snap-back on async saves. */
+/** Global production sliders - local copies to avoid snap-back on async saves. */
 const localTankRatio = ref(0);
 const localSpeedMultiplier = ref(1.0);
 let productionSaveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -460,7 +460,7 @@ onUnmounted(() => {
             </div>
         </header>
 
-        <!-- Canvas area — fills all remaining height -->
+        <!-- Canvas area - fills all remaining height -->
         <div class="relative min-h-0 flex-1">
             <!-- Loading overlays -->
             <div
@@ -545,7 +545,7 @@ onUnmounted(() => {
                 class="absolute top-3 right-3 left-3 z-10 rounded-md border border-destructive/60 bg-background/95 px-3 py-2 text-xs text-destructive shadow-md backdrop-blur-sm"
                 role="alert"
             >
-                World time is not advancing — ensure
+                World time is not advancing - ensure
                 <code class="rounded bg-muted px-1 font-mono text-foreground"
                     >game:tick --daemon</code
                 >
@@ -613,7 +613,7 @@ onUnmounted(() => {
                                 (myCredits ?? 0) < 0 ? 'text-destructive' : ''
                             "
                         >
-                            {{ myCredits ?? '—' }}
+                            {{ myCredits ?? '-' }}
                         </p>
                         <p
                             v-if="incomePerTick !== 0"
@@ -880,8 +880,8 @@ onUnmounted(() => {
                                 "
                                 :title="
                                     (city.recruitmentEnabled ?? true)
-                                        ? 'Recruitment on — click to disable'
-                                        : 'Recruitment off — click to enable'
+                                        ? 'Recruitment on - click to disable'
+                                        : 'Recruitment off - click to enable'
                                 "
                             >
                                 {{
@@ -941,7 +941,7 @@ onUnmounted(() => {
                         <dd class="break-all">{{ game.uuid }}</dd>
                         <dt class="text-foreground/80">broadcast</dt>
                         <dd class="break-all">
-                            {{ broadcastConnection ?? '—' }}
+                            {{ broadcastConnection ?? '-' }}
                         </dd>
                         <dt class="text-foreground/80">snapshot</dt>
                         <dd class="break-all">{{ snapshotPath }}</dd>
@@ -949,7 +949,7 @@ onUnmounted(() => {
                         <dd>
                             {{
                                 store.devDiagnostics
-                                    .lastWorldTickDeltaViaSnapshot ?? '—'
+                                    .lastWorldTickDeltaViaSnapshot ?? '-'
                             }}
                         </dd>
                         <dt class="text-foreground/80">snap RTT</dt>
@@ -958,14 +958,14 @@ onUnmounted(() => {
                                 store.devDiagnostics.lastSnapshotDurationMs !==
                                 null
                                     ? `${store.devDiagnostics.lastSnapshotDurationMs} ms`
-                                    : '—'
+                                    : '-'
                             }}
                         </dd>
                         <dt class="text-foreground/80">snap HTTP</dt>
                         <dd>
                             {{
                                 store.devDiagnostics.lastSnapshotHttpStatus ??
-                                '—'
+                                '-'
                             }}
                         </dd>
                         <dt class="text-foreground/80">snap @</dt>
@@ -978,13 +978,13 @@ onUnmounted(() => {
                         </dd>
                         <dt class="text-foreground/80">snap err</dt>
                         <dd class="break-words text-destructive">
-                            {{ store.devDiagnostics.lastSnapshotError ?? '—' }}
+                            {{ store.devDiagnostics.lastSnapshotError ?? '-' }}
                         </dd>
                         <dt class="text-foreground/80">echo Δtick</dt>
                         <dd>
                             {{
                                 store.devDiagnostics.lastEchoWorldTickDelta ??
-                                '—'
+                                '-'
                             }}
                         </dd>
                         <dt class="text-foreground/80">echo @</dt>

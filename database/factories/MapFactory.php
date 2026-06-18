@@ -88,11 +88,11 @@ class MapFactory extends Factory
             $data['teamCount'] = 3;
             $data['teamPaletteSlots'] = [0, 1, 2];
             $data['markers'] = [
-                // Capitals — well-separated across the 195×108 grid
+                // Capitals - well-separated across the 195×108 grid
                 ['type' => MapMarkers::TYPE_CAPITAL, 'team' => 0, 'row' => 50,  'col' => 20],
                 ['type' => MapMarkers::TYPE_CAPITAL, 'team' => 1, 'row' => 50,  'col' => 90],
                 ['type' => MapMarkers::TYPE_CAPITAL, 'team' => 2, 'row' => 150, 'col' => 55],
-                // Flags — each team's flag placed far from capitals and other flags
+                // Flags - each team's flag placed far from capitals and other flags
                 ['type' => MapMarkers::TYPE_FLAG,    'team' => 0, 'row' => 130, 'col' => 20],
                 ['type' => MapMarkers::TYPE_FLAG,    'team' => 1, 'row' => 130, 'col' => 90],
                 ['type' => MapMarkers::TYPE_FLAG,    'team' => 2, 'row' => 50,  'col' => 55],

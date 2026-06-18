@@ -129,7 +129,7 @@ class GameController extends Controller
                 $gameUrl = route('games.show', $game);
 
                 /** @var array<string, string> $shareLinks */
-                $shareLinks = Share::page($gameUrl, "Check out this War of Dots match — code {$game->code}!")
+                $shareLinks = Share::page($gameUrl, "Check out this War of Dots match - code {$game->code}!")
                     ->facebook()
                     ->twitter()
                     ->linkedin()
@@ -174,7 +174,7 @@ class GameController extends Controller
         $gameUrl = route('games.show', $game);
 
         /** @var array<string, string> $shareLinks */
-        $shareLinks = Share::page($gameUrl, "Join my War of Dots lobby — code {$game->code}!")
+        $shareLinks = Share::page($gameUrl, "Join my War of Dots lobby - code {$game->code}!")
             ->facebook()
             ->twitter()
             ->linkedin()

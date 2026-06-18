@@ -605,7 +605,7 @@ final class Environment
         }
 
         if ($bestPlayer === null) {
-            return false; // neutral cell — neither own nor enemy territory
+            return false; // neutral cell - neither own nor enemy territory
         }
 
         if ($bestPlayer === $player) {
@@ -803,7 +803,7 @@ final class Environment
 
                 // Morale: territory-based encirclement replaces the old supply-line distance check.
                 // Being inside own territory (or a teammate's) is sufficient to recover morale.
-                // Being caught in enemy territory — whether fighting or not — drains morale.
+                // Being caught in enemy territory - whether fighting or not - drains morale.
                 if ($inCombat) {
                     $drain = GameConstants::TROOP_MORALE_COMBAT_DRAIN;
                     if (! $inOwnTerritory) {
@@ -862,7 +862,7 @@ final class Environment
 
                     if ($dist < GameConstants::CELL_SIZE) {
                         // Only count each player once per city regardless of how
-                        // many troops they have nearby — prevents the player being
+                        // many troops they have nearby - prevents the player being
                         // listed multiple times which would break the count === 1 check.
                         if (! in_array($player, $this->playersInCities[$i], true)) {
                             $this->playersInCities[$i][] = $player;
@@ -1045,8 +1045,8 @@ final class Environment
      *
      * Vision is not persisted to Redis (it is stripped in Player::toArray()) because it is always
      * reset and recomputed at the start of each tick's updateTroops() call.  This method provides
-     * the same result without running a full tick, so that drawInfo() — used by snapshot and
-     * broadcast endpoints that run between ticks — produces correct fog-of-war data.
+     * the same result without running a full tick, so that drawInfo() - used by snapshot and
+     * broadcast endpoints that run between ticks - produces correct fog-of-war data.
      */
     public function recomputeVision(): void
     {
@@ -1091,7 +1091,7 @@ final class Environment
                 $gy = max(0, min($this->gridMaxY, $troop->position[1] / GameConstants::CELL_SIZE));
 
                 $lit = $player->vision->getGridValue($gx, $gy) >= GameConstants::THRESHOLD;
-                /** Always return your own army — vision sampling can sit below {@see GameConstants::THRESHOLD} where brushes pull toward 0. */
+                /** Always return your own army - vision sampling can sit below {@see GameConstants::THRESHOLD} where brushes pull toward 0. */
                 $isOwnTroop = $troop->owner->slot === $playerSlot;
                 /** Allied troops (same non-zero team) are always visible. */
                 $isAlly = $player->teamIndex > 0 && $troop->owner->teamIndex === $player->teamIndex;
@@ -1139,7 +1139,7 @@ final class Environment
         // 1. Border-brush influence (0–1): reflects actual zone-of-control near
         //    each player's troops, capitals, and outposts.  The brush radius is
         //    small (40–80 px), so this only affects cells within a few tiles of
-        //    a unit — it shifts the frontier line closer to the enemy.
+        //    a unit - it shifts the frontier line closer to the enemy.
         //
         // 2. Voronoi proximity to the player's nearest anchor (owned city or
         //    start position).  This divides the whole map even in areas where no

@@ -80,7 +80,7 @@ final class GameSpecs
                 'incomePerTick' => 1,
                 'incomePerSecond' => 30.0,
                 'healMultiplier' => 2.0,
-                'summary' => 'One per faction. Generates the same income as outposts but is the primary strategic objective — all enemy capitals must be captured to win.',
+                'summary' => 'One per faction. Generates the same income as outposts but is the primary strategic objective - all enemy capitals must be captured to win.',
             ],
         ];
     }
@@ -164,8 +164,8 @@ final class GameSpecs
             'dense_forest' => 'Thick woodland. Infantry penalty is mild; tanks are severely hampered.',
             'hill' => 'High ground. Tanks move slowly but keep full damage - strong on hilltops above forest.',
             'mountain' => 'Impassable peaks. Units cannot cross; no combat occurs here.',
-            'water' => 'Shallow lakes. When a drafted path crosses water you choose Wade (instant, continuous HP drain, cannot enter deep water) or Embark (3 s shore conversion to a ship — faster on water, no drain, can cross deep water).',
-            'deep_water' => 'Open ocean. Ships only — wading troops are blocked here. Embark before entering or route around.',
+            'water' => 'Shallow lakes. When a drafted path crosses water you choose Wade (instant, continuous HP drain, cannot enter deep water) or Embark (3 s shore conversion to a ship - faster on water, no drain, can cross deep water).',
+            'deep_water' => 'Open ocean. Ships only - wading troops are blocked here. Embark before entering or route around.',
             'river' => 'Narrow waterways. Wading works for short crossings; embark if the river is wide or connects to open water.',
             'swamp' => 'Boggy wetland. Mud-like penalties slow everyone and reduce damage output.',
             'desert' => 'Sandy dunes. Tanks move as fast as infantry - the best heavy-unit terrain.',
@@ -258,7 +258,7 @@ final class GameSpecs
             [
                 'title' => 'Income',
                 'icon' => 'coins',
-                'body' => 'Every city and outpost you own pays 1 credit per tick (~30 credits/second per city). Income stacks — the more settlements you hold, the faster your war chest grows.',
+                'body' => 'Every city and outpost you own pays 1 credit per tick (~30 credits/second per city). Income stacks - the more settlements you hold, the faster your war chest grows.',
             ],
             [
                 'title' => 'Spawn cost',
@@ -268,7 +268,7 @@ final class GameSpecs
             [
                 'title' => 'Army upkeep',
                 'icon' => 'wallet',
-                'body' => 'Every troop on the field costs 1 credit per tick regardless of type or health. A large army drains your treasury fast — you can sustain a bigger force temporarily by saving credits, but you will eventually need to downsize.',
+                'body' => 'Every troop on the field costs 1 credit per tick regardless of type or health. A large army drains your treasury fast - you can sustain a bigger force temporarily by saving credits, but you will eventually need to downsize.',
             ],
             [
                 'title' => 'Debt damage',
@@ -283,7 +283,7 @@ final class GameSpecs
             [
                 'title' => 'Water crossing',
                 'icon' => 'waves',
-                'body' => 'When a drafted path crosses water a prompt lets you choose Wade or Embark. Wade is instant but drains HP every tick and cannot enter deep water. Embark spends ~3 s converting the unit to a ship at the shore — ships move faster, take no water damage, and can cross deep water freely. The ship reverts to a troop the moment it reaches dry land.',
+                'body' => 'When a drafted path crosses water a prompt lets you choose Wade or Embark. Wade is instant but drains HP every tick and cannot enter deep water. Embark spends ~3 s converting the unit to a ship at the shore - ships move faster, take no water damage, and can cross deep water freely. The ship reverts to a troop the moment it reaches dry land.',
             ],
         ];
     }

@@ -1124,7 +1124,7 @@ final class GameManager
     }
 
     /**
-     * Writes the immutable terrain fields to a dedicated key. Uses SETNX so it is idempotent —
+     * Writes the immutable terrain fields to a dedicated key. Uses SETNX so it is idempotent -
      * safe to call on every {@see storeLiveState} when terrain is present in the environment array.
      *
      * @param  array<string, mixed>  $envArray

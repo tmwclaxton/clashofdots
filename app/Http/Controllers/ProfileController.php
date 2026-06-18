@@ -82,7 +82,7 @@ class ProfileController extends Controller
                 $gameUrl = route('games.show', $game);
 
                 /** @var array<string, string> $gameShareLinks */
-                $gameShareLinks = Share::page($gameUrl, "Check out this War of Dots match — code {$game->code}!")
+                $gameShareLinks = Share::page($gameUrl, "Check out this War of Dots match - code {$game->code}!")
                     ->facebook()
                     ->twitter()
                     ->linkedin()

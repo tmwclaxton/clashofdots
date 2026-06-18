@@ -64,7 +64,7 @@ defineProps<{
 
 function formatDate(iso: string | null): string {
     if (!iso) {
-        return '—';
+        return '-';
     }
 
     try {
@@ -113,7 +113,7 @@ function formatDate(iso: string | null): string {
                         v-if="isOwnProfile"
                         class="mt-2 text-xs text-muted-foreground"
                     >
-                        This is your public profile — others see the same stats
+                        This is your public profile - others see the same stats
                         (no email shown).
                     </p>
                 </div>

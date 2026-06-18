@@ -411,7 +411,7 @@ export const useGameStore = defineStore('game', {
                     await this.pullSnapshot(snapshotFetchUrl);
                 }
             } catch {
-                toast.error('Network error — stop failed.');
+                toast.error('Network error - stop failed.');
             }
         },
 
@@ -467,7 +467,7 @@ export const useGameStore = defineStore('game', {
                     await this.pullSnapshot(snapshotUrl);
                 }
             } catch {
-                toast.error('Network error — orders not submitted.');
+                toast.error('Network error - orders not submitted.');
             }
         },
         clearUnreadChat() {
@@ -496,7 +496,7 @@ export const useGameStore = defineStore('game', {
                     toast.error('Could not send message.');
                 }
             } catch {
-                toast.error('Network error — chat failed.');
+                toast.error('Network error - chat failed.');
             }
         },
 
@@ -533,7 +533,7 @@ export const useGameStore = defineStore('game', {
                     toast.error(message);
                 }
             } catch {
-                toast.error('Network error — city update failed.');
+                toast.error('Network error - city update failed.');
             }
         },
 
@@ -573,7 +573,7 @@ export const useGameStore = defineStore('game', {
                     toast.error(message);
                 }
             } catch {
-                toast.error('Network error — production update failed.');
+                toast.error('Network error - production update failed.');
             }
         },
     },

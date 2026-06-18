@@ -73,7 +73,7 @@ function pathHexagonPointy(
 
 /**
  * Dark outer glow so troop markers read on pale terrain (capitals/flags use {@link strokeMarkerHalo}).
- * `sizeRef` replaces `cellPx * scale` — pass `cellPx * scale` for grid-based callers or the marker
+ * `sizeRef` replaces `cellPx * scale` - pass `cellPx * scale` for grid-based callers or the marker
  * radius directly for pixel-centre callers.
  */
 function strokeTroopMarkerBackdrop(
@@ -187,7 +187,7 @@ export function isFarEnoughFromHydraulicWaterForMapMarker(
 }
 
 // ---------------------------------------------------------------------------
-// Pixel-centre drawing functions — used by the live game canvas and any other
+// Pixel-centre drawing functions - used by the live game canvas and any other
 // consumer that already has world-space coordinates.
 // ---------------------------------------------------------------------------
 
@@ -338,7 +338,7 @@ export function drawTankAtPixel(
 }
 
 // ---------------------------------------------------------------------------
-// Grid-based drawing functions — used by the map editor canvas.
+// Grid-based drawing functions - used by the map editor canvas.
 // These are thin wrappers that convert (grid col, grid row, cellPx) to a
 // pixel-centre + radius and delegate to the pixel-centre functions above.
 // ---------------------------------------------------------------------------

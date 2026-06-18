@@ -16,7 +16,7 @@ class WaterModeTest extends TestCase
     private function placeOnWater(Environment $environment, Troop $troop): void
     {
         $cs = GameConstants::CELL_SIZE;
-        // Use grid cell (1,1) — well within the grid.
+        // Use grid cell (1,1) - well within the grid.
         $gx = 1;
         $gy = 1;
         // Set a value clearly below the water threshold (-0.1).
@@ -82,7 +82,7 @@ class WaterModeTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // assignTroopPathsFromOrders — waterMode protocol
+    // assignTroopPathsFromOrders - waterMode protocol
     // -------------------------------------------------------------------------
 
     public function test_assign_orders_sets_water_mode_from_third_tuple_element(): void
@@ -318,7 +318,7 @@ class WaterModeTest extends TestCase
             $environment->updateTroops([], $i);
         }
 
-        // The troop must remain in the land cell — its X should never exceed the
+        // The troop must remain in the land cell - its X should never exceed the
         // start of the first deep_water cell (gx=4 → world x = 80).
         $deepWaterWorldX = 4 * $cs;
         $this->assertLessThanOrEqual(

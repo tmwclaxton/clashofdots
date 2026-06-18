@@ -132,7 +132,7 @@ class GameLobbyTest extends TestCase
         $this->actingAs($guest)
             ->post(route('games.join', $game));
 
-        // Host starts the game — launches immediately, redirects to the show page.
+        // Host starts the game - launches immediately, redirects to the show page.
         $this->actingAs($host)
             ->post(route('games.start', $game))
             ->assertRedirect(route('games.show', $game));
@@ -196,7 +196,7 @@ class GameLobbyTest extends TestCase
         $this->actingAs($guest)
             ->post(route('games.join', $game));
 
-        // Host starts — game launches immediately.
+        // Host starts - game launches immediately.
         $this->actingAs($host)
             ->post(route('games.start', $game));
 

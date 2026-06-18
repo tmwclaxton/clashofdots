@@ -1,4 +1,4 @@
-# Laravel Sail — `docker compose` / `./vendor/bin/sail up`
+# Laravel Sail - `docker compose` / `./vendor/bin/sail up`
 #
 # PHP services inject Docker DNS hostnames so Redis, Reverb, and Postgres work
 # inside the network even if `.env` still says 127.0.0.1 / localhost.

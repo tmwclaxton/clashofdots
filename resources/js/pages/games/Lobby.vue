@@ -131,7 +131,7 @@ function startQsPoll() {
                 stopQsPoll();
             }
         } catch {
-            // network blip — keep polling
+            // network blip - keep polling
         }
     }, 2000);
 }
@@ -159,7 +159,7 @@ async function fetchQueueSize(): Promise<void> {
             qsState.value = { ...qsState.value, queueSize: data.queueSize };
         }
     } catch {
-        // network blip — ignore
+        // network blip - ignore
     }
 }
 
@@ -247,7 +247,7 @@ onBeforeUnmount(() => {
     <div class="flex flex-col gap-8">
         <Heading
             title="Lobby Overview"
-            description="Pick a published map — lobby size matches the map’s team count. Everyone must join before the host can start."
+            description="Pick a published map - lobby size matches the map’s team count. Everyone must join before the host can start."
             class="!mb-0"
         />
 
@@ -363,7 +363,7 @@ onBeforeUnmount(() => {
             </template>
             <template v-else-if="qsState.status === 'matched'">
                 <p class="text-sm font-semibold text-green-600">
-                    Match found — redirecting…
+                    Match found - redirecting…
                 </p>
             </template>
         </div>
@@ -471,7 +471,7 @@ onBeforeUnmount(() => {
                 </div>
                 <p class="flex-1 text-sm text-muted-foreground">
                     Don't mind what you play? Join the pool and we'll drop you
-                    straight into a lobby the moment there's a fit — no browsing
+                    straight into a lobby the moment there's a fit - no browsing
                     required.
                 </p>
                 <Button :disabled="qsLoading" @click="joinQuickStart">

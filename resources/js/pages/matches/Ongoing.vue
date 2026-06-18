@@ -54,7 +54,7 @@ withDefaults(
             <Clock3 class="mx-auto mb-2 size-7 opacity-60" />
             <p class="font-bold">No active battles for you</p>
             <p class="mt-1 text-sm">
-                Join a lobby — your browser keeps a guest session so you can
+                Join a lobby - your browser keeps a guest session so you can
                 come back here after a disconnect.
             </p>
         </div>

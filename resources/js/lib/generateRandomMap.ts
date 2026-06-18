@@ -808,7 +808,7 @@ function classifyTundra(elevation: number, moisture: number): TerrainId {
 
 /**
  * Open grassland: sweeping meadows and plains with light forest patches, gentle rivers,
- * and only rare hills — mountains are almost entirely absent.
+ * and only rare hills - mountains are almost entirely absent.
  */
 function classifyGrassland(elevation: number, moisture: number): TerrainId {
     if (elevation < 0.13) {

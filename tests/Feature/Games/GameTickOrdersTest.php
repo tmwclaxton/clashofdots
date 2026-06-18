@@ -123,13 +123,13 @@ class GameTickOrdersTest extends TestCase
             // Submit first set of orders (pathA) for the troop.
             $manager->submitOrders($game, $hostPlayer, [[[$troopId, $pathA]], []]);
 
-            // Submit a second set of orders (pathB) for the same troop — should replace pathA.
+            // Submit a second set of orders (pathB) for the same troop - should replace pathA.
             $manager->submitOrders($game, $hostPlayer, [[[$troopId, $pathB]], []]);
 
             $stateAfter = $manager->getLiveState($game);
             $pending = $stateAfter['playerInputs'][$hostPlayer->slot];
 
-            // Only one entry should remain for the troop — the latest one.
+            // Only one entry should remain for the troop - the latest one.
             $this->assertCount(1, $pending, 'Duplicate pending entries for the same troop must be collapsed to one.');
 
             // The stored path should be pathB (the override), not pathA.

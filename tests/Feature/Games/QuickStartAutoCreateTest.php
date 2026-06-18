@@ -133,7 +133,7 @@ class QuickStartAutoCreateTest extends TestCase
         $this->assertDatabaseCount('games', 1);
 
         $game = Game::query()->firstOrFail();
-        // Quick-start games launch immediately when full — expect Playing status.
+        // Quick-start games launch immediately when full - expect Playing status.
         $this->assertSame(GameStatus::Playing, $game->status);
         $this->assertSame($map->id, $game->map_id);
         $this->assertNull($game->host_user_id);
@@ -157,7 +157,7 @@ class QuickStartAutoCreateTest extends TestCase
         $this->assertDatabaseCount('games', 1);
 
         $game = Game::query()->firstOrFail();
-        // Quick-start games launch immediately when full — expect Playing status.
+        // Quick-start games launch immediately when full - expect Playing status.
         $this->assertSame(GameStatus::Playing, $game->status);
         $this->assertSame($map->id, $game->map_id);
         $this->assertSame(2, $game->max_players);
@@ -250,7 +250,7 @@ class QuickStartAutoCreateTest extends TestCase
         $this->enqueueUserReady($readyUser);
         $this->enqueueUserFresh($freshUser);
 
-        // Only one ready player — not enough to auto-create.
+        // Only one ready player - not enough to auto-create.
         app(GameManager::class)->runQuickStart();
 
         $this->assertDatabaseCount('games', 0);
