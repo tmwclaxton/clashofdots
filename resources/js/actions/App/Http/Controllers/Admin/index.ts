@@ -1,9 +1,12 @@
-import OverviewController from './OverviewController'
-import SeedFakeDataController from './SeedFakeDataController'
+import OverviewController from './OverviewController';
+import SeedFakeDataController from './SeedFakeDataController';
 
 const Admin = {
     OverviewController: Object.assign(OverviewController, OverviewController),
-    SeedFakeDataController: Object.assign(SeedFakeDataController, SeedFakeDataController),
-}
+    SeedFakeDataController: Object.assign(
+        SeedFakeDataController,
+        SeedFakeDataController,
+    ),
+};
 
-export default Admin
+export default Admin;

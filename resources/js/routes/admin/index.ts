@@ -1,144 +1,163 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
+import {
+    queryParams,
+    type RouteQueryOptions,
+    type RouteDefinition,
+    type RouteFormDefinition,
+} from './../../wayfinder';
 /**
-* @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
-* @route '/admin'
-*/
-export const overview = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+ * @see \App\Http\Controllers\Admin\OverviewController::__invoke
+ * @see app/Http/Controllers/Admin/OverviewController.php:16
+ * @route '/admin'
+ */
+export const overview = (
+    options?: RouteQueryOptions,
+): RouteDefinition<'get'> => ({
     url: overview.url(options),
     method: 'get',
-})
+});
 
 overview.definition = {
-    methods: ["get","head"],
+    methods: ['get', 'head'],
     url: '/admin',
-} satisfies RouteDefinition<["get","head"]>
+} satisfies RouteDefinition<['get', 'head']>;
 
 /**
-* @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
-* @route '/admin'
-*/
+ * @see \App\Http\Controllers\Admin\OverviewController::__invoke
+ * @see app/Http/Controllers/Admin/OverviewController.php:16
+ * @route '/admin'
+ */
 overview.url = (options?: RouteQueryOptions) => {
-    return overview.definition.url + queryParams(options)
-}
+    return overview.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
-* @route '/admin'
-*/
+ * @see \App\Http\Controllers\Admin\OverviewController::__invoke
+ * @see app/Http/Controllers/Admin/OverviewController.php:16
+ * @route '/admin'
+ */
 overview.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: overview.url(options),
     method: 'get',
-})
+});
 
 /**
-* @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
-* @route '/admin'
-*/
+ * @see \App\Http\Controllers\Admin\OverviewController::__invoke
+ * @see app/Http/Controllers/Admin/OverviewController.php:16
+ * @route '/admin'
+ */
 overview.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: overview.url(options),
     method: 'head',
-})
+});
 
 /**
-* @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
-* @route '/admin'
-*/
-const overviewForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+ * @see \App\Http\Controllers\Admin\OverviewController::__invoke
+ * @see app/Http/Controllers/Admin/OverviewController.php:16
+ * @route '/admin'
+ */
+const overviewForm = (
+    options?: RouteQueryOptions,
+): RouteFormDefinition<'get'> => ({
     action: overview.url(options),
     method: 'get',
-})
+});
 
 /**
-* @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
-* @route '/admin'
-*/
-overviewForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+ * @see \App\Http\Controllers\Admin\OverviewController::__invoke
+ * @see app/Http/Controllers/Admin/OverviewController.php:16
+ * @route '/admin'
+ */
+overviewForm.get = (
+    options?: RouteQueryOptions,
+): RouteFormDefinition<'get'> => ({
     action: overview.url(options),
     method: 'get',
-})
+});
 
 /**
-* @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
-* @route '/admin'
-*/
-overviewForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+ * @see \App\Http\Controllers\Admin\OverviewController::__invoke
+ * @see app/Http/Controllers/Admin/OverviewController.php:16
+ * @route '/admin'
+ */
+overviewForm.head = (
+    options?: RouteQueryOptions,
+): RouteFormDefinition<'get'> => ({
     action: overview.url({
         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
             _method: 'HEAD',
             ...(options?.query ?? options?.mergeQuery ?? {}),
-        }
+        },
     }),
     method: 'get',
-})
+});
 
-overview.form = overviewForm
+overview.form = overviewForm;
 
 /**
-* @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
-* @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
-* @route '/admin/seed-fake-data'
-*/
-export const seedFakeData = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+ * @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
+ * @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
+ * @route '/admin/seed-fake-data'
+ */
+export const seedFakeData = (
+    options?: RouteQueryOptions,
+): RouteDefinition<'post'> => ({
     url: seedFakeData.url(options),
     method: 'post',
-})
+});
 
 seedFakeData.definition = {
-    methods: ["post"],
+    methods: ['post'],
     url: '/admin/seed-fake-data',
-} satisfies RouteDefinition<["post"]>
+} satisfies RouteDefinition<['post']>;
 
 /**
-* @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
-* @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
-* @route '/admin/seed-fake-data'
-*/
+ * @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
+ * @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
+ * @route '/admin/seed-fake-data'
+ */
 seedFakeData.url = (options?: RouteQueryOptions) => {
-    return seedFakeData.definition.url + queryParams(options)
-}
+    return seedFakeData.definition.url + queryParams(options);
+};
 
 /**
-* @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
-* @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
-* @route '/admin/seed-fake-data'
-*/
+ * @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
+ * @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
+ * @route '/admin/seed-fake-data'
+ */
 seedFakeData.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: seedFakeData.url(options),
     method: 'post',
-})
+});
 
 /**
-* @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
-* @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
-* @route '/admin/seed-fake-data'
-*/
-const seedFakeDataForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+ * @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
+ * @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
+ * @route '/admin/seed-fake-data'
+ */
+const seedFakeDataForm = (
+    options?: RouteQueryOptions,
+): RouteFormDefinition<'post'> => ({
     action: seedFakeData.url(options),
     method: 'post',
-})
+});
 
 /**
-* @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
-* @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
-* @route '/admin/seed-fake-data'
-*/
-seedFakeDataForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+ * @see \App\Http\Controllers\Admin\SeedFakeDataController::__invoke
+ * @see app/Http/Controllers/Admin/SeedFakeDataController.php:43
+ * @route '/admin/seed-fake-data'
+ */
+seedFakeDataForm.post = (
+    options?: RouteQueryOptions,
+): RouteFormDefinition<'post'> => ({
     action: seedFakeData.url(options),
     method: 'post',
-})
+});
 
-seedFakeData.form = seedFakeDataForm
+seedFakeData.form = seedFakeDataForm;
 
 const admin = {
     overview: Object.assign(overview, overview),
     seedFakeData: Object.assign(seedFakeData, seedFakeData),
-}
+};
 
-export default admin
+export default admin;

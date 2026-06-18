@@ -1,7 +1,7 @@
-import GameController from './GameController'
+import GameController from './GameController';
 
 const Games = {
     GameController: Object.assign(GameController, GameController),
-}
+};
 
-export default Games
+export default Games;

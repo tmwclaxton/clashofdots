@@ -1,7 +1,7 @@
-import Controller from './Controller'
+import Controller from './Controller';
 
 const Inertia = {
     Controller: Object.assign(Controller, Controller),
-}
+};
 
-export default Inertia
+export default Inertia;
