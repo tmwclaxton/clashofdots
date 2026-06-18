@@ -21,7 +21,10 @@ class ProfileLeaderboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('community/Leaderboard')
-                ->has('leaderboard'));
+                ->has('leaderboard.data')
+                ->has('leaderboard.current_page')
+                ->has('leaderboard.last_page')
+                ->has('leaderboard.total'));
     }
 
     public function test_unknown_profile_returns_404(): void
@@ -74,6 +77,8 @@ class ProfileLeaderboardTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('community/Leaderboard')
-                ->has('leaderboard', 2));
+                ->has('leaderboard.data', 2)
+                ->where('leaderboard.total', 2)
+                ->where('leaderboard.current_page', 1));
     }
 }

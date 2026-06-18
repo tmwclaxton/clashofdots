@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Maps\MapEditorGrid;
+use App\Maps\MapGenerator;
 use App\Models\Map;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +30,11 @@ class SeedFakeDataTest extends TestCase
 
     public function test_admin_can_seed_10_fake_accounts_with_published_maps(): void
     {
+        $this->mock(MapGenerator::class, function ($mock): void {
+            $mock->shouldReceive('random')
+                ->andReturn(MapEditorGrid::emptyData());
+        });
+
         $admin = User::factory()->create(['email' => 'tmwclaxton@gmail.com']);
 
         $this->actingAs($admin)

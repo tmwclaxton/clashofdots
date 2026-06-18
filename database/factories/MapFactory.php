@@ -15,6 +15,36 @@ class MapFactory extends Factory
 {
     protected $model = Map::class;
 
+    /** @var array<string, list<string>> */
+    private const MAP_NAME_POOLS = [
+        'prefixes' => [
+            'Iron', 'Ash', 'Storm', 'Frost', 'Ember', 'Shadow', 'Crimson',
+            'Stone', 'Thunder', 'Broken', 'Lost', 'Ancient', 'Sunken',
+            'Bitter', 'Hollow', 'Cursed', 'Forsaken', 'Scarred', 'Burning',
+            'Silent', 'Ruined', 'Forgotten', 'Barren', 'Shattered', 'Dark',
+        ],
+        'nouns' => [
+            'Reach', 'Peaks', 'Vale', 'Basin', 'Expanse', 'Wastes', 'Shores',
+            'Ridge', 'Gorge', 'Pass', 'Delta', 'Highlands', 'Frontier',
+            'Citadel', 'Crossing', 'Flats', 'Marshes', 'Steppes', 'Tundra',
+            'Archipelago', 'Straits', 'Outpost', 'Badlands', 'Peninsula',
+            'Crater', 'Plateau', 'Canyons', 'Reef', 'Lagoon', 'Dunes',
+        ],
+        'articles' => [
+            'The ', 'The ', 'The ', '',
+        ],
+    ];
+
+    private static function randomMapName(): string
+    {
+        $pool = self::MAP_NAME_POOLS;
+        $article = fake()->randomElement($pool['articles']);
+        $prefix = fake()->randomElement($pool['prefixes']);
+        $noun = fake()->randomElement($pool['nouns']);
+
+        return $article.$prefix.' '.$noun;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -22,7 +52,7 @@ class MapFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'name' => fake()->words(3, true),
+            'name' => self::randomMapName(),
             'data' => MapEditorGrid::emptyData(),
         ];
     }

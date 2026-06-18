@@ -91,24 +91,26 @@ const activityColors: Record<string, string> = {
             />
 
             <Form
-                v-bind="SeedFakeDataController.post()"
+                v-bind="SeedFakeDataController.form()"
                 #default="{ processing, wasSuccessful }"
             >
-                <Button
-                    type="submit"
-                    variant="outline"
-                    :disabled="processing"
-                    class="gap-2"
-                >
-                    <Wand2 class="size-4" />
-                    {{ processing ? 'Generating…' : 'Generate fake accounts' }}
-                </Button>
-                <p
-                    v-if="wasSuccessful"
-                    class="mt-1.5 text-sm text-muted-foreground"
-                >
-                    10 fake accounts + maps created.
-                </p>
+                <div>
+                    <Button
+                        type="submit"
+                        variant="outline"
+                        :disabled="processing"
+                        class="gap-2"
+                    >
+                        <Wand2 class="size-4" />
+                        {{ processing ? 'Generating…' : 'Generate fake accounts' }}
+                    </Button>
+                    <p
+                        v-if="wasSuccessful"
+                        class="mt-1.5 text-sm text-muted-foreground"
+                    >
+                        10 fake accounts + maps created.
+                    </p>
+                </div>
             </Form>
         </div>
 

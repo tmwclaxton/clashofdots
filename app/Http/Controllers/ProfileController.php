@@ -14,13 +14,11 @@ use Jorenvh\Share\ShareFacade as Share;
 
 class ProfileController extends Controller
 {
-    public function leaderboard(): Response
+    public function leaderboard(Request $request): Response
     {
-        $rows = User::query()
-            ->whereHas('gamePlayers', fn ($gp) => $gp->whereHas(
-                'game',
-                fn ($g) => $g->where('status', GameStatus::Finished),
-            ))
+        $perPage = 25;
+
+        $paginator = User::query()
             ->withCount([
                 'gamePlayers as finished_matches_count' => fn ($q) => $q->whereHas(
                     'game',
@@ -32,16 +30,17 @@ class ProfileController extends Controller
             ])
             ->orderByDesc('wins_count')
             ->orderByDesc('finished_matches_count')
-            ->limit(100)
-            ->get()
-            ->values()
-            ->map(fn (User $user, int $index) => array_merge(
-                $this->serializeLeaderboardRow($user),
-                ['rank' => $index + 1],
-            ));
+            ->paginate($perPage);
+
+        $offset = ($paginator->currentPage() - 1) * $perPage;
+
+        $paginator->through(fn (User $user, int $index) => array_merge(
+            $this->serializeLeaderboardRow($user),
+            ['rank' => $offset + $index + 1],
+        ));
 
         return Inertia::render('community/Leaderboard', [
-            'leaderboard' => $rows,
+            'leaderboard' => $paginator,
         ]);
     }
 
