@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { Copy, ThumbsDown, ThumbsUp, Users } from 'lucide-vue-next';
+import { Copy, Flag, ThumbsDown, ThumbsUp, Users } from 'lucide-vue-next';
 import { computed, reactive, ref, watch } from 'vue';
 import MapExplorePreview from '@/components/map-explore/MapExplorePreview.vue';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ export type ExploreMapCard = {
     name: string;
     ownerName: string;
     ownerId: number;
+    teamCount: number;
     data: MapDataPayload;
     gamesCount: number;
     likesCount: number;
@@ -36,6 +37,7 @@ export type ExploreFilters = {
     uuid: string;
     sort: string;
     per_page: number;
+    teams: number | null;
 };
 
 export type ExplorePagination = {
@@ -66,6 +68,7 @@ const filterForm = reactive({
     uuid: props.filters.uuid,
     sort: props.filters.sort,
     per_page: props.filters.per_page,
+    teams: props.filters.teams,
 });
 
 watch(
@@ -76,6 +79,7 @@ watch(
         filterForm.uuid = f.uuid;
         filterForm.sort = f.sort;
         filterForm.per_page = f.per_page;
+        filterForm.teams = f.teams;
     },
     { deep: true },
 );
@@ -96,7 +100,8 @@ const hasActiveFilters = computed(() => {
         filterForm.author.trim() !== '' ||
         filterForm.uuid.trim() !== '' ||
         filterForm.sort !== 'newest' ||
-        filterForm.per_page !== 12
+        filterForm.per_page !== 12 ||
+        filterForm.teams !== null
     );
 });
 
@@ -132,6 +137,10 @@ function buildExploreQuery(
         out.per_page = q.per_page;
     }
 
+    if (q.teams !== null && q.teams !== undefined) {
+        out.teams = q.teams;
+    }
+
     const pageNum = overrides.page ?? 1;
 
     if (pageNum > 1) {
@@ -161,6 +170,7 @@ function resetFilters(): void {
     filterForm.uuid = '';
     filterForm.sort = 'newest';
     filterForm.per_page = 12;
+    filterForm.teams = null;
     visitExplore({ page: 1 });
 }
 
@@ -324,7 +334,7 @@ const sortOptions = [
             >
                 Search &amp; sort
             </p>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                 <div class="flex flex-col gap-1.5">
                     <label
                         class="text-xs font-medium text-foreground"
@@ -356,6 +366,27 @@ const sortOptions = [
                         autocomplete="off"
                         class="h-9"
                     />
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label
+                        class="text-xs font-medium text-foreground"
+                        for="explore-teams"
+                        >Teams</label
+                    >
+                    <select
+                        id="explore-teams"
+                        v-model.number="filterForm.teams"
+                        class="wod-field h-9 rounded-md border-2 border-foreground px-2 text-sm"
+                    >
+                        <option :value="null">Any</option>
+                        <option :value="2">2 teams</option>
+                        <option :value="3">3 teams</option>
+                        <option :value="4">4 teams</option>
+                        <option :value="5">5 teams</option>
+                        <option :value="6">6 teams</option>
+                        <option :value="7">7 teams</option>
+                        <option :value="8">8 teams</option>
+                    </select>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label
@@ -503,13 +534,17 @@ const sortOptions = [
                     </p>
                 </div>
 
-                <div class="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span>{{ m.gamesCount }} games</span>
-                    <span>·</span>
-                    <span>{{ m.forksCount }} forks</span>
-                    <span>·</span>
+                <div class="flex flex-wrap items-center gap-2">
                     <span
-                        >{{ m.likesCount }} likes /
+                        class="inline-flex items-center gap-1 rounded border border-foreground/20 bg-muted/50 px-1.5 py-0.5 text-xs font-semibold"
+                    >
+                        <Flag class="size-3 shrink-0" aria-hidden="true" />
+                        {{ m.teamCount }}
+                        {{ m.teamCount === 1 ? 'team' : 'teams' }}
+                    </span>
+                    <span class="text-xs text-muted-foreground"
+                        >{{ m.gamesCount }} games · {{ m.forksCount }} forks ·
+                        {{ m.likesCount }} likes /
                         {{ m.dislikesCount }} dislikes</span
                     >
                 </div>
@@ -603,7 +638,7 @@ const sortOptions = [
                     class="min-w-[5.5rem]"
                     as-child
                 >
-                    <Link :href="pagination.prev_url" preserve-scroll>
+                    <Link :href="pagination.prev_url">
                         Previous
                     </Link>
                 </Button>
@@ -625,7 +660,7 @@ const sortOptions = [
                         class="min-w-9 px-2"
                         as-child
                     >
-                        <Link :href="p.url" preserve-scroll>{{ p.page }}</Link>
+                        <Link :href="p.url">{{ p.page }}</Link>
                     </Button>
                 </div>
                 <Button
@@ -635,7 +670,7 @@ const sortOptions = [
                     class="min-w-[5.5rem]"
                     as-child
                 >
-                    <Link :href="pagination.next_url" preserve-scroll>
+                    <Link :href="pagination.next_url">
                         Next
                     </Link>
                 </Button>

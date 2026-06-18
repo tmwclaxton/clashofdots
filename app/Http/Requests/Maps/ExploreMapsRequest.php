@@ -24,11 +24,12 @@ class ExploreMapsRequest extends FormRequest
             'sort' => ['sometimes', 'nullable', 'string', 'max:32'],
             'per_page' => ['sometimes', 'nullable', 'integer', Rule::in([12, 24, 48])],
             'page' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'teams' => ['sometimes', 'nullable', 'integer', 'min:2', 'max:8'],
         ];
     }
 
     /**
-     * @return array{q: string, author: string, uuid: string, sort: string, per_page: int}
+     * @return array{q: string, author: string, uuid: string, sort: string, per_page: int, teams: int|null}
      */
     public function exploreFilters(): array
     {
@@ -56,12 +57,17 @@ class ExploreMapsRequest extends FormRequest
         $author = isset($validated['author']) && is_string($validated['author']) ? trim($validated['author']) : '';
         $uuid = isset($validated['uuid']) && is_string($validated['uuid']) ? trim($validated['uuid']) : '';
 
+        $teams = isset($validated['teams']) && is_numeric($validated['teams'])
+            ? (int) $validated['teams']
+            : null;
+
         return [
             'q' => $q,
             'author' => $author,
             'uuid' => $uuid,
             'sort' => $sort,
             'per_page' => $perPage,
+            'teams' => $teams,
         ];
     }
 }

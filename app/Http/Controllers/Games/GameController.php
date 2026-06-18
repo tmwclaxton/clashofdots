@@ -39,23 +39,8 @@ class GameController extends Controller
             ->get()
             ->map(fn (Game $game) => $this->serializeLobby($game, $userId, $guestKey));
 
-        $publishedMaps = Map::query()
-            ->where('published', true)
-            ->with(['user:id,name'])
-            ->orderByDesc('published_at')
-            ->orderByDesc('id')
-            ->limit(30)
-            ->get()
-            ->map(fn (Map $map) => [
-                'uuid' => $map->uuid,
-                'name' => $map->name,
-                'teamCount' => (int) ($map->data['teamCount'] ?? GameConstants::MIN_PLAYERS),
-                'ownerName' => $map->user?->name ?? 'Unknown',
-            ]);
-
         return Inertia::render('games/Lobby', [
             'lobbies' => $lobbies,
-            'publishedMaps' => $publishedMaps,
             'playerTag' => $request->user()?->game_display_name,
         ]);
     }

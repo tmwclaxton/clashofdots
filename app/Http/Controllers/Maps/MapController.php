@@ -54,6 +54,10 @@ class MapController extends Controller
             $query->where('uuid', $filters['uuid']);
         }
 
+        if ($filters['teams'] !== null) {
+            $query->whereRaw("(data->>'teamCount')::int = ?", [$filters['teams']]);
+        }
+
         match ($filters['sort']) {
             'oldest' => $query->orderBy('published_at')->orderBy('id'),
             'name_az' => $query->orderBy('name')->orderBy('id'),
@@ -103,6 +107,7 @@ class MapController extends Controller
                 'uuid' => $filters['uuid'],
                 'sort' => $filters['sort'],
                 'per_page' => $filters['per_page'],
+                'teams' => $filters['teams'],
             ],
         ]);
     }
@@ -276,6 +281,7 @@ class MapController extends Controller
             'name' => $map->name,
             'ownerName' => $map->user?->name ?? 'Unknown',
             'ownerId' => $map->user_id,
+            'teamCount' => (int) ($map->data['teamCount'] ?? 0),
             'data' => $map->data,
             'gamesCount' => $map->games_count,
             'likesCount' => $map->likes_count,

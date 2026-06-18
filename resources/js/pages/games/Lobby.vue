@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage, usePoll } from '@inertiajs/vue3';
-import { Loader2, Lock, Plus, Tag, Users, Zap } from 'lucide-vue-next';
+import { Loader2, Lock, Map, Tag, Users, Zap } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
@@ -8,15 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { login as loginRoute } from '@/routes';
-import { joinCode, leave, show, store } from '@/routes/games';
+import { joinCode, leave, show } from '@/routes/games';
+import { explore as mapsExplore } from '@/routes/maps';
 import { update as updatePlayerTag } from '@/routes/player-tag';
 import {
     join as qsJoin,
@@ -37,13 +31,6 @@ type Lobby = {
     players: Array<{ slot: number; name: string; color: string }>;
 };
 
-type PublishedMap = {
-    uuid: string;
-    name: string;
-    teamCount: number;
-    ownerName: string;
-};
-
 type QsStatus = {
     status: 'none' | 'queued' | 'matched';
     queueSize: number;
@@ -52,7 +39,6 @@ type QsStatus = {
 
 const props = defineProps<{
     lobbies: Lobby[];
-    publishedMaps: PublishedMap[];
     playerTag: string | null;
 }>();
 
@@ -68,17 +54,9 @@ function savePlayerTag() {
     playerTagForm.patch(updatePlayerTag().url);
 }
 
-const createForm = useForm({
-    map_uuid: '',
-});
-
 const joinForm = useForm({
     code: '',
 });
-
-const selectedMap = computed(() =>
-    props.publishedMaps.find((m) => m.uuid === createForm.map_uuid),
-);
 
 const myLobby = computed(
     () => props.lobbies.find((l) => l.isParticipant) ?? null,
@@ -89,10 +67,6 @@ const otherLobbies = computed(() =>
 
 function leaveLobby(uuid: string) {
     router.delete(leave(uuid).url);
-}
-
-function createLobby() {
-    createForm.post(store().url);
 }
 
 function joinLobby() {
@@ -404,51 +378,16 @@ onBeforeUnmount(() => {
                     <div class="wod-swatch bg-wod-red" aria-hidden="true" />
                     <h2 class="font-bold">Create lobby</h2>
                 </div>
-                <div
-                    v-if="publishedMaps.length === 0"
-                    class="text-sm text-muted-foreground"
-                >
-                    No published maps yet. Publish one from the Map Builder or
-                    explore the gallery.
-                </div>
-                <template v-else>
-                    <div class="flex-1 space-y-2">
-                        <Label for="map_uuid">Published map</Label>
-                        <Select v-model="createForm.map_uuid">
-                            <SelectTrigger id="map_uuid" class="w-full">
-                                <SelectValue placeholder="Choose a map…" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="m in publishedMaps"
-                                    :key="m.uuid"
-                                    :value="m.uuid"
-                                >
-                                    {{ m.name }} · {{ m.teamCount }} teams ·
-                                    {{ m.ownerName }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <InputError :message="createForm.errors.map_uuid" />
-                        <p
-                            v-if="selectedMap"
-                            class="text-xs text-muted-foreground"
-                        >
-                            This lobby will hold
-                            <strong>{{ selectedMap.teamCount }}</strong>
-                            commanders (one per team on the map).
-                        </p>
-                    </div>
-                    <Button
-                        :disabled="
-                            createForm.processing || !createForm.map_uuid
-                        "
-                        @click="createLobby"
-                    >
-                        <Plus class="mr-2 h-4 w-4" />
-                        Create lobby
-                    </Button>
-                </template>
+                <p class="flex-1 text-sm text-muted-foreground">
+                    Browse published maps, pick one you like, and start a lobby
+                    directly from the map card.
+                </p>
+                <Button as-child>
+                    <Link :href="mapsExplore().url">
+                        <Map class="mr-2 h-4 w-4" />
+                        Explore maps
+                    </Link>
+                </Button>
             </div>
 
             <!-- Quick Start: idle state -->
