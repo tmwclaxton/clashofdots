@@ -40,12 +40,15 @@ final class GameTickService
 
         $worldTick = (int) ($state['worldTick'] ?? 0);
 
-        $cityPaths = [];
-        foreach ($state['playerCityInputs'] as $inputs) {
-            $cityPaths = array_merge($cityPaths, $inputs);
+        // Economy is passed by reference into updateCities so spawn costs are deducted atomically.
+        $economy = $state['economy'] ?? [];
+        $environment->updateCities($worldTick, $economy);
+        $state['economy'] = $economy;
+
+        // Clear any stale city-path inputs from before the rally-path system was removed.
+        if (isset($state['playerCityInputs'])) {
+            $state['playerCityInputs'] = array_fill(0, count($state['playerCityInputs']), []);
         }
-        $state['playerCityInputs'] = array_fill(0, count($state['playerCityInputs']), []);
-        $environment->updateCities($cityPaths, $worldTick);
 
         $troopPaths = [];
         foreach ($state['playerInputs'] as $inputs) {
@@ -107,12 +110,9 @@ final class GameTickService
                 'ownerColor' => $c->owner?->color,
                 'position' => $c->position,
                 'id' => $c->id,
-                'path' => $c->path,
                 'ownerSlot' => $c->owner?->slot,
                 'markerType' => $c->markerType,
-                'productionType' => $c->productionType,
-                'productionTankRatio' => $c->productionTankRatio,
-                'productionSpeedMultiplier' => $c->productionSpeedMultiplier,
+                'recruitmentEnabled' => $c->recruitmentEnabled,
             ], $environment->cities);
 
             $viewState = [
@@ -135,6 +135,15 @@ final class GameTickService
     }
 
     /**
+     * Applies income, upkeep, and debt damage for all players.
+     *
+     * Order of operations per player:
+     *   1. Add city income.
+     *   2. Deduct army upkeep (1 credit per troop).
+     *   3. If credits are negative, apply proportional HP drain to troops
+     *      (floor(abs(credits) / 10) × ECONOMY_DEBT_DAMAGE_PER_10_CREDITS HP per troop,
+     *      tanks first then newest infantry first).
+     *
      * @param  array<string, mixed>  $state
      */
     private function applyEconomyTick(array &$state, Environment $environment): void
@@ -157,10 +166,20 @@ final class GameTickService
 
             $ownedCities = count(array_filter($environment->cities, fn (City $c) => $c->owner === $player));
             $income = $ownedCities * GameConstants::ECONOMY_INCOME_PER_CITY_PER_TICK;
+            $upkeep = count($player->troops) * GameConstants::ECONOMY_UPKEEP_PER_TROOP_PER_TICK;
+
             $credits = (int) ($economy[$slot]['credits'] ?? 0);
-            $credits += $income;
+            $credits += $income - $upkeep;
             $economy[$slot]['credits'] = $credits;
-            $economy[$slot]['incomePerTick'] = $income;
+            // incomePerTick reflects net income so the UI can show a negative value when in debt.
+            $economy[$slot]['incomePerTick'] = $income - $upkeep;
+
+            if ($credits < 0) {
+                $hpDrain = (int) floor(abs($credits) / 10) * GameConstants::ECONOMY_DEBT_DAMAGE_PER_10_CREDITS;
+                if ($hpDrain > 0) {
+                    $environment->applyDebtDamage($slot, $hpDrain);
+                }
+            }
         }
 
         $state['economy'] = $economy;

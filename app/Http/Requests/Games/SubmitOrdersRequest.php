@@ -41,9 +41,6 @@ class SubmitOrdersRequest extends FormRequest
             'troop_orders.*.1.*.0' => ['required', 'numeric'],
             'troop_orders.*.1.*.1' => ['required', 'numeric'],
             'troop_orders.*.2' => ['sometimes', 'string', 'in:wade,embark'],
-            'city_orders' => ['present', 'array'],
-            'city_orders.*.0' => ['required', 'integer'],
-            'city_orders.*.1' => ['present', 'array'],
         ];
     }
 }

@@ -40,9 +40,8 @@ Route::middleware(['guest.game'])->group(function () {
     Route::get('games/{game}/play', [GameController::class, 'play'])->name('games.play');
     Route::get('games/{game}/snapshot', [GameController::class, 'snapshot'])->name('games.snapshot');
     Route::post('games/{game}/orders', [GameController::class, 'submitOrders'])->name('games.orders');
-    Route::post('games/{game}/recruit', [GameController::class, 'recruit'])->name('games.recruit');
-    Route::post('games/{game}/recruit-tank', [GameController::class, 'recruitTank'])->name('games.recruit-tank');
-    Route::post('games/{game}/city-production', [GameController::class, 'setCityProduction'])->name('games.city-production');
+    Route::post('games/{game}/city-recruitment', [GameController::class, 'setCityRecruitment'])->name('games.city-recruitment');
+    Route::post('games/{game}/player-production', [GameController::class, 'setPlayerProduction'])->name('games.player-production');
     Route::post('games/{game}/chat', [GameController::class, 'sendChat'])->name('games.chat');
     Route::get('games/{game}/replay', [GameController::class, 'replay'])->name('games.replay');
 });

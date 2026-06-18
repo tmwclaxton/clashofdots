@@ -24,8 +24,12 @@ const props = withDefaults(
         readOnly?: boolean;
         /** When set, orders trigger an immediate snapshot pull (covers missing Reverb). */
         snapshotFetchUrl?: string;
+        /** When true, draw recruitment rings around owned cities. */
+        recruitmentPanelOpen?: boolean;
+        /** City id currently hovered in the recruitment panel; canvas highlights it. */
+        hoveredCityId?: number | null;
     }>(),
-    { readOnly: false, snapshotFetchUrl: '' },
+    { readOnly: false, snapshotFetchUrl: '', recruitmentPanelOpen: false, hoveredCityId: null },
 );
 
 
@@ -319,10 +323,12 @@ function draw() {
         id: i,
         ownerColor: null,
         ownerSlot: null,
-        path: [],
         markerType: null as string | null,
+        recruitmentEnabled: true,
     }))) {
-        drawCity(ctx, city.position, city.ownerColor, city.markerType);
+        const showRing = props.recruitmentPanelOpen && city.ownerSlot === store.slot;
+        const isHovered = props.hoveredCityId === city.id;
+        drawCity(ctx, city.position, city.ownerColor, city.markerType, showRing ? (city.recruitmentEnabled ?? true) : null, isHovered);
     }
 
     for (const troop of state?.troops ?? []) {
@@ -597,14 +603,39 @@ function drawCity(
     position: [number, number],
     color: number[] | null,
     markerType?: string | null,
+    recruitmentEnabled?: boolean | null,
+    hovered?: boolean,
 ) {
     const [x, y] = position;
     const fill = color ? rgb(color) : '#f1c40f';
+    const radius = markerType === 'capital' ? 15 : 13;
 
     if (markerType === 'capital') {
-        drawCapitalAtPixel(ctx, x, y, fill, 15);
+        drawCapitalAtPixel(ctx, x, y, fill, radius);
     } else {
-        drawOutpostAtPixel(ctx, x, y, fill, 13);
+        drawOutpostAtPixel(ctx, x, y, fill, radius);
+    }
+
+    // Recruitment ring: green = enabled, red = disabled. Glow when hovered.
+    if (recruitmentEnabled !== null && recruitmentEnabled !== undefined) {
+        const ringColor = recruitmentEnabled ? '#22c55e' : '#ef4444';
+        const ringRadius = radius + 5;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = ringColor;
+        ctx.lineWidth = hovered ? 3 : 2;
+        ctx.globalAlpha = hovered ? 1.0 : 0.8;
+        ctx.stroke();
+        if (hovered) {
+            ctx.beginPath();
+            ctx.arc(x, y, ringRadius + 4, 0, Math.PI * 2);
+            ctx.strokeStyle = ringColor;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.3;
+            ctx.stroke();
+        }
+        ctx.restore();
     }
 }
 
@@ -760,9 +791,8 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
     /** World radius so the pick target is at least ~22 CSS px (fixed radii vanish when zoomed out). */
     const z = camera.zoom;
     const troopPickR = Math.max(12, 22 / z);
-    const cityPickR = Math.max(14, 22 / z);
 
-    type PickHit = { id: number; kind: 'troop' | 'city'; dist: number };
+    type PickHit = { id: number; kind: 'troop'; dist: number };
 
     const hits: PickHit[] = [];
 
@@ -777,20 +807,6 @@ function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'cit
 
         if (dist < troopPickR) {
             hits.push({ id: troop.id, kind: 'troop', dist });
-        }
-    }
-
-    for (const city of state.cities) {
-        if (city.ownerSlot !== store.slot) {
-            continue;
-        }
-
-        const dx = city.position[0] - world[0];
-        const dy = city.position[1] - world[1];
-        const dist = Math.hypot(dx, dy);
-
-        if (dist < cityPickR) {
-            hits.push({ id: city.id, kind: 'city', dist });
         }
     }
 
@@ -831,17 +847,17 @@ function onMouseDown(e: MouseEvent) {
     const entity = findEntity(world);
 
     if (entity) {
-        // If a lasso selection is active and the user starts a path from any entity,
+        // If a lasso selection is active and the user starts a path from a troop,
         // begin group drafts for all selected troops.
-        if (entity.kind === 'troop' && drafts.selectedTroopIds.length > 1) {
+        if (drafts.selectedTroopIds.length > 1) {
             dragging = true;
             for (const id of drafts.selectedTroopIds) {
-                drafts.beginPath(id, 'troop', world);
+                drafts.beginPath(id, world);
             }
         } else {
             drafts.clearSelection();
             dragging = true;
-            drafts.beginPath(entity.id, entity.kind, world);
+            drafts.beginPath(entity.id, world);
         }
     } else {
         // No entity hit — start lasso selection (clears existing selection first).
@@ -922,7 +938,7 @@ function onMouseUp() {
         // prompt the player to choose wade vs embark.
         if (entityIdBeforeFinish !== null && !props.readOnly) {
             const finished = drafts.draftPaths.find(
-                (p) => p.entityId === entityIdBeforeFinish && p.kind === 'troop',
+                (p) => p.entityId === entityIdBeforeFinish,
             );
             if (finished && pathCrossesWater(finished.points)) {
                 waterModalEntityId = entityIdBeforeFinish;
@@ -1012,7 +1028,7 @@ function onTouchStart(e: TouchEvent) {
         if (entity) {
             touchDrafting = true;
             touchPanning = false;
-            drafts.beginPath(entity.id, entity.kind, world);
+            drafts.beginPath(entity.id, world);
         } else {
             touchPanning = true;
             touchDrafting = false;

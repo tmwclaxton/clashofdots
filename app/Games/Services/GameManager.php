@@ -609,9 +609,8 @@ final class GameManager
         $state = $this->getLiveState($game);
         $slot = $player->slot;
 
-        [$troopOrders, $cityOrders] = $orders;
+        [$troopOrders] = $orders;
         $state['playerInputs'][$slot] = $this->mergeOrdersById($state['playerInputs'][$slot] ?? [], $troopOrders);
-        $state['playerCityInputs'][$slot] = $this->mergeOrdersById($state['playerCityInputs'][$slot] ?? [], $cityOrders);
 
         $environment = $this->environmentFromState($state);
         $mergedTroopPaths = [];
@@ -682,68 +681,6 @@ final class GameManager
      *
      * @param  'infantry'|'tank'|'none'  $productionType
      */
-    public function setCityProduction(
-        Game $game,
-        GamePlayer $gamePlayer,
-        int $cityId,
-        string $productionType,
-        ?int $tankRatio = null,
-        ?float $speedMultiplier = null,
-    ): void {
-        if ($game->status !== GameStatus::Playing) {
-            abort(422, 'Production can only be changed during a live match.');
-        }
-
-        if ($gamePlayer->game_id !== $game->id) {
-            abort(403);
-        }
-
-        if (! in_array($productionType, ['infantry', 'tank', 'none'])) {
-            abort(422, 'Invalid production type.');
-        }
-
-        $state = $this->getLiveState($game);
-        $environment = $this->environmentFromState($state);
-        $slot = $gamePlayer->slot;
-        $player = $environment->players[$slot] ?? null;
-
-        if ($player === null) {
-            abort(500, 'Invalid commander slot.');
-        }
-
-        $city = null;
-        foreach ($environment->cities as $c) {
-            if ($c->id === $cityId) {
-                $city = $c;
-                break;
-            }
-        }
-
-        if ($city === null) {
-            abort(422, 'City not found.');
-        }
-
-        if ($city->owner !== $player) {
-            abort(403, 'You do not own this city.');
-        }
-
-        $city->productionType = $productionType;
-
-        if ($tankRatio !== null) {
-            $city->productionTankRatio = max(0, min(100, $tankRatio));
-        }
-
-        if ($speedMultiplier !== null) {
-            $city->productionSpeedMultiplier = max(0.0, min(3.0, $speedMultiplier));
-        }
-
-        $state['environment'] = $environment->toArray();
-
-        $this->touchPlayerActivityInState($state, $slot);
-        $this->storeLiveState($game, $state);
-        $this->broadcastState($game, $environment, $state);
-    }
-
     /**
      * Marks the given commander slot as active (used for inactivity timeouts).
      */
@@ -1034,7 +971,7 @@ final class GameManager
     {
         $environment = Environment::fromArray($state['environment']);
         // Vision is not persisted to Redis; rebuild it from current positions so that any
-        // subsequent drawInfo() call (snapshot, broadcast, recruit) sees correct fog-of-war.
+        // subsequent drawInfo() call (snapshot, broadcast) sees correct fog-of-war.
         $environment->recomputeVision();
 
         return $environment;
@@ -1072,20 +1009,13 @@ final class GameManager
         return $dirty;
     }
 
-    public function recruitTank(Game $game, GamePlayer $gamePlayer): void
-    {
-        $this->recruit($game, $gamePlayer, 'tank', GameConstants::ECONOMY_RECRUIT_COST_TANK);
-    }
-
-    public function recruitInfantry(Game $game, GamePlayer $gamePlayer): void
-    {
-        $this->recruit($game, $gamePlayer, 'infantry', GameConstants::ECONOMY_RECRUIT_COST);
-    }
-
-    private function recruit(Game $game, GamePlayer $gamePlayer, string $troopType, int $cost): void
+    /**
+     * Toggles whether a city acts as a spawn point for the owning player's army.
+     */
+    public function setCityRecruitment(Game $game, GamePlayer $gamePlayer, int $cityId, bool $enabled): void
     {
         if ($game->status !== GameStatus::Playing) {
-            abort(422, 'Recruiting is only available during a live match.');
+            abort(422, 'City settings can only be changed during a live match.');
         }
 
         if ($gamePlayer->game_id !== $game->id) {
@@ -1093,8 +1023,6 @@ final class GameManager
         }
 
         $state = $this->getLiveState($game);
-        $this->repairLiveStateEconomy($game, $state);
-
         $environment = $this->environmentFromState($state);
         $slot = $gamePlayer->slot;
         $player = $environment->players[$slot] ?? null;
@@ -1103,43 +1031,59 @@ final class GameManager
             abort(500, 'Invalid commander slot.');
         }
 
-        $capital = $this->findOwnedCapitalCity($environment, $player);
-
-        if ($capital === null) {
-            abort(422, 'You must control your capital to recruit.');
+        $city = null;
+        foreach ($environment->cities as $c) {
+            if ($c->id === $cityId) {
+                $city = $c;
+                break;
+            }
         }
 
-        if (count($player->troops) >= GameConstants::ECONOMY_MAX_ARMY_PER_PLAYER) {
-            abort(422, 'Your army is at maximum size.');
+        if ($city === null) {
+            abort(422, 'City not found.');
         }
 
-        if (! isset($state['economy'][$slot]) || ! is_array($state['economy'][$slot])) {
-            abort(500, 'Economy state is missing for this commander.');
+        if ($city->owner !== $player) {
+            abort(403, 'You do not own this city.');
         }
 
-        $credits = (int) ($state['economy'][$slot]['credits'] ?? 0);
-
-        if ($credits < $cost) {
-            abort(422, 'Not enough credits to recruit.');
-        }
-
-        $spawn = $this->findRecruitSpawnPosition($environment, $capital->position);
-
-        if ($spawn === null) {
-            abort(422, 'No clear rally point near your capital. Move units aside.');
-        }
-
-        $worldTick = (int) ($state['worldTick'] ?? 0);
-        $troopId = $environment->takeNextTroopId();
-        $player->spawnTroop($spawn, [], $troopId, $worldTick, $troopType);
-
-        $state['economy'][$slot]['credits'] = $credits - $cost;
+        $city->recruitmentEnabled = $enabled;
         $state['environment'] = $environment->toArray();
 
         $this->touchPlayerActivityInState($state, $slot);
         $this->storeLiveState($game, $state);
+        $this->broadcastState($game, $environment, $state);
+    }
 
-        $game->loadMissing('players');
+    /**
+     * Updates the player's global spawn-speed multiplier and tank/infantry ratio.
+     */
+    public function setPlayerProduction(Game $game, GamePlayer $gamePlayer, int $tankRatio, float $speedMultiplier): void
+    {
+        if ($game->status !== GameStatus::Playing) {
+            abort(422, 'Production settings can only be changed during a live match.');
+        }
+
+        if ($gamePlayer->game_id !== $game->id) {
+            abort(403);
+        }
+
+        $state = $this->getLiveState($game);
+        $environment = $this->environmentFromState($state);
+        $slot = $gamePlayer->slot;
+        $player = $environment->players[$slot] ?? null;
+
+        if ($player === null) {
+            abort(500, 'Invalid commander slot.');
+        }
+
+        $player->productionTankRatio = max(0, min(100, $tankRatio));
+        $player->productionSpeedMultiplier = max(0.0, min(3.0, $speedMultiplier));
+
+        $state['environment'] = $environment->toArray();
+
+        $this->touchPlayerActivityInState($state, $slot);
+        $this->storeLiveState($game, $state);
         $this->broadcastState($game, $environment, $state);
     }
 
@@ -1159,80 +1103,6 @@ final class GameManager
                 $worldTick,
             ));
         }
-    }
-
-    private function findOwnedCapitalCity(Environment $environment, Player $player): ?City
-    {
-        foreach ($environment->cities as $city) {
-            if ($city->markerType === MapMarkers::TYPE_CAPITAL && $city->owner === $player) {
-                return $city;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  array{0: float, 1: float}  $capitalPosition
-     * @return array{0: float, 1: float}|null
-     */
-    private function findRecruitSpawnPosition(Environment $environment, array $capitalPosition): ?array
-    {
-        $blockedTerrain = ['mountain', 'water', 'deep_water', 'river'];
-        $offsets = [];
-
-        for ($dx = -15; $dx <= 15; $dx++) {
-            for ($dy = -15; $dy <= 15; $dy++) {
-                if ($dx === 0 && $dy === 0) {
-                    continue;
-                }
-
-                $offsets[] = [$dx * GameConstants::CELL_SIZE, $dy * GameConstants::CELL_SIZE];
-            }
-        }
-
-        usort($offsets, function (array $a, array $b): int {
-            $da = $a[0] ** 2 + $a[1] ** 2;
-            $db = $b[0] ** 2 + $b[1] ** 2;
-
-            return $da <=> $db;
-        });
-
-        foreach ($offsets as [$ox, $oy]) {
-            $pos = [(float) $capitalPosition[0] + $ox, (float) $capitalPosition[1] + $oy];
-            $name = $environment->terrainNameAtWorldPosition($pos);
-
-            if (in_array($name, $blockedTerrain, true)) {
-                continue;
-            }
-
-            if (! $this->recruitPositionHasClearance($environment, $pos, (float) GameConstants::ECONOMY_RECRUIT_CLEARANCE)) {
-                continue;
-            }
-
-            return $pos;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param  array{0: float, 1: float}  $pos
-     */
-    private function recruitPositionHasClearance(Environment $environment, array $pos, float $minDistance): bool
-    {
-        foreach ($environment->players as $p) {
-            foreach ($p->troops as $t) {
-                $dx = $t->position[0] - $pos[0];
-                $dy = $t->position[1] - $pos[1];
-
-                if (hypot($dx, $dy) < $minDistance) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     private function redisKey(Game $game): string

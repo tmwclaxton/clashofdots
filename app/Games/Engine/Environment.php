@@ -663,44 +663,6 @@ final class Environment
     }
 
     /**
-     * Applies rally / move orders to city path fields.
-     *
-     * @param  list<array{0: mixed, 1: mixed}>  $pathsToApply
-     */
-    public function assignCityPathsFromOrders(array $pathsToApply): void
-    {
-        if ($pathsToApply === []) {
-            return;
-        }
-
-        $pairs = [];
-
-        foreach ($pathsToApply as $row) {
-            if (! is_array($row) || count($row) < 2 || ! is_array($row[1])) {
-                continue;
-            }
-
-            $pairs[] = [(int) $row[0], $row[1]];
-        }
-
-        if ($pairs === []) {
-            return;
-        }
-
-        /** Last row wins when the same city id appears more than once in one batch. */
-        $pathByCityId = [];
-        foreach ($pairs as [$id, $path]) {
-            $pathByCityId[$id] = $path;
-        }
-
-        foreach ($this->cities as $city) {
-            if (array_key_exists($city->id, $pathByCityId)) {
-                $city->path = $pathByCityId[$city->id];
-            }
-        }
-    }
-
-    /**
      * @param  list<array{0: int, 1: list<array{0: float, 1: float}>}>  $pathsToApply
      */
     public function updateTroops(array $pathsToApply, int $worldTick): void
@@ -711,26 +673,6 @@ final class Environment
 
         // Merge vision grids between teammates (non-zero teamIndex = team play).
         $this->mergeTeamVision();
-
-        // Supply starvation: troops beyond owned_cities × CITY_SUPPLY_CAP lose HP each tick.
-        foreach ($this->players as $player) {
-            $ownedCities = count(array_filter($this->cities, fn (City $c) => $c->owner === $player));
-            $supplyLimit = $ownedCities * GameConstants::CITY_SUPPLY_CAP;
-            $excessCount = count($player->troops) - $supplyLimit;
-            if ($excessCount > 0) {
-                // Drain the most recently spawned (highest id) troops first.
-                $sorted = $player->troops;
-                usort($sorted, fn (Troop $a, Troop $b) => $b->id - $a->id);
-                $drained = 0;
-                foreach ($sorted as $troop) {
-                    if ($drained >= $excessCount) {
-                        break;
-                    }
-                    $troop->health -= GameConstants::STARVATION_DAMAGE_PER_TICK;
-                    $drained++;
-                }
-            }
-        }
 
         foreach ($this->players as $player) {
             $player->vision->setGrid($this->defaultVision);
@@ -771,10 +713,9 @@ final class Environment
 
                 $inOwnTerritory = $this->isInOwnTerritory($player, $troop->position);
 
-                // Heal when in own territory and not starving (starvation is handled separately).
+                // Heal when in own territory.
                 // Healing is intentionally deferred until after combat resolution below so that
-                // $inCombat can suppress it; a troop reference is passed through by value so we
-                // update health after the combat block instead.
+                // $inCombat can suppress it.
                 $shouldHeal = $inOwnTerritory && $owned !== [];
 
                 $enemiesInRange = [];
@@ -992,12 +933,22 @@ final class Environment
     }
 
     /**
-     * @param  list<array{0: int, 1: list<array{0: float, 1: float}>}>  $pathsToApply
+     * Processes city capture and auto-spawning for the current tick.
+     *
+     * Spawn conditions per city:
+     *   - City is owned and recruitment is enabled
+     *   - No troop of any player is standing at the city (checked via playersInCities)
+     *   - Player's productionSpeedMultiplier > 0
+     *   - City timer has reached the speed-adjusted threshold
+     *   - Player has enough credits to pay the spawn cost
+     *
+     * New troops spawn at the city position with TROOP_SPAWN_HEALTH_FRACTION × maxHealth.
+     * The spawn cost is deducted from the economy atomically inside this method.
+     *
+     * @param  array<int, array<string, mixed>>  $economy  Live economy state, modified in place.
      */
-    public function updateCities(array $pathsToApply, int $worldTick): void
+    public function updateCities(int $worldTick, array &$economy): void
     {
-        $this->assignCityPathsFromOrders($pathsToApply);
-
         foreach ($this->cities as $i => $city) {
             [$cx, $cy] = $city->position;
             $lastOwner = $city->owner;
@@ -1008,36 +959,84 @@ final class Environment
 
             if ($lastOwner !== $city->owner) {
                 $city->timer = 0;
-                $city->path = [];
             }
 
-            if ($city->owner !== null) {
-                $city->timer++;
-                $ownedCount = count(array_filter($this->cities, fn (City $c) => $c->owner === $city->owner));
-                $tPerC = count($city->owner->troops) / max(1, $ownedCount);
+            if ($city->owner === null || ! $city->recruitmentEnabled) {
+                continue;
+            }
 
-                $baseThreshold = 45 * (30 * $tPerC);
-                $adjustedThreshold = (int) round($baseThreshold * $city->productionSpeedMultiplier);
+            $player = $city->owner;
+            $slot = $player->slot;
+            $speed = $player->productionSpeedMultiplier;
 
-                if ($city->timer >= $adjustedThreshold && $tPerC < 10 && $city->productionType !== 'none') {
-                    $unitType = 'infantry';
-                    if ($city->productionTankRatio > 0) {
-                        $roll = $this->randomInt(0, 100);
-                        if ($roll <= $city->productionTankRatio) {
-                            $unitType = 'tank';
-                        }
-                    }
+            if ($speed <= 0.0) {
+                continue;
+            }
 
-                    $city->owner->spawnTroop(
-                        [$cx + $this->randomInt(-6, 5), $cy + $this->randomInt(-6, 5)],
-                        $city->path,
-                        $this->nextTroopId++,
-                        $worldTick,
-                        $unitType,
-                    );
-                    $city->timer = 0;
+            $city->timer++;
+
+            // Spawn threshold: at speed=1.0 ≈ 1350 ticks (45 s); at speed=3.0 ≈ 50 ticks (~1.7 s).
+            $adjustedThreshold = max(1, (int) round(1350.0 / ($speed * $speed * $speed)));
+
+            if ($city->timer < $adjustedThreshold) {
+                continue;
+            }
+
+            // Block spawn if any player already has troops at this city.
+            if ($this->playersInCities[$i] !== []) {
+                continue;
+            }
+
+            // Determine unit type from the player's global tank ratio.
+            $spawnCost = GameConstants::ECONOMY_RECRUIT_COST;
+            $unitType = 'infantry';
+            if ($player->productionTankRatio > 0) {
+                $roll = $this->randomInt(0, 100);
+                if ($roll <= $player->productionTankRatio) {
+                    $unitType = 'tank';
+                    $spawnCost = GameConstants::ECONOMY_RECRUIT_COST_TANK;
                 }
             }
+
+            // Check affordability.
+            $credits = (int) ($economy[$slot]['credits'] ?? 0);
+            if ($credits < $spawnCost) {
+                continue;
+            }
+
+            // Spawn at the city position with reduced starting health.
+            $newTroop = $player->spawnTroop([$cx, $cy], [], $this->nextTroopId++, $worldTick, $unitType);
+            $newTroop->health = max(1, (int) round($newTroop->maxHealth() * GameConstants::TROOP_SPAWN_HEALTH_FRACTION));
+
+            $economy[$slot]['credits'] = $credits - $spawnCost;
+            $city->timer = 0;
+        }
+    }
+
+    /**
+     * Applies proportional HP drain to all troops owned by a given player slot.
+     * Used by the economy tick to penalise players that have gone into debt.
+     */
+    public function applyDebtDamage(int $slot, int $hpDrain): void
+    {
+        $player = $this->players[$slot] ?? null;
+
+        if ($player === null || $hpDrain <= 0 || $player->troops === []) {
+            return;
+        }
+
+        // Sort tanks first (most expensive), then newest (highest id) within each type.
+        $sorted = $player->troops;
+        usort($sorted, function (Troop $a, Troop $b): int {
+            if ($a->type !== $b->type) {
+                return $a->type === 'tank' ? -1 : 1;
+            }
+
+            return $b->id - $a->id;
+        });
+
+        foreach ($sorted as $troop) {
+            $troop->health -= $hpDrain;
         }
     }
 
@@ -1125,12 +1124,9 @@ final class Environment
                 'ownerColor' => $city->owner?->color,
                 'position' => $city->position,
                 'id' => $city->id,
-                'path' => $city->path,
                 'ownerSlot' => $city->owner?->slot,
                 'markerType' => $city->markerType,
-                'productionType' => $city->productionType,
-                'productionTankRatio' => $city->productionTankRatio,
-                'productionSpeedMultiplier' => $city->productionSpeedMultiplier,
+                'recruitmentEnabled' => $city->recruitmentEnabled,
             ];
         }, $this->cities);
 

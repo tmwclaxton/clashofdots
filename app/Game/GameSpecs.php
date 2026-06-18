@@ -55,8 +55,7 @@ final class GameSpecs
      *     id: string,
      *     label: string,
      *     marker: string,
-     *     incomePerSecond: int,
-     *     supplyCapacity: int,
+     *     incomePerTick: int,
      *     healMultiplier: float,
      *     summary: string
      * }>
@@ -68,19 +67,17 @@ final class GameSpecs
                 'id' => 'outpost',
                 'label' => 'Outpost',
                 'marker' => 'Flag (star)',
-                'incomePerSecond' => 5,
-                'supplyCapacity' => 5,
+                'incomePerTick' => 1,
                 'healMultiplier' => 2.0,
-                'summary' => 'Capturable settlements scattered across the map. Each funds and supplies up to five field units.',
+                'summary' => 'Capturable settlements scattered across the map. Each pays 1 credit per tick and can be toggled as a recruitment spawn point.',
             ],
             [
                 'id' => 'capital',
                 'label' => 'Capital',
                 'marker' => 'Capital (hexagon)',
-                'incomePerSecond' => 8,
-                'supplyCapacity' => 8,
+                'incomePerTick' => 1,
                 'healMultiplier' => 2.0,
-                'summary' => 'One per faction. Generates more income, supports a larger army, and is the primary strategic objective.',
+                'summary' => 'One per faction. Generates the same income as outposts but is the primary strategic objective — all enemy capitals must be captured to win.',
             ],
         ];
     }
@@ -258,27 +255,27 @@ final class GameSpecs
             [
                 'title' => 'Income',
                 'icon' => 'coins',
-                'body' => 'Outposts generate 5 funds per second; capitals generate 8. Income stacks across every settlement you hold.',
+                'body' => 'Every city and outpost you own pays 1 credit per tick (~30 credits/second per city). Income stacks — the more settlements you hold, the faster your war chest grows.',
             ],
             [
-                'title' => 'Upkeep',
+                'title' => 'Spawn cost',
+                'icon' => 'user-plus',
+                'body' => 'Spawning a unit deducts credits immediately: infantry costs 200, tanks cost 400. You need the funds in your balance at the moment a recruitment city tries to produce.',
+            ],
+            [
+                'title' => 'Army upkeep',
                 'icon' => 'wallet',
-                'body' => 'Every field unit costs 1 fund per second. Units garrisoned on a settlement cost nothing - parking troops on cities makes money.',
+                'body' => 'Every troop on the field costs 1 credit per tick regardless of type or health. A large army drains your treasury fast — you can sustain a bigger force temporarily by saving credits, but you will eventually need to downsize.',
             ],
             [
-                'title' => 'Supply',
+                'title' => 'Debt damage',
                 'icon' => 'package',
-                'body' => 'Each outpost supplies up to 5 units; each capital supplies up to 8. Exceed your supply cap and the newest unsupported units slowly die.',
+                'body' => 'If your credit balance goes negative, your troops take HP damage every tick proportional to the debt: 1 HP per 10 credits owed, applied to tanks first, then newest infantry. Recapture cities or let units die to get back into the black.',
             ],
             [
                 'title' => 'Recruitment',
-                'icon' => 'user-plus',
-                'body' => 'Infantry cost 200 funds; tanks cost 400. Upkeep is identical regardless of unit health - a wounded infantry costs the same as a fresh tank.',
-            ],
-            [
-                'title' => 'Encirclement',
                 'icon' => 'radar',
-                'body' => 'Cut off from friendly settlements, a pocket army depends only on cities inside the encirclement. Isolate enemy groups to starve them without fighting.',
+                'body' => 'Open the Recruit panel and toggle any owned city or outpost on (green) or off (red) as a spawn point. Two global sliders control speed (Off → Fast) and unit mix (Infantry → Tanks). Troops spawn at 25% HP and only if the city is unoccupied and you can afford the cost.',
             ],
             [
                 'title' => 'Water crossing',

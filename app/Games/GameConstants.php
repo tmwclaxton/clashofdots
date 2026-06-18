@@ -50,20 +50,30 @@ final class GameConstants
      */
     public const float TERRITORY_CLAIM_THRESHOLD = 0.01;
 
-    /** Starting credits per commander (spent on recruits). */
+    /** Starting credits per commander. */
     public const int ECONOMY_STARTING_CREDITS = 220;
 
     /** Credits earned per owned city per tick (flags + capitals). */
     public const int ECONOMY_INCOME_PER_CITY_PER_TICK = 1;
 
-    /** Cost to recruit one infantry at your capital. */
+    /** Cost to spawn one infantry from an owned city. */
     public const int ECONOMY_RECRUIT_COST = 200;
 
-    /** Minimum clearance from other units when spawning recruits. */
-    public const int ECONOMY_RECRUIT_CLEARANCE = 22;
+    /** Credits drained per troop per tick as army upkeep. */
+    public const int ECONOMY_UPKEEP_PER_TROOP_PER_TICK = 1;
 
-    /** Maximum infantry units per commander (auto-spawns + recruits). */
-    public const int ECONOMY_MAX_ARMY_PER_PLAYER = 24;
+    /**
+     * HP drained per tick from every troop when the player is in debt.
+     * Applied once per 10 credits of debt (floor division).
+     * e.g. −30 credits → 3 HP/tick drained from each troop.
+     */
+    public const int ECONOMY_DEBT_DAMAGE_PER_10_CREDITS = 1;
+
+    /**
+     * Fraction of max HP that a newly spawned troop starts with.
+     * infantry: 100 × 0.25 = 25 HP; tank: 200 × 0.25 = 50 HP.
+     */
+    public const float TROOP_SPAWN_HEALTH_FRACTION = 0.25;
 
     public const int MAX_PLAYERS = 6;
 
@@ -156,15 +166,6 @@ final class GameConstants
      */
     public const float VICTORY_CITY_THRESHOLD = 0.8;
 
-    /**
-     * Maximum units each owned city can supply. Troops in excess of
-     * (ownedCities × CITY_SUPPLY_CAP) lose 1 HP per tick (starvation).
-     */
-    public const int CITY_SUPPLY_CAP = 5;
-
-    /** HP drained per tick from each unsupported (starving) troop. */
-    public const int STARVATION_DAMAGE_PER_TICK = 1;
-
     // -------------------------------------------------------------------------
     // Ship / water conversion
     // -------------------------------------------------------------------------
@@ -200,7 +201,7 @@ final class GameConstants
     /** Max health for tank units — twice as durable as infantry. */
     public const int TANK_MAX_HEALTH = 200;
 
-    /** Credits to recruit one tank at the player's capital. */
+    /** Cost to spawn one tank from an owned city. */
     public const int ECONOMY_RECRUIT_COST_TANK = 400;
 
     /**

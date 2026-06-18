@@ -9,7 +9,6 @@ use App\Games\Services\GameManager;
 use App\Games\Services\GuestGameIdentity;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Games\CreateGameRequest;
-use App\Http\Requests\Games\RecruitTroopRequest;
 use App\Http\Requests\Games\SubmitOrdersRequest;
 use App\Models\ChatMessage;
 use App\Models\Game;
@@ -22,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Jorenvh\Share\ShareFacade as Share;
 
 class GameController extends Controller
 {
@@ -125,7 +125,25 @@ class GameController extends Controller
             ->latest('finished_at')
             ->limit(20)
             ->get()
-            ->map(fn (Game $game) => $this->serializeMatch($game, $userId, null));
+            ->map(function (Game $game) use ($userId): array {
+                $gameUrl = route('games.show', $game);
+
+                /** @var array<string, string> $shareLinks */
+                $shareLinks = Share::page($gameUrl, "Check out this War of Dots match — code {$game->code}!")
+                    ->facebook()
+                    ->twitter()
+                    ->linkedin()
+                    ->whatsapp()
+                    ->telegram()
+                    ->reddit()
+                    ->pinterest()
+                    ->getRawLinks();
+
+                return array_merge($this->serializeMatch($game, $userId, null), [
+                    'shareLinks' => $shareLinks,
+                    'gameUrl' => $gameUrl,
+                ]);
+            });
 
         return Inertia::render('matches/Past', [
             'matches' => $matches,
@@ -153,12 +171,27 @@ class GameController extends Controller
     {
         $game->load(['players.user', 'host', 'map.user']);
 
+        $gameUrl = route('games.show', $game);
+
+        /** @var array<string, string> $shareLinks */
+        $shareLinks = Share::page($gameUrl, "Join my War of Dots lobby — code {$game->code}!")
+            ->facebook()
+            ->twitter()
+            ->linkedin()
+            ->whatsapp()
+            ->telegram()
+            ->reddit()
+            ->pinterest()
+            ->getRawLinks();
+
         return Inertia::render('games/Show', [
             'game' => $this->serializeLobby(
                 $game,
                 $request->user()?->id,
                 $this->guestKeyFromSession($request),
             ),
+            'shareLinks' => $shareLinks,
+            'gameUrl' => $gameUrl,
         ]);
     }
 
@@ -329,13 +362,12 @@ class GameController extends Controller
 
         $gameManager->submitOrders($game, $player, [
             $request->input('troop_orders', []),
-            $request->input('city_orders', []),
         ]);
 
         return response()->json(['ok' => true]);
     }
 
-    public function recruit(RecruitTroopRequest $request, Game $game, GameManager $gameManager): JsonResponse
+    public function setCityRecruitment(Request $request, Game $game, GameManager $gameManager): JsonResponse
     {
         $player = $this->actingPlayer($request, $game);
 
@@ -343,7 +375,12 @@ class GameController extends Controller
             abort(403);
         }
 
-        $gameManager->recruitInfantry($game, $player);
+        $validated = $request->validate([
+            'city_id' => ['required', 'integer'],
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        $gameManager->setCityRecruitment($game, $player, (int) $validated['city_id'], (bool) $validated['enabled']);
 
         return response()->json(['ok' => true]);
     }
@@ -391,7 +428,7 @@ class GameController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function setCityProduction(Request $request, Game $game, GameManager $gameManager): JsonResponse
+    public function setPlayerProduction(Request $request, Game $game, GameManager $gameManager): JsonResponse
     {
         $player = $this->actingPlayer($request, $game);
 
@@ -400,41 +437,16 @@ class GameController extends Controller
         }
 
         $validated = $request->validate([
-            'city_id' => ['required', 'integer'],
-            'production_tank_ratio' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'production_speed_multiplier' => ['nullable', 'numeric', 'min:0', 'max:3'],
+            'tank_ratio' => ['required', 'integer', 'min:0', 'max:100'],
+            'speed_multiplier' => ['required', 'numeric', 'min:0', 'max:3'],
         ]);
 
-        $speedMultiplier = isset($validated['production_speed_multiplier'])
-            ? (float) $validated['production_speed_multiplier']
-            : null;
-
-        // speed = 0 means idle; otherwise keep previous type or default to infantry
-        $productionType = $speedMultiplier !== null
-            ? ($speedMultiplier <= 0 ? 'none' : 'infantry')
-            : 'infantry';
-
-        $gameManager->setCityProduction(
+        $gameManager->setPlayerProduction(
             $game,
             $player,
-            (int) $validated['city_id'],
-            $productionType,
-            isset($validated['production_tank_ratio']) ? (int) $validated['production_tank_ratio'] : null,
-            $speedMultiplier,
+            (int) $validated['tank_ratio'],
+            (float) $validated['speed_multiplier'],
         );
-
-        return response()->json(['ok' => true]);
-    }
-
-    public function recruitTank(RecruitTroopRequest $request, Game $game, GameManager $gameManager): JsonResponse
-    {
-        $player = $this->actingPlayer($request, $game);
-
-        if ($player === null) {
-            abort(403);
-        }
-
-        $gameManager->recruitTank($game, $player);
 
         return response()->json(['ok' => true]);
     }
@@ -617,14 +629,14 @@ class GameController extends Controller
     }
 
     /**
-     * @return array{recruitCost: int, recruitCostTank: int, maxArmyPerPlayer: int, tickRate: int}
+     * @return array{recruitCost: int, recruitCostTank: int, upkeepPerTroop: int, tickRate: int}
      */
     private function gameConstantsProp(): array
     {
         return [
             'recruitCost' => GameConstants::ECONOMY_RECRUIT_COST,
             'recruitCostTank' => GameConstants::ECONOMY_RECRUIT_COST_TANK,
-            'maxArmyPerPlayer' => GameConstants::ECONOMY_MAX_ARMY_PER_PLAYER,
+            'upkeepPerTroop' => GameConstants::ECONOMY_UPKEEP_PER_TROOP_PER_TICK,
             'tickRate' => GameConstants::TICK_RATE,
         ];
     }

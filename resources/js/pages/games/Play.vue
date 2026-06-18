@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { MessageSquare, Building2, ChevronDown, ChevronUp } from 'lucide-vue-next';
+import { MessageSquare, Building2, ChevronDown } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import GameCanvas from '@/components/game/GameCanvas.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
@@ -26,7 +26,7 @@ type GamePayload = {
 type GameConstants = {
     recruitCost: number;
     recruitCostTank: number;
-    maxArmyPerPlayer: number;
+    upkeepPerTroop: number;
     tickRate: number;
 };
 
@@ -167,69 +167,42 @@ const myEconomy = computed(() => store.economy?.[props.game.slot] ?? null);
 
 const myCredits = computed(() => myEconomy.value?.credits ?? null);
 
-/** Cities owned by this player, for the production-control panel. */
+/** Cities owned by this player, for the recruitment panel. */
 const ownedCities = computed(() => {
     const cities = store.latestState?.cities ?? [];
     return cities.filter((c) => c.ownerSlot === props.game.slot);
 });
 
-const productionPanelOpen = ref(false);
+const recruitmentPanelOpen = ref(false);
 const chatPanelOpen = ref(false);
 const chatInput = ref('');
 
-/** Local slider state — keyed by city id. Avoids slider snapping back during async saves. */
-type CitySliders = { tankRatio: number; speedMultiplier: number };
-const localCitySliders = ref<Record<number, CitySliders>>({});
+/** ID of the city currently hovered in the recruitment panel (for canvas highlight). */
+const hoveredCityId = ref<number | null>(null);
 
-function citySliders(cityId: number): CitySliders {
-    if (!localCitySliders.value[cityId]) {
-        const city = ownedCities.value.find((c) => c.id === cityId);
-        localCitySliders.value[cityId] = {
-            tankRatio: city?.productionTankRatio ?? 0,
-            speedMultiplier: city?.productionSpeedMultiplier ?? 1.0,
-        };
+/** Global production sliders — local copies to avoid snap-back on async saves. */
+const localTankRatio = ref(0);
+const localSpeedMultiplier = ref(1.0);
+let productionSaveTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleProductionSave() {
+    if (productionSaveTimer !== null) {
+        clearTimeout(productionSaveTimer);
     }
-    return localCitySliders.value[cityId];
-}
-
-watch(
-    () => store.latestState?.cities,
-    (cities) => {
-        if (!cities) return;
-        for (const city of cities) {
-            // Only sync from server if there is no local entry yet (first load)
-            if (localCitySliders.value[city.id] === undefined) {
-                localCitySliders.value[city.id] = {
-                    tankRatio: city.productionTankRatio ?? 0,
-                    speedMultiplier: city.productionSpeedMultiplier ?? 1.0,
-                };
-            }
-        }
-    },
-    { deep: true, immediate: true },
-);
-
-function saveCitySliders(cityId: number) {
-    const sliders = localCitySliders.value[cityId];
-    if (!sliders) return;
-    store.setCityProduction(
-        props.game.uuid,
-        cityId,
-        sliders.speedMultiplier <= 0 ? 'none' : 'infantry',
-        sliders.tankRatio,
-        sliders.speedMultiplier,
-        // No snapshot pull — avoids slider snapping back; polling will sync eventually
-    );
+    productionSaveTimer = setTimeout(() => {
+        store.setPlayerProduction(props.game.uuid, localTankRatio.value, localSpeedMultiplier.value);
+        productionSaveTimer = null;
+    }, 300);
 }
 
 function openChat() {
     chatPanelOpen.value = true;
-    productionPanelOpen.value = false;
+    recruitmentPanelOpen.value = false;
     store.clearUnreadChat();
 }
 
-function openProduction() {
-    productionPanelOpen.value = true;
+function openRecruitment() {
+    recruitmentPanelOpen.value = true;
     chatPanelOpen.value = false;
 }
 
@@ -477,6 +450,8 @@ onUnmounted(() => {
             <GameCanvas
                 :read-only="spectatorMode"
                 :snapshot-fetch-url="spectatorMode ? '' : snapshotUrl"
+                :recruitment-panel-open="recruitmentPanelOpen"
+                :hovered-city-id="hoveredCityId"
             />
 
             <!-- Victory / defeat overlay -->
@@ -515,7 +490,7 @@ onUnmounted(() => {
                 is running.
             </div>
 
-            <!-- Left-side panel toggles (Chat & Cities) -->
+            <!-- Left-side panel toggles (Chat & Recruitment) -->
             <div
                 v-if="!spectatorMode && store.initialized && !store.matchEnded"
                 class="pointer-events-none absolute left-0 top-0 p-3"
@@ -541,10 +516,10 @@ onUnmounted(() => {
                         size="sm"
                         variant="outline"
                         class="gap-1.5"
-                        @click="productionPanelOpen ? (productionPanelOpen = false) : openProduction()"
+                        @click="recruitmentPanelOpen ? (recruitmentPanelOpen = false) : openRecruitment()"
                     >
                         <Building2 class="size-3.5" />
-                        <span class="hidden sm:inline">Cities</span>
+                        <span class="hidden sm:inline">Recruit</span>
                     </Button>
                 </div>
             </div>
@@ -560,9 +535,18 @@ onUnmounted(() => {
                         class="pointer-events-auto shrink-0 rounded-xl border border-border/60 bg-background/90 px-3 py-2.5 shadow-lg backdrop-blur-sm"
                     >
                         <p class="text-[0.55rem] font-semibold uppercase tracking-widest text-muted-foreground">Credits</p>
-                        <p class="font-mono text-xl font-bold leading-none">{{ myCredits ?? '—' }}</p>
-                        <p v-if="incomePerTick > 0" class="mt-0.5 text-[0.6rem] text-muted-foreground">
-                            +{{ incomePerTick }}/tick
+                        <p
+                            class="font-mono text-xl font-bold leading-none"
+                            :class="(myCredits ?? 0) < 0 ? 'text-destructive' : ''"
+                        >
+                            {{ myCredits ?? '—' }}
+                        </p>
+                        <p
+                            v-if="incomePerTick !== 0"
+                            class="mt-0.5 text-[0.6rem]"
+                            :class="incomePerTick < 0 ? 'text-destructive' : 'text-muted-foreground'"
+                        >
+                            {{ incomePerTick > 0 ? '+' : '' }}{{ incomePerTick }}/tick
                         </p>
                     </div>
 
@@ -643,76 +627,94 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Troop production floating panel -->
+            <!-- Recruitment floating panel -->
             <div
-                v-if="productionPanelOpen && !spectatorMode && store.initialized && ownedCities.length > 0"
+                v-if="recruitmentPanelOpen && !spectatorMode && store.initialized && ownedCities.length > 0"
                 class="absolute left-3 top-28 z-10 w-80 rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-sm"
             >
                 <div class="flex items-center justify-between border-b border-border/40 px-3 py-2">
-                    <span class="text-xs font-semibold">Troop Production</span>
+                    <span class="text-xs font-semibold">Recruitment</span>
                     <button
                         class="text-muted-foreground hover:text-foreground"
-                        @click="productionPanelOpen = false"
+                        @click="recruitmentPanelOpen = false"
                     >
                         <ChevronDown class="size-4" />
                     </button>
                 </div>
-                <div class="flex max-h-96 flex-col gap-4 overflow-y-auto p-4">
-                    <div
-                        v-for="city in [...ownedCities].sort((a, b) => (a.markerType === 'capital' ? -1 : b.markerType === 'capital' ? 1 : 0))"
-                        :key="city.id"
-                        class="space-y-3 rounded-lg border border-border/40 bg-muted/20 p-3"
-                    >
-                        <span class="text-[0.7rem] font-semibold text-foreground">
-                            {{ city.markerType === 'capital' ? '★ Capital' : '⬠ Outpost' }}
-                        </span>
 
-                        <!-- Tank/Infantry Ratio Slider -->
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label class="text-[0.65rem] font-medium text-muted-foreground">Tank Ratio</label>
-                                <span class="text-[0.65rem] font-semibold text-foreground">
-                                    {{ citySliders(city.id).tankRatio }}%
-                                </span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                step="10"
-                                :value="citySliders(city.id).tankRatio"
-                                class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
-                                @input="(e) => { citySliders(city.id).tankRatio = parseInt((e.target as HTMLInputElement).value) }"
-                                @change="saveCitySliders(city.id)"
-                            />
-                            <div class="flex justify-between text-[0.6rem] text-muted-foreground">
-                                <span>Infantry</span>
-                                <span>Tanks</span>
-                            </div>
+                <div class="flex flex-col gap-4 p-4">
+                    <!-- Global spawn speed slider -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[0.65rem] font-medium text-muted-foreground">Spawn Speed</label>
+                            <span
+                                class="text-[0.65rem] font-semibold"
+                                :class="localSpeedMultiplier <= 0 ? 'text-muted-foreground' : 'text-foreground'"
+                            >
+                                {{ localSpeedMultiplier <= 0 ? 'Off' : localSpeedMultiplier.toFixed(1) + '×' }}
+                            </span>
                         </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="3"
+                            step="0.1"
+                            :value="localSpeedMultiplier"
+                            class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
+                            @input="(e) => { localSpeedMultiplier = parseFloat((e.target as HTMLInputElement).value); scheduleProductionSave(); }"
+                        />
+                        <div class="flex justify-between text-[0.6rem] text-muted-foreground">
+                            <span>Off</span>
+                            <span>Fast</span>
+                        </div>
+                    </div>
 
-                        <!-- Spawn Speed Slider -->
-                        <div class="space-y-1.5">
-                            <div class="flex items-center justify-between">
-                                <label class="text-[0.65rem] font-medium text-muted-foreground">Spawn Speed</label>
-                                <span class="text-[0.65rem] font-semibold" :class="citySliders(city.id).speedMultiplier <= 0 ? 'text-muted-foreground' : 'text-foreground'">
-                                    {{ citySliders(city.id).speedMultiplier <= 0 ? 'Idle' : citySliders(city.id).speedMultiplier.toFixed(1) + 'x' }}
-                                </span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="3"
-                                step="0.1"
-                                :value="citySliders(city.id).speedMultiplier"
-                                class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
-                                @input="(e) => { citySliders(city.id).speedMultiplier = parseFloat((e.target as HTMLInputElement).value) }"
-                                @change="saveCitySliders(city.id)"
-                            />
-                            <div class="flex justify-between text-[0.6rem] text-muted-foreground">
-                                <span>Idle</span>
-                                <span>Slower (3x)</span>
-                            </div>
+                    <!-- Global tank/infantry ratio slider -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[0.65rem] font-medium text-muted-foreground">Unit Mix</label>
+                            <span class="text-[0.65rem] font-semibold text-foreground">
+                                {{ localTankRatio === 0 ? 'Infantry only' : localTankRatio === 100 ? 'Tanks only' : localTankRatio + '% Tanks' }}
+                            </span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="10"
+                            :value="localTankRatio"
+                            class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
+                            @input="(e) => { localTankRatio = parseInt((e.target as HTMLInputElement).value); scheduleProductionSave(); }"
+                        />
+                        <div class="flex justify-between text-[0.6rem] text-muted-foreground">
+                            <span>Infantry</span>
+                            <span>Tanks</span>
+                        </div>
+                    </div>
+
+                    <!-- Per-city recruitment toggles -->
+                    <div class="space-y-1">
+                        <p class="text-[0.6rem] font-semibold uppercase tracking-widest text-muted-foreground">Spawn points</p>
+                        <div
+                            v-for="city in [...ownedCities].sort((a, b) => (a.markerType === 'capital' ? -1 : b.markerType === 'capital' ? 1 : 0))"
+                            :key="city.id"
+                            class="flex cursor-pointer items-center justify-between rounded-lg border border-border/40 bg-muted/20 px-3 py-2 transition-colors hover:bg-muted/40"
+                            @mouseenter="hoveredCityId = city.id"
+                            @mouseleave="hoveredCityId = null"
+                            @click="store.setCityRecruitment(props.game.uuid, city.id, !(city.recruitmentEnabled ?? true))"
+                        >
+                            <span class="text-[0.7rem] font-medium text-foreground">
+                                {{ city.markerType === 'capital' ? '★ Capital' : '⬠ Outpost' }}
+                            </span>
+                            <span
+                                class="flex size-4 items-center justify-center rounded-full border-2 text-[0.5rem] font-bold"
+                                :class="(city.recruitmentEnabled ?? true)
+                                    ? 'border-green-500 bg-green-500/20 text-green-600'
+                                    : 'border-red-500 bg-red-500/20 text-red-600'"
+                                :title="(city.recruitmentEnabled ?? true) ? 'Recruitment on — click to disable' : 'Recruitment off — click to enable'"
+                            >
+                                {{ (city.recruitmentEnabled ?? true) ? '✓' : '✕' }}
+                            </span>
                         </div>
                     </div>
                 </div>

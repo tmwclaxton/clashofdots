@@ -39,8 +39,7 @@ type SettlementStat = {
     id: string;
     label: string;
     marker: string;
-    incomePerSecond: number;
-    supplyCapacity: number;
+    incomePerTick: number;
     healMultiplier: number;
     summary: string;
 };
@@ -252,7 +251,7 @@ function speedClass(speed: number, impassable: boolean): string {
                         Settlements & economy
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Capitals and outposts (flags) pay your army. Icons match the map editor:
+                        Capitals and outposts pay income and can be toggled as troop spawn points. Icons match the map editor:
                         <span class="whitespace-nowrap"
                             ><Landmark class="inline size-3.5 align-text-bottom" stroke-width="2" />
                             capital</span
@@ -294,16 +293,10 @@ function speedClass(speed: number, impassable: boolean): string {
                         <div>
                             <dt class="text-muted-foreground">Income</dt>
                             <dd class="font-display font-bold">
-                                {{ settlement.incomePerSecond }} funds/s
+                                {{ settlement.incomePerTick }} credit/tick
                             </dd>
                         </div>
                         <div>
-                            <dt class="text-muted-foreground">Supply cap</dt>
-                            <dd class="font-display font-bold">
-                                {{ settlement.supplyCapacity }} units
-                            </dd>
-                        </div>
-                        <div class="col-span-2">
                             <dt class="text-muted-foreground">Healing</dt>
                             <dd class="font-display font-bold">
                                 {{ formatStat(settlement.healMultiplier, 1) }}×

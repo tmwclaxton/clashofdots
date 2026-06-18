@@ -36,8 +36,8 @@ The in-app **Game Wiki** (`/wiki`) is the live reference for balance and map rul
 
 | Section | What it covers |
 |--------|----------------|
-| **Combat units** | Infantry vs tank—health, recruit cost, upkeep, defense, and role summaries |
-| **Settlements & economy** | Capitals and outposts (income, supply caps, healing), plus economy notes on income, upkeep, supply, recruitment, and encirclement |
+| **Combat units** | Infantry vs tank—health, spawn cost, upkeep, defense, and role summaries |
+| **Settlements & economy** | Capitals and outposts (income per tick, healing), plus economy notes on income, spawn cost, upkeep, debt damage, recruitment, and water crossing |
 | **Terrain types** | All 13 editor terrains with color swatches, infantry/tank speed & attack stats, and tactical notes |
 | **Map generation styles** | Mixed, Islands, Desert, Mountains, Jungle, Volcanic, Tundra, and Grassland—traits, descriptions, and deterministic preview renders |
 
@@ -163,49 +163,41 @@ Each commander has a credit balance tracked in Redis alongside the simulation st
 | Constant | Value | Description |
 |----------|-------|-------------|
 | Starting credits | 220 | Credits each commander begins the match with |
-| Income per owned city per tick | 1 credit | Earned every 30 Hz tick for every flag or capital you hold |
-| Infantry recruit cost | 200 credits | One-time cost; deducted immediately |
-| Tank recruit cost | 400 credits | One-time cost; deducted immediately |
-| Army cap | 24 units | Hard upper limit per player across auto-spawns + manual recruits |
+| Income per owned city per tick | 1 credit | Earned every 30 Hz tick for every outpost or capital you hold |
+| Infantry spawn cost | 200 credits | One-time cost; deducted when the troop spawns |
+| Tank spawn cost | 400 credits | One-time cost; deducted when the troop spawns |
+| Upkeep per troop per tick | 1 credit | Applies to every troop on the field, regardless of type or health |
+| Debt damage scaling | 1 HP per 10 credits | HP drained per tick per 10 credits of negative balance |
 
 **Income math:** at 30 Hz, 1 credit/tick/city ≈ **30 credits/second** per owned city (e.g. 3 cities → 90 credits/s). Holding more cities snowballs income quickly.
 
-There is **no upkeep mechanic** deducting credits per tick — the wiki describes upkeep as a narrative concept inherited from War of Dots community guides, but the engine has no recurring per-unit credit drain. Instead, oversized armies are punished via **supply starvation** (see below).
+**Army size is unlimited** — there is no hard cap. Your sustainable army size is governed entirely by the economy: each troop costs 1 credit/tick in upkeep, so the break-even force is roughly `net income / 1`. Saving up credits lets you field a larger army temporarily, but if credits go negative your troops start taking damage (see below).
 
 ---
 
-### Auto-spawn (city production)
+### Recruitment
 
-Every city owned by a player acts as a production facility that auto-spawns troops over time — no player action needed. The spawn formula:
+Troops spawn automatically at any city or outpost you designate as a **recruitment city**. Open the **Recruit panel** in the HUD to manage this:
 
-```
-baseThreshold = 45 × (30 × troopsPerCity)
-adjustedThreshold = baseThreshold × productionSpeedMultiplier
-```
+- **Per-city toggle** — click any owned city or outpost in the list (or on the map while the panel is open) to enable (green ring) or disable (red ring) it as a spawn point.
+- **Speed slider** — global control from Off (no spawning) to Max (spawn as soon as a city is available and affordable).
+- **Infantry / Tank slider** — global ratio applied across all recruitment cities; 0 = all infantry, 100 = all tanks, 50 = equal mix.
 
-`troopsPerCity` is `(total own troops) / (owned cities)`. A city spawns a troop when its internal timer reaches `adjustedThreshold`, then resets. This naturally slows spawn rate as you accumulate troops and speeds it up when you are behind.
-
-- The production type (infantry / tank / none) can be set per city via the HUD.
-- A **tank ratio** (0–100) controls the probability a spawned unit is a tank vs infantry.
-- Captures reset a city's timer to 0.
-- Auto-spawns respect the 24-unit army cap.
+Spawn rules for each enabled city on each tick:
+1. The city's internal timer advances based on the speed slider (cubic scaling — faster at the high end).
+2. When the timer threshold is reached the engine checks: city unoccupied by own troops, sufficient credits for the chosen unit type.
+3. On success the troop spawns at the city's position with **25% of its maximum HP** and the spawn cost is deducted immediately. The timer resets.
+4. If the city is occupied or credits are insufficient, the tick is skipped and the timer continues.
 
 ---
 
-### Manual recruitment
+### Army upkeep & debt
 
-You can bypass the auto-spawn queue and instantly place a unit near your **capital** for a credit cost:
+Every tick the engine deducts `troopCount × 1 credit` from your balance (upkeep) before adding income.
 
-- **Infantry** — 200 credits. Requires: own capital controlled, army below cap, credits available, and a clear spawn point within 22 world units of the capital.
-- **Tank** — 400 credits. Same requirements.
-
-Newly recruited units spawn adjacent to the capital with any rally path the capital already has assigned.
-
----
-
-### Supply & starvation
-
-Each owned city supplies **5 units** (`CITY_SUPPLY_CAP`). If your army exceeds `ownedCities × 5` the most recently spawned excess units lose **1 HP per tick** (starvation damage). Losing cities mid-battle can suddenly push you over the cap and start bleeding your newest units — capture more cities or let some troops die.
+- If the resulting balance is **negative**, the `applyDebtDamage` routine runs: `hpDrain = floor(abs(credits) / 10)` HP is distributed across your troops.
+- Damage is applied **tanks first**, then **newest infantry first** within each type.
+- Recapture cities, let some troops die, or reduce recruitment speed to climb back into the black.
 
 ---
 
@@ -231,7 +223,7 @@ Clash of Dots uses a **draw-then-commit** order system. Nothing moves until you 
 
 | Action | What happens |
 |--------|-------------|
-| **Click + drag from a unit** | Begins a movement path for that troop or city rally point. Drag to the destination and release. |
+| **Click + drag from a unit** | Begins a movement path for that troop. Drag to the destination and release. |
 | **Re-drag the same unit** | Replaces its existing draft path. |
 | **Click + drag on empty ground** | Draws a lasso rectangle. All own troops inside are selected as a group. |
 | **Drag from any selected troop** | Extends draft paths for every troop in the group simultaneously. |

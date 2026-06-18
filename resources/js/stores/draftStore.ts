@@ -6,7 +6,6 @@ type Point = [number, number];
 export type DraftPath = {
     entityId: number;
     points: Point[];
-    kind: 'troop' | 'city';
     waterMode?: 'wade' | 'embark';
 };
 
@@ -29,15 +28,12 @@ export const useDraftStore = defineStore('draft', {
         clearSelection() {
             this.selectedTroopIds = [];
         },
-        beginPath(entityId: number, kind: 'troop' | 'city', start: Point) {
-            if (
-                this.activeDraft !== null &&
-                (this.activeDraft.entityId !== entityId || this.activeDraft.kind !== kind)
-            ) {
+        beginPath(entityId: number, start: Point) {
+            if (this.activeDraft !== null && this.activeDraft.entityId !== entityId) {
                 this.finishPath();
             }
 
-            this.activeDraft = { entityId, kind, points: [start] };
+            this.activeDraft = { entityId, points: [start] };
         },
         extendPath(point: Point) {
             if (!this.activeDraft) {
@@ -68,11 +64,7 @@ export const useDraftStore = defineStore('draft', {
 
             if (this.activeDraft.points.length > 1) {
                 this.draftPaths = this.draftPaths.filter(
-                    (p) =>
-                        !(
-                            p.entityId === this.activeDraft!.entityId &&
-                            p.kind === this.activeDraft!.kind
-                        ),
+                    (p) => p.entityId !== this.activeDraft!.entityId,
                 );
                 this.draftPaths.push({ ...this.activeDraft });
             }
@@ -80,7 +72,7 @@ export const useDraftStore = defineStore('draft', {
             this.activeDraft = null;
         },
         setWaterMode(entityId: number, mode: 'wade' | 'embark') {
-            const draft = this.draftPaths.find((p) => p.entityId === entityId && p.kind === 'troop');
+            const draft = this.draftPaths.find((p) => p.entityId === entityId);
             if (draft) {
                 draft.waterMode = mode;
             }

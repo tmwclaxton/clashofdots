@@ -2,10 +2,9 @@ import { defineStore } from 'pinia';
 import { createGameEcho } from '@/lib/echo';
 import {
     chat as chatRoute,
-    cityProduction as cityProductionRoute,
+    cityRecruitment as cityRecruitmentRoute,
     orders,
-    recruit as recruitRoute,
-    recruitTank as recruitTankRoute,
+    playerProduction as playerProductionRoute,
 } from '@/routes/games';
 import { useCameraStore } from '@/stores/cameraStore';
 import { useDraftStore } from '@/stores/draftStore';
@@ -52,12 +51,9 @@ type CityState = {
     ownerColor: number[] | null;
     position: Point;
     id: number;
-    path: Point[];
     ownerSlot: number | null;
     markerType?: string | null;
-    productionType?: 'infantry' | 'tank' | 'none';
-    productionTankRatio?: number;
-    productionSpeedMultiplier?: number;
+    recruitmentEnabled?: boolean;
 };
 
 type ChatMessage = {
@@ -382,18 +378,14 @@ export const useGameStore = defineStore('game', {
             const toast = useToastStore();
 
             const troopOrders = drafts.draftPaths
-                .filter((p) => p.kind === 'troop')
                 .map((p) => [p.entityId, p.points, p.waterMode ?? 'embark'] as [number, Point[], string]);
-            const cityOrders = drafts.draftPaths
-                .filter((p) => p.kind === 'city')
-                .map((p) => [p.entityId, p.points] as [number, Point[]]);
 
             try {
                 const res = await fetch(orders(gameUuid).url, {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: csrfHeaders(),
-                    body: JSON.stringify({ troop_orders: troopOrders, city_orders: cityOrders }),
+                    body: JSON.stringify({ troop_orders: troopOrders }),
                 });
 
                 if (!res.ok) {
@@ -418,14 +410,6 @@ export const useGameStore = defineStore('game', {
                 toast.error('Network error — orders not submitted.');
             }
         },
-        async recruitInfantry(gameUuid: string, options?: { snapshotFetchUrl?: string }) {
-            await this._recruit(recruitRoute({ game: gameUuid }).url, 'Infantry recruited.', options);
-        },
-
-        async recruitTank(gameUuid: string, options?: { snapshotFetchUrl?: string }) {
-            await this._recruit(recruitTankRoute({ game: gameUuid }).url, 'Tank deployed.', options);
-        },
-
         clearUnreadChat() {
             this.unreadChatCount = 0;
         },
@@ -453,82 +437,47 @@ export const useGameStore = defineStore('game', {
             }
         },
 
-        async setCityProduction(
-            gameUuid: string,
-            cityId: number,
-            productionType: 'infantry' | 'tank' | 'none',
-            tankRatio?: number,
-            speedMultiplier?: number,
-            options?: { snapshotFetchUrl?: string },
-        ) {
+        async setCityRecruitment(gameUuid: string, cityId: number, enabled: boolean) {
             const toast = useToastStore();
 
             try {
-                const body: Record<string, unknown> = {
-                    city_id: cityId,
-                };
-
-                if (tankRatio !== undefined) {
-                    body.production_tank_ratio = tankRatio;
-                }
-
-                if (speedMultiplier !== undefined) {
-                    body.production_speed_multiplier = speedMultiplier;
-                }
-
-                const res = await fetch(cityProductionRoute({ game: gameUuid }).url, {
+                const res = await fetch(cityRecruitmentRoute({ game: gameUuid }).url, {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
+                    body: JSON.stringify({ city_id: cityId, enabled }),
                 });
 
                 if (!res.ok) {
                     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
                     const message =
-                        typeof data.message === 'string' ? data.message : 'Could not change production.';
+                        typeof data.message === 'string' ? data.message : 'Could not update city recruitment.';
                     toast.error(message);
-                    return;
-                }
-
-                const snapshotUrl = options?.snapshotFetchUrl;
-                if (snapshotUrl !== undefined && snapshotUrl.length > 0) {
-                    await this.pullSnapshot(snapshotUrl);
                 }
             } catch {
-                toast.error('Network error — production change failed.');
+                toast.error('Network error — city update failed.');
             }
         },
 
-        async _recruit(url: string, successMessage: string, options?: { snapshotFetchUrl?: string }) {
+        async setPlayerProduction(gameUuid: string, tankRatio: number, speedMultiplier: number) {
             const toast = useToastStore();
 
             try {
-                const res = await fetch(url, {
+                const res = await fetch(playerProductionRoute({ game: gameUuid }).url, {
                     method: 'POST',
                     credentials: 'same-origin',
-                    headers: csrfHeaders(),
-                    body: JSON.stringify({}),
+                    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tank_ratio: tankRatio, speed_multiplier: speedMultiplier }),
                 });
 
                 if (!res.ok) {
                     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
                     const message =
-                        typeof data.message === 'string'
-                            ? data.message
-                            : 'Could not recruit — check your credits and army size.';
+                        typeof data.message === 'string' ? data.message : 'Could not update production settings.';
                     toast.error(message);
-                    return;
-                }
-
-                toast.success(successMessage);
-
-                const snapshotUrl = options?.snapshotFetchUrl;
-                if (snapshotUrl !== undefined && snapshotUrl.length > 0) {
-                    await this.pullSnapshot(snapshotUrl);
                 }
             } catch {
-                toast.error('Network error — recruit failed.');
+                toast.error('Network error — production update failed.');
             }
         },
     },

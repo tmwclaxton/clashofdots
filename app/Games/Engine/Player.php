@@ -12,6 +12,18 @@ final class Player
     public MarchingSquares $vision;
 
     /**
+     * Tank spawn ratio: 0–100. 0 = all infantry, 100 = all tanks, 50 = 50/50.
+     * Applied across all recruitment cities owned by this player.
+     */
+    public int $productionTankRatio = 0;
+
+    /**
+     * Global spawn-speed multiplier: 0.0 = off, 1.0 = normal (~45 s/troop),
+     * 3.0 = fastest (~5 s/troop). Controls the timer threshold in updateCities().
+     */
+    public float $productionSpeedMultiplier = 1.0;
+
+    /**
      * @param  array{0: int, 1: int, 2: int}  $color
      * @param  array{0: float, 1: float}  $startPos
      */
@@ -43,6 +55,8 @@ final class Player
             'color' => $this->color,
             'slot' => $this->slot,
             'teamIndex' => $this->teamIndex,
+            'productionTankRatio' => $this->productionTankRatio,
+            'productionSpeedMultiplier' => $this->productionSpeedMultiplier,
             'border' => $this->border->grid,
             // vision is intentionally excluded: it is always reset and recomputed at the start of
             // every tick, so persisting it wastes ~111 KB per player per write. It is rebuilt on
@@ -59,6 +73,8 @@ final class Player
     {
         $firstTroopId = $data['troops'][0]['id'] ?? 1;
         $player = new self($data['startPos'], $data['color'], $data['slot'], $environment, $firstTroopId, (int) ($data['teamIndex'] ?? 0));
+        $player->productionTankRatio = max(0, min(100, (int) ($data['productionTankRatio'] ?? 0)));
+        $player->productionSpeedMultiplier = max(0.0, min(3.0, (float) ($data['productionSpeedMultiplier'] ?? 1.0)));
         $player->troops = [];
 
         // Merge stored border values into the correctly-sized grid that the constructor
