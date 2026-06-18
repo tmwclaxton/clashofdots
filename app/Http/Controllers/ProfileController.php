@@ -130,6 +130,7 @@ class ProfileController extends Controller
                 'playerTag' => $playerTag,
                 'avatar' => $profile->avatar,
                 'avatarStyle' => $profile->avatar_style ?? 'pixel-art',
+                'avatarSeed' => $profile->avatar_seed ?? $profile->profile_uuid,
                 'profileUuid' => $profile->profile_uuid,
                 'memberSince' => $profile->created_at?->toIso8601String(),
                 'profileUrl' => $profileUrl,
@@ -150,6 +151,7 @@ class ProfileController extends Controller
         return array_merge(
             [
                 'profileUuid' => $user->profile_uuid,
+                'avatarSeed' => $user->avatar_seed ?? $user->profile_uuid,
                 'name' => $user->game_display_name ?: $user->name,
                 'avatar' => $user->avatar,
                 'avatarStyle' => $user->avatar_style ?? 'pixel-art',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { Form, Head } from '@inertiajs/vue3';
 import {
     Activity,
     Clock3,
@@ -8,9 +8,12 @@ import {
     Swords,
     TrendingUp,
     Users,
+    Wand2,
 } from 'lucide-vue-next';
+import SeedFakeDataController from '@/actions/App/Http/Controllers/Admin/SeedFakeDataController';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 type SummaryStats = {
     totalUsers: number;
@@ -81,10 +84,33 @@ const activityColors: Record<string, string> = {
     <Head title="Admin Overview" />
 
     <div class="flex flex-col gap-8">
-        <Heading
-            title="Admin Overview"
-            description="Platform health at a glance. Placeholder figures until live queries are wired up."
-        />
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <Heading
+                title="Admin Overview"
+                description="Platform health at a glance. Placeholder figures until live queries are wired up."
+            />
+
+            <Form
+                v-bind="SeedFakeDataController.post()"
+                #default="{ processing, wasSuccessful }"
+            >
+                <Button
+                    type="submit"
+                    variant="outline"
+                    :disabled="processing"
+                    class="gap-2"
+                >
+                    <Wand2 class="size-4" />
+                    {{ processing ? 'Generating…' : 'Generate fake accounts' }}
+                </Button>
+                <p
+                    v-if="wasSuccessful"
+                    class="mt-1.5 text-sm text-muted-foreground"
+                >
+                    10 fake accounts + maps created.
+                </p>
+            </Form>
+        </div>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <article class="wod-panel p-5">

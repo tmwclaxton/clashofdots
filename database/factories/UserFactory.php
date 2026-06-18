@@ -38,4 +38,14 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * Indicate that this is a fake/seeded account.
+     */
+    public function fakeAccount(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'fake_account' => true,
+        ]);
+    }
 }

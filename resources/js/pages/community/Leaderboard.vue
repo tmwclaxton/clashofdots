@@ -12,6 +12,7 @@ import { show as profileShow } from '@/routes/profiles';
 type Row = {
     rank: number;
     profileUuid: string;
+    avatarSeed: string;
     name: string;
     avatar: string;
     avatarStyle: string;
@@ -101,12 +102,7 @@ onMounted(async () => {
                                     class="size-9 border-2 border-foreground bg-black"
                                 >
                                     <AvatarImage
-                                        :src="
-                                            avatarUrl(
-                                                row.profileUuid,
-                                                row.avatarStyle,
-                                            )
-                                        "
+                                        :src="avatarUrl(row.avatarSeed, row.avatarStyle)"
                                         :alt="row.name"
                                     />
                                     <AvatarFallback class="text-xs font-bold">

@@ -2,6 +2,7 @@
 
 use App\Game\GameSpecs;
 use App\Http\Controllers\Admin\OverviewController;
+use App\Http\Controllers\Admin\SeedFakeDataController;
 use App\Http\Controllers\Games\GameController;
 use App\Http\Controllers\Maps\MapController;
 use App\Http\Controllers\MatchmakingController;
@@ -22,7 +23,10 @@ Route::get('map-builder/{map?}', [MapController::class, 'builder'])->name('map-b
 Route::get('leaderboard', [ProfileController::class, 'leaderboard'])->name('leaderboard.index');
 Route::get('profiles/{profile:profile_uuid}', [ProfileController::class, 'show'])->name('profiles.show');
 
-Route::middleware(['auth', 'admin'])->get('admin', OverviewController::class)->name('admin.overview');
+Route::middleware(['auth', 'admin'])->group(function (): void {
+    Route::get('admin', OverviewController::class)->name('admin.overview');
+    Route::post('admin/seed-fake-data', SeedFakeDataController::class)->name('admin.seed-fake-data');
+});
 
 Route::middleware(['guest.game'])->group(function () {
     Route::post('quick-start', [QuickStartController::class, 'join'])->name('quick-start.join');

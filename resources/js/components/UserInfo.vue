@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { avatarUrl } from '@/composables/useAvatar';
+import { avatarUrl, resolveAvatarSeed } from '@/composables/useAvatar';
 import { useInitials } from '@/composables/useInitials';
 import type { User } from '@/types';
 
@@ -18,7 +18,7 @@ const { getInitials } = useInitials();
 
 const avatarSrc = computed(() =>
     props.user.profile_uuid
-        ? avatarUrl(props.user.profile_uuid, props.user.avatar_style as string)
+        ? avatarUrl(resolveAvatarSeed(props.user), props.user.avatar_style as string)
         : null,
 );
 </script>

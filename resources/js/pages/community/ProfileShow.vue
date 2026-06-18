@@ -22,6 +22,7 @@ type Profile = {
     playerTag: string;
     avatar: string;
     avatarStyle: string;
+    avatarSeed: string;
     profileUuid: string;
     memberSince: string | null;
     profileUrl: string;
@@ -90,7 +91,7 @@ function formatDate(iso: string | null): string {
                 <Avatar class="size-20 border-2 border-foreground bg-black">
                     <AvatarImage
                         :src="
-                            avatarUrl(profile.profileUuid, profile.avatarStyle)
+                            avatarUrl(profile.avatarSeed, profile.avatarStyle)
                         "
                         :alt="profile.playerTag"
                     />
