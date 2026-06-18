@@ -610,6 +610,7 @@ final class GameManager
         $slot = $player->slot;
 
         [$troopOrders] = $orders;
+        $cityOrders = $orders[1] ?? [];
         $state['playerInputs'][$slot] = $this->mergeOrdersById($state['playerInputs'][$slot] ?? [], $troopOrders);
 
         $environment = $this->environmentFromState($state);

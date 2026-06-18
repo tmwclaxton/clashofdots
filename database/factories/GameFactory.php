@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Enums\GameStatus;
-use App\Games\GameConstants;
 use App\Models\Game;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
