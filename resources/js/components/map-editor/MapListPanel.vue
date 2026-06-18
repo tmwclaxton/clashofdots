@@ -42,8 +42,8 @@ const deleteDialogDescription = computed(() => {
 
 function openMap(uuid: string): void {
     if (
-        props.editor.dirty.value
-        && !window.confirm('Discard unsaved changes and open this map?')
+        props.editor.dirty.value &&
+        !window.confirm('Discard unsaved changes and open this map?')
     ) {
         return;
     }
@@ -105,9 +105,13 @@ function formatUpdated(iso: string | null): string {
 </script>
 
 <template>
-    <div class="flex max-h-full min-h-0 w-56 shrink-0 flex-col gap-2 wod-surface p-2">
+    <div
+        class="wod-surface flex max-h-full min-h-0 w-56 shrink-0 flex-col gap-2 p-2"
+    >
         <div class="flex items-center justify-between gap-1">
-            <p class="font-display text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            <p
+                class="font-display text-xs font-bold tracking-wide text-muted-foreground uppercase"
+            >
                 Maps
             </p>
             <Button
@@ -122,8 +126,13 @@ function formatUpdated(iso: string | null): string {
             </Button>
         </div>
         <p v-if="error" class="text-xs text-destructive">{{ error }}</p>
-        <ul class="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-0.5 text-sm">
-            <li v-if="maps.length === 0" class="px-1 py-2 text-xs text-muted-foreground">
+        <ul
+            class="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-0.5 text-sm"
+        >
+            <li
+                v-if="maps.length === 0"
+                class="px-1 py-2 text-xs text-muted-foreground"
+            >
                 No saved maps yet. Paint terrain - maps autosave while you work.
             </li>
             <li v-for="m in maps" :key="m.uuid">
@@ -131,7 +140,8 @@ function formatUpdated(iso: string | null): string {
                     :class="
                         cn(
                             'flex items-center gap-1 rounded-md border border-transparent px-1 py-0.5',
-                            editor.currentUuid.value === m.uuid && 'border-foreground/40 bg-muted/50',
+                            editor.currentUuid.value === m.uuid &&
+                                'border-foreground/40 bg-muted/50',
                         )
                     "
                 >
@@ -142,9 +152,15 @@ function formatUpdated(iso: string | null): string {
                         @click="openMap(m.uuid)"
                     >
                         <span class="block truncate">{{ m.name }}</span>
-                        <span class="block truncate text-[10px] font-normal text-muted-foreground">
+                        <span
+                            class="block truncate text-[10px] font-normal text-muted-foreground"
+                        >
                             {{ formatUpdated(m.updated_at) }}
-                            <span v-if="m.published" class="ml-1 font-semibold text-foreground">· Public</span>
+                            <span
+                                v-if="m.published"
+                                class="ml-1 font-semibold text-foreground"
+                                >· Public</span
+                            >
                         </span>
                     </button>
                     <Button
@@ -168,10 +184,20 @@ function formatUpdated(iso: string | null): string {
             :description="deleteDialogDescription"
         >
             <template #footer>
-                <Button type="button" variant="outline" :disabled="deleting" @click="closeDeleteDialog">
+                <Button
+                    type="button"
+                    variant="outline"
+                    :disabled="deleting"
+                    @click="closeDeleteDialog"
+                >
                     Cancel
                 </Button>
-                <Button type="button" variant="destructive" :disabled="deleting" @click="confirmRemoveMap">
+                <Button
+                    type="button"
+                    variant="destructive"
+                    :disabled="deleting"
+                    @click="confirmRemoveMap"
+                >
                     Delete map
                 </Button>
             </template>

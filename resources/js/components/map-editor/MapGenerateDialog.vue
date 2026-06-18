@@ -18,7 +18,9 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    generate: [payload: { seed?: number; type: MapGenerationType; teamCount: number }];
+    generate: [
+        payload: { seed?: number; type: MapGenerationType; teamCount: number },
+    ];
 }>();
 
 const dialogDescription =
@@ -91,7 +93,9 @@ function onGenerate(): void {
             </p>
 
             <div class="space-y-2">
-                <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <p
+                    class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                >
                     Generation style
                 </p>
                 <div class="grid gap-2 sm:grid-cols-2">
@@ -109,8 +113,12 @@ function onGenerate(): void {
                         "
                         @click="selectedType = option.id"
                     >
-                        <span class="block text-sm font-semibold">{{ option.label }}</span>
-                        <span class="mt-0.5 block text-xs text-muted-foreground">
+                        <span class="block text-sm font-semibold">{{
+                            option.label
+                        }}</span>
+                        <span
+                            class="mt-0.5 block text-xs text-muted-foreground"
+                        >
                             {{ option.description }}
                         </span>
                     </button>
@@ -118,13 +126,17 @@ function onGenerate(): void {
             </div>
 
             <div class="space-y-1">
-                <label class="text-xs font-semibold" for="map-generate-teams">Teams:</label>
+                <label class="text-xs font-semibold" for="map-generate-teams"
+                    >Teams:</label
+                >
                 <select
                     id="map-generate-teams"
                     v-model.number="generateTeamCount"
                     class="h-9 w-full max-w-xs rounded-md border-2 border-foreground bg-background px-2 text-sm font-medium"
                 >
-                    <option v-for="t in teamCountChoices" :key="t" :value="t">{{ t }}</option>
+                    <option v-for="t in teamCountChoices" :key="t" :value="t">
+                        {{ t }}
+                    </option>
                 </select>
                 <p class="mr-1 text-xs text-muted-foreground">
                     Number of players / team slots on the generated map.
@@ -147,7 +159,12 @@ function onGenerate(): void {
         </div>
 
         <template #footer>
-            <Button type="button" variant="outline" :disabled="props.generating" @click="open = false">
+            <Button
+                type="button"
+                variant="outline"
+                :disabled="props.generating"
+                @click="open = false"
+            >
                 Cancel
             </Button>
             <Button
@@ -156,7 +173,10 @@ function onGenerate(): void {
                 :disabled="props.generating"
                 @click="onGenerate"
             >
-                <Loader2 v-if="props.generating" class="size-3.5 shrink-0 animate-spin" />
+                <Loader2
+                    v-if="props.generating"
+                    class="size-3.5 shrink-0 animate-spin"
+                />
                 <Sparkles v-else class="size-3.5 shrink-0" />
                 {{ props.generating ? 'Generating…' : 'Generate' }}
             </Button>

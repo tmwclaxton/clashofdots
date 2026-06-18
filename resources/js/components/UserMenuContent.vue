@@ -9,8 +9,8 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import UserInfo from '@/components/UserInfo.vue';
-import { overview as adminOverview } from '@/routes/admin';
 import { logout } from '@/routes';
+import { overview as adminOverview } from '@/routes/admin';
 import { edit } from '@/routes/profile';
 import { show as profileShow } from '@/routes/profiles';
 import type { User } from '@/types';

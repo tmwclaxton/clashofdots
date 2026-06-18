@@ -43,7 +43,9 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                         :class="[
                             'w-full justify-start',
                             {
-                                'wod-nav-active': isCurrentOrParentUrl(item.href),
+                                'wod-nav-active': isCurrentOrParentUrl(
+                                    item.href,
+                                ),
                             },
                         ]"
                         as-child

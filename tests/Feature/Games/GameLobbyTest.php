@@ -10,7 +10,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
-use Predis\Client;
 use Tests\TestCase;
 
 class GameLobbyTest extends TestCase
@@ -21,20 +20,26 @@ class GameLobbyTest extends TestCase
     {
         parent::setUp();
 
-        if (! extension_loaded('redis') && ! class_exists(Client::class)) {
+        try {
+            Redis::ping();
+        } catch (\Throwable) {
             $this->markTestSkipped('Redis is required for game tests.');
         }
     }
 
     protected function tearDown(): void
     {
-        // Flush game-related Redis keys so tests don't bleed state into each other.
-        $keys = Redis::keys('game:*');
-        if (! empty($keys)) {
-            Redis::del(...$keys);
-        }
+        try {
+            // Flush game-related Redis keys so tests don't bleed state into each other.
+            $keys = Redis::keys('game:*');
+            if (! empty($keys)) {
+                Redis::del(...$keys);
+            }
 
-        Redis::del('games:active');
+            Redis::del('games:active');
+        } catch (\Throwable) {
+            // Redis unavailable; nothing to clean up.
+        }
 
         parent::tearDown();
     }

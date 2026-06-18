@@ -1,10 +1,9 @@
 import {
     EDITOR_TERRAIN_COLORS,
     TERRAIN_IDS,
-    
-    isTerrainId
+    isTerrainId,
 } from '@/lib/terrainCatalog';
-import type {TerrainId} from '@/lib/terrainCatalog';
+import type { TerrainId } from '@/lib/terrainCatalog';
 
 function hexToRgbTuple(hex: string): readonly [number, number, number] {
     const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
@@ -13,12 +12,21 @@ function hexToRgbTuple(hex: string): readonly [number, number, number] {
         return [200, 214, 138];
     }
 
-    return [Number.parseInt(m[1], 16), Number.parseInt(m[2], 16), Number.parseInt(m[3], 16)] as const;
+    return [
+        Number.parseInt(m[1], 16),
+        Number.parseInt(m[2], 16),
+        Number.parseInt(m[3], 16),
+    ] as const;
 }
 
 /** Editor terrain RGB - built once from {@link EDITOR_TERRAIN_COLORS} for fast canvas fills. */
-export const EDITOR_TERRAIN_RGB: Record<TerrainId, readonly [number, number, number]> = Object.fromEntries(
-    TERRAIN_IDS.map((id) => [id, hexToRgbTuple(EDITOR_TERRAIN_COLORS[id])] as const),
+export const EDITOR_TERRAIN_RGB: Record<
+    TerrainId,
+    readonly [number, number, number]
+> = Object.fromEntries(
+    TERRAIN_IDS.map(
+        (id) => [id, hexToRgbTuple(EDITOR_TERRAIN_COLORS[id])] as const,
+    ),
 ) as Record<TerrainId, readonly [number, number, number]>;
 
 const PLAINS_RGB = EDITOR_TERRAIN_RGB.plains;
@@ -78,7 +86,9 @@ export function editorTerrainFillStyle(terrain: string): string {
     return EDITOR_TERRAIN_COLORS[terrain as TerrainId];
 }
 
-export function editorTerrainRgb(terrain: string): readonly [number, number, number] {
+export function editorTerrainRgb(
+    terrain: string,
+): readonly [number, number, number] {
     return isTerrainId(terrain) ? EDITOR_TERRAIN_RGB[terrain] : PLAINS_RGB;
 }
 
@@ -101,7 +111,6 @@ export function editorTerrainDimOverlayFill(isDark: boolean): string {
         ? 'rgba(0, 0, 0, 0.22)'
         : `rgba(0, 0, 0, ${EDITOR_TERRAIN_DIM_ALPHA_LIGHT})`;
 }
-
 
 /**
  * Softens biome boundaries in the map editor by mixing the cell color with neighbor terrain colors.

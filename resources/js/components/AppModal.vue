@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 
 const open = defineModel<boolean>('open', { required: true });
 
-const props = withDefaults(
+withDefaults(
     defineProps<{
         title: string;
         description?: string;

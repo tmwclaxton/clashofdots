@@ -40,6 +40,11 @@ export default defineConfigWithVueTs(
         rules: {
             'vue/multi-word-component-names': 'off',
             '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-unused-vars': [
+                'error',
+                { varsIgnorePattern: '^_', argsIgnorePattern: '^_' },
+            ],
+            'vue/no-unused-vars': ['error', { ignorePattern: '^_' }],
             '@typescript-eslint/consistent-type-imports': [
                 'error',
                 {

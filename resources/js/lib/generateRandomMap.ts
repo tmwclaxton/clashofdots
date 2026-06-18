@@ -60,22 +60,26 @@ export const MAP_GENERATION_TYPE_OPTIONS: ReadonlyArray<{
     {
         id: 'jungle',
         label: 'Jungle',
-        description: 'Impenetrable rainforest canopy threaded by winding rivers and swampland.',
+        description:
+            'Impenetrable rainforest canopy threaded by winding rivers and swampland.',
     },
     {
         id: 'volcanic',
         label: 'Volcanic',
-        description: 'Smouldering mountain peaks surrounded by vast ash fields and hardened lava rock.',
+        description:
+            'Smouldering mountain peaks surrounded by vast ash fields and hardened lava rock.',
     },
     {
         id: 'tundra',
         label: 'Tundra',
-        description: 'Frozen wastes of open plains and sparse taiga beneath jagged ice-capped peaks.',
+        description:
+            'Frozen wastes of open plains and sparse taiga beneath jagged ice-capped peaks.',
     },
     {
         id: 'grassland',
         label: 'Grassland',
-        description: 'Sweeping open meadows and plains with scattered forests, gentle rivers, and almost no mountains.',
+        description:
+            'Sweeping open meadows and plains with scattered forests, gentle rivers, and almost no mountains.',
     },
 ];
 
@@ -203,7 +207,10 @@ function mulberry32(seed: number): () => number {
 }
 
 function hash01(ix: number, iy: number, salt: number): number {
-    let n = Math.imul(ix, 1597334677) ^ Math.imul(iy, 3812015801) ^ Math.imul(salt, 1944066667);
+    let n =
+        Math.imul(ix, 1597334677) ^
+        Math.imul(iy, 3812015801) ^
+        Math.imul(salt, 1944066667);
     n = Math.imul(n ^ (n >>> 16), 2246822507);
     n = Math.imul(n ^ (n >>> 13), 3266489917);
 
@@ -400,7 +407,12 @@ function collectPassableComponents(
     return components;
 }
 
-function bresenhamLineKeys(x0: number, y0: number, x1: number, y1: number): string[] {
+function bresenhamLineKeys(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+): string[] {
     const keys: string[] = [];
     let x = x0;
     let y = y0;
@@ -617,7 +629,14 @@ function ensureMountainAccessibility(
 
         if (!connected) {
             for (let i = 1; i < components.length; i++) {
-                connectComponentToMain(cells, elev, rows, cols, components[i]!, main);
+                connectComponentToMain(
+                    cells,
+                    elev,
+                    rows,
+                    cols,
+                    components[i]!,
+                    main,
+                );
                 break;
             }
         }
@@ -625,7 +644,13 @@ function ensureMountainAccessibility(
 }
 
 /** Moisture hotspots for oases - soft falloff so greenery can ring each pool. */
-function oasisStrength(gx: number, gy: number, scale: number, ox: number, oy: number): number {
+function oasisStrength(
+    gx: number,
+    gy: number,
+    scale: number,
+    ox: number,
+    oy: number,
+): number {
     const wx = (gx + 0.5) * scale * 2.8 + ox;
     const wy = (gy + 0.5) * scale * 2.8 + oy;
     const raw = fbm2D(wx, wy, 1201, 3);
@@ -633,7 +658,11 @@ function oasisStrength(gx: number, gy: number, scale: number, ox: number, oy: nu
     return smoothstep((raw - 0.64) / 0.2);
 }
 
-function classifyDesert(elevation: number, moisture: number, oasis: number): TerrainId {
+function classifyDesert(
+    elevation: number,
+    moisture: number,
+    oasis: number,
+): TerrainId {
     if (elevation < 0.14) {
         return 'deep_water';
     }
@@ -799,7 +828,11 @@ function classifyGrassland(elevation: number, moisture: number): TerrainId {
     }
 
     if (elevation < 0.62) {
-        return moisture > 0.7 ? 'forest' : moisture > 0.35 ? 'meadow' : 'plains';
+        return moisture > 0.7
+            ? 'forest'
+            : moisture > 0.35
+              ? 'meadow'
+              : 'plains';
     }
 
     if (elevation < 0.74) {
@@ -841,7 +874,10 @@ function spreadOasisGreenery(
                     continue;
                 }
 
-                localOasis = Math.max(localOasis, oasisStrength(nx, ny, scale, oasisOx, oasisOy));
+                localOasis = Math.max(
+                    localOasis,
+                    oasisStrength(nx, ny, scale, oasisOx, oasisOy),
+                );
 
                 if (DESERT_GREENERY.has(cells[nx][ny] as TerrainId)) {
                     touchesGreen = true;
@@ -943,7 +979,12 @@ function capDesertGreenery(
     }
 }
 
-function edgeFalloff(gx: number, gy: number, rows: number, cols: number): number {
+function edgeFalloff(
+    gx: number,
+    gy: number,
+    rows: number,
+    cols: number,
+): number {
     const nx = (gx + 0.5) / rows - 0.5;
     const ny = (gy + 0.5) / cols - 0.5;
     const d = Math.sqrt(nx * nx + ny * ny) * 1.35;
@@ -958,17 +999,28 @@ type ArchipelagoSeed = {
 };
 
 /** Place 2–4 well-separated island centers with large radii. */
-function buildArchipelagoSeeds(rows: number, cols: number, rng: () => number): ArchipelagoSeed[] {
+function buildArchipelagoSeeds(
+    rows: number,
+    cols: number,
+    rng: () => number,
+): ArchipelagoSeed[] {
     const targetCount = 2 + Math.floor(rng() * 3);
     const minDim = Math.min(rows, cols);
     const margin = minDim * 0.18;
     const seeds: ArchipelagoSeed[] = [];
 
-    for (let attempt = 0; attempt < 360 && seeds.length < targetCount; attempt++) {
+    for (
+        let attempt = 0;
+        attempt < 360 && seeds.length < targetCount;
+        attempt++
+    ) {
         const radius = minDim * (0.16 + rng() * 0.07);
         const cx = margin + rng() * (rows - 2 * margin);
         const cy = margin + rng() * (cols - 2 * margin);
-        const strait = Math.max(minDim * 0.03, minDim * 0.08 - Math.floor(attempt / 100) * 0.01);
+        const strait = Math.max(
+            minDim * 0.03,
+            minDim * 0.08 - Math.floor(attempt / 100) * 0.01,
+        );
 
         let spaced = true;
 
@@ -1169,11 +1221,12 @@ function applyArchipelagoCoastalLayers(
             }
 
             const preferBeach =
-                t === 'plains'
-                || t === 'meadow'
-                || t === 'desert'
-                || t === 'beach'
-                || ((t === 'forest' || t === 'dense_forest' || t === 'swamp') && rng() < 0.42);
+                t === 'plains' ||
+                t === 'meadow' ||
+                t === 'desert' ||
+                t === 'beach' ||
+                ((t === 'forest' || t === 'dense_forest' || t === 'swamp') &&
+                    rng() < 0.42);
 
             if (preferBeach) {
                 cells[x][y] = 'beach';
@@ -1229,9 +1282,11 @@ function islandLandFactor(
     const angularMod = (fbm2D(awx, awy, 601, 3) - 0.5) * 0.46;
 
     const coastNoise = (fbm2D(wx * 2.3, wy * 2.3, 701, 4) - 0.5) * 0.3;
-    const inletNoise = (fbm2D(wx * 4.2 + 29, wy * 4.2 - 11, 811, 2) - 0.5) * 0.18;
+    const inletNoise =
+        (fbm2D(wx * 4.2 + 29, wy * 4.2 - 11, 811, 2) - 0.5) * 0.18;
 
-    const effectiveRadius = nearest.radius * (1 + angularMod + coastNoise + inletNoise);
+    const effectiveRadius =
+        nearest.radius * (1 + angularMod + coastNoise + inletNoise);
     const t = 1 - warpedDist / effectiveRadius;
     const land = smoothstep(t / 0.11);
 
@@ -1239,7 +1294,12 @@ function islandLandFactor(
 }
 
 /** Drop stray single-cell land specks left by noisy coastlines. */
-function pruneTinyLandIsles(cells: string[][], rows: number, cols: number, minSize: number): void {
+function pruneTinyLandIsles(
+    cells: string[][],
+    rows: number,
+    cols: number,
+    minSize: number,
+): void {
     const land = new Set<string>();
 
     for (let x = 0; x < rows; x++) {
@@ -1317,7 +1377,13 @@ function isOpenOceanTerrain(terrain: string): boolean {
 }
 
 /** Paints `river` on land; skips open ocean and existing water/river tiles. */
-function paintRiverCell(cells: string[][], rows: number, cols: number, cx: number, cy: number): void {
+function paintRiverCell(
+    cells: string[][],
+    rows: number,
+    cols: number,
+    cx: number,
+    cy: number,
+): void {
     if (cx < 0 || cx >= rows || cy < 0 || cy >= cols) {
         return;
     }
@@ -1364,7 +1430,10 @@ function carveDescendingRivers(
     rng: () => number,
 ): void {
     const minDim = Math.min(rows, cols);
-    const riverCount = Math.max(2, Math.min(14, Math.floor((rows * cols) / 280)));
+    const riverCount = Math.max(
+        2,
+        Math.min(14, Math.floor((rows * cols) / 280)),
+    );
     const minSourceElev = 0.76;
     const maxSteps = rows + cols + 40;
     const minSpacing = Math.max(4, Math.floor(minDim / 9));
@@ -1375,7 +1444,10 @@ function carveDescendingRivers(
 
     for (let x = 0; x < rows; x++) {
         for (let y = 0; y < cols; y++) {
-            if (elev[x][y] >= minSourceElev && !WATER_TERRAINS.has(cells[x][y] as TerrainId)) {
+            if (
+                elev[x][y] >= minSourceElev &&
+                !WATER_TERRAINS.has(cells[x][y] as TerrainId)
+            ) {
                 candidates.push([x, y]);
             }
         }
@@ -1498,7 +1570,12 @@ function carveDescendingRivers(
     }
 }
 
-function smoothGrid(grid: TerrainId[][], rows: number, cols: number, passes: number): void {
+function smoothGrid(
+    grid: TerrainId[][],
+    rows: number,
+    cols: number,
+    passes: number,
+): void {
     const counts: Record<string, number> = {};
     const order: TerrainId[] = [
         'mountain',
@@ -1608,20 +1685,24 @@ function smoothGrid(grid: TerrainId[][], rows: number, cols: number, passes: num
 /**
  * Procedural terrain for the map editor. Deterministic when `seed` is provided.
  */
-export function generateRandomMap(options: MapGenerationOptions = {}): GeneratedMapData {
+export function generateRandomMap(
+    options: MapGenerationOptions = {},
+): GeneratedMapData {
     const cellRows = options.cellRows ?? DEFAULT_MAP_CELL_ROWS;
     const cellCols = options.cellCols ?? DEFAULT_MAP_CELL_COLS;
     const type = options.type ?? 'mix';
     const profile = GENERATION_PROFILES[type];
 
     if (!isAllowedMapGridSize(cellRows, cellCols)) {
-        throw new RangeError(`Invalid map size ${cellRows}×${cellCols} for generation.`);
+        throw new RangeError(
+            `Invalid map size ${cellRows}×${cellCols} for generation.`,
+        );
     }
 
     const s =
         options.seed === undefined || !Number.isFinite(options.seed)
             ? defaultSeed()
-            : (options.seed >>> 0);
+            : options.seed >>> 0;
     const rng = mulberry32(s ^ 0x9e3779b9);
 
     const rows = cellRows;
@@ -1643,7 +1724,9 @@ export function generateRandomMap(options: MapGenerationOptions = {}): Generated
     const islandOy = rng() * 2000 + 1100;
     const oasisOx = profile.aridBiome ? rng() * 2000 + 500 : 0;
     const oasisOy = profile.aridBiome ? rng() * 2000 + 700 : 0;
-    const archipelagoSeeds = profile.islandMask ? buildArchipelagoSeeds(rows, cols, rng) : [];
+    const archipelagoSeeds = profile.islandMask
+        ? buildArchipelagoSeeds(rows, cols, rng)
+        : [];
 
     for (let x = 0; x < rows; x++) {
         cells[x] = [];
@@ -1751,16 +1834,24 @@ export function generateRandomMap(options: MapGenerationOptions = {}): Generated
         markerRng,
         requestedTeamCount,
     );
-    const troopSpawns = buildTroopMarkersForGeneratedMap(cells, rows, cols, markers, teamCount, markerRng, {
-        islandLike: profile.islandMask && minDim >= 96,
-    });
+    const troopSpawns = buildTroopMarkersForGeneratedMap(
+        cells,
+        rows,
+        cols,
+        markers,
+        teamCount,
+        markerRng,
+        {
+            islandLike: profile.islandMask && minDim >= 96,
+        },
+    );
 
     if (
-        troopSpawns.length === 0
-        && teamCount >= 2
-        && profile.islandMask
-        && minDim < 120
-        && type === 'islands'
+        troopSpawns.length === 0 &&
+        teamCount >= 2 &&
+        profile.islandMask &&
+        minDim < 120 &&
+        type === 'islands'
     ) {
         return generateRandomMap({
             ...options,

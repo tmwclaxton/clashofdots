@@ -1,5 +1,8 @@
 import { generateRandomMap } from '@/lib/generateRandomMap';
-import type { GeneratedMapData, MapGenerationOptions } from '@/lib/generateRandomMap';
+import type {
+    GeneratedMapData,
+    MapGenerationOptions,
+} from '@/lib/generateRandomMap';
 
 import workerEntryUrl from '../workers/generateMap.worker.ts?worker&url';
 
@@ -16,7 +19,10 @@ let worker: Worker | null = null;
 /** Revoked when the worker instance is torn down. */
 let workerBootstrapBlobUrl: string | null = null;
 let nextId = 0;
-const pending = new Map<number, { resolve: (data: GeneratedMapData) => void; reject: (err: Error) => void }>();
+const pending = new Map<
+    number,
+    { resolve: (data: GeneratedMapData) => void; reject: (err: Error) => void }
+>();
 
 function rejectAllPending(message: string): void {
     const err = new Error(message);
@@ -76,7 +82,11 @@ function attachWorkerHandlers(w: Worker): void {
  * loaded via `import()` from the URL Vite provides (`?worker&url`). See vitejs/vite#13680.
  */
 function getWorker(): Worker | null {
-    if (typeof Worker === 'undefined' || typeof window === 'undefined' || typeof URL.createObjectURL === 'undefined') {
+    if (
+        typeof Worker === 'undefined' ||
+        typeof window === 'undefined' ||
+        typeof URL.createObjectURL === 'undefined'
+    ) {
         return null;
     }
 
@@ -105,7 +115,9 @@ function getWorker(): Worker | null {
  * Runs procedural map generation in a dedicated worker when possible so the UI can show a spinner.
  * Falls back to synchronous generation on the main thread when workers are unavailable.
  */
-export function runProceduralMapGeneration(options: MapGenerationOptions): Promise<GeneratedMapData> {
+export function runProceduralMapGeneration(
+    options: MapGenerationOptions,
+): Promise<GeneratedMapData> {
     const w = getWorker();
 
     if (!w) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { useMediaQuery } from '@vueuse/core';
 import {
     Circle,
     Copy,
@@ -16,7 +17,6 @@ import {
     Undo2,
     Upload,
 } from 'lucide-vue-next';
-import { useMediaQuery } from '@vueuse/core';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppModal from '@/components/AppModal.vue';
 import MapEditorCanvas from '@/components/map-editor/MapEditorCanvas.vue';
@@ -33,7 +33,6 @@ import { Input } from '@/components/ui/input';
 import type { MapDataPayload, MapEditorTool } from '@/composables/useMapEditor';
 import { useMapEditor } from '@/composables/useMapEditor';
 import type { MapGenerationType } from '@/lib/generateRandomMap';
-import { runProceduralMapGeneration } from '@/lib/runProceduralMapGeneration';
 import {
     DEFAULT_MAP_CELL_COLS,
     DEFAULT_MAP_CELL_ROWS,
@@ -44,9 +43,14 @@ import {
     isAllowedMapGridSize,
     validateMapMarkers,
 } from '@/lib/mapEditorGrid';
+import { runProceduralMapGeneration } from '@/lib/runProceduralMapGeneration';
 import { login as loginRoute, mapBuilder } from '@/routes';
 import { store as createGame } from '@/routes/games';
-import { explore as mapsExplore, fork as forkMap, publish as publishMap } from '@/routes/maps';
+import {
+    explore as mapsExplore,
+    fork as forkMap,
+    publish as publishMap,
+} from '@/routes/maps';
 import { useToastStore } from '@/stores/toastStore';
 
 export type MapBuilderInitialDocument = {
@@ -107,12 +111,16 @@ function getCookie(name: string): string {
 
 function csrfToken(): string {
     return (
-        document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ??
-        getCookie('XSRF-TOKEN')
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? getCookie('XSRF-TOKEN')
     );
 }
 
-async function jsonPost(url: string, body: Record<string, unknown> = {}): Promise<Response> {
+async function jsonPost(
+    url: string,
+    body: Record<string, unknown> = {},
+): Promise<Response> {
     return fetch(url, {
         method: 'POST',
         credentials: 'same-origin',
@@ -147,7 +155,9 @@ let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
 function currentPathname(): string {
     return new URL(
         page.url,
-        typeof window !== 'undefined' ? window.location.origin : 'http://localhost',
+        typeof window !== 'undefined'
+            ? window.location.origin
+            : 'http://localhost',
     ).pathname;
 }
 
@@ -161,7 +171,10 @@ function pathMatchesMapSlug(uuid: string | null): boolean {
     return path === `/map-builder/${uuid}`;
 }
 
-function visitMapBuilder(uuid: string | null, options: { replace?: boolean } = {}): void {
+function visitMapBuilder(
+    uuid: string | null,
+    options: { replace?: boolean } = {},
+): void {
     const url = uuid ? mapBuilder.url(uuid) : mapBuilder.url();
 
     router.visit(url, {
@@ -171,7 +184,9 @@ function visitMapBuilder(uuid: string | null, options: { replace?: boolean } = {
     });
 }
 
-function syncSlugToCurrentMapIfNeeded(options: { replace?: boolean } = {}): void {
+function syncSlugToCurrentMapIfNeeded(
+    options: { replace?: boolean } = {},
+): void {
     const uuid = editor.currentUuid.value;
 
     if (!uuid || pathMatchesMapSlug(uuid)) {
@@ -201,7 +216,12 @@ watch(
 );
 
 watch(
-    () => [editor.currentUuid.value, page.url, props.initialDocument?.uuid ?? null] as const,
+    () =>
+        [
+            editor.currentUuid.value,
+            page.url,
+            props.initialDocument?.uuid ?? null,
+        ] as const,
     ([uuid, , slugProp]) => {
         if (uuid !== null) {
             return;
@@ -225,9 +245,9 @@ watch(
 
 function onOpenMapFromList(uuid: string): void {
     if (
-        editor.currentUuid.value === uuid
-        && !editor.dirty.value
-        && pathMatchesMapSlug(uuid)
+        editor.currentUuid.value === uuid &&
+        !editor.dirty.value &&
+        pathMatchesMapSlug(uuid)
     ) {
         return;
     }
@@ -325,7 +345,9 @@ function closeTeamMarkerDialog(): void {
     teamMarkerDialogOpen.value = false;
 }
 
-function applyTeamMarkerTool(tool: Extract<MapEditorTool, 'capital' | 'flag' | 'infantry' | 'tank'>): void {
+function applyTeamMarkerTool(
+    tool: Extract<MapEditorTool, 'capital' | 'flag' | 'infantry' | 'tank'>,
+): void {
     editor.selectedTeam.value = teamMarkerDialogSlot.value;
     editor.activeTool.value = tool;
     teamMarkerDialogOpen.value = false;
@@ -428,13 +450,17 @@ async function onGenerateMap(payload: {
         const applied = editor.applyGeneratedMap(data);
 
         if (!applied) {
-            toast.error('The generated map could not be applied to the current grid.');
+            toast.error(
+                'The generated map could not be applied to the current grid.',
+            );
 
             return;
         }
     } catch (err) {
         const message =
-            err instanceof Error ? err.message : 'Map generation failed. Try again with different options.';
+            err instanceof Error
+                ? err.message
+                : 'Map generation failed. Try again with different options.';
         toast.error(message);
     } finally {
         mapGenerationPending.value = false;
@@ -490,6 +516,7 @@ function requestPublishConfirm(): void {
     }
 
     const markerErrors = validateMapMarkers(editor.getDataPayload());
+
     if (markerErrors.length > 0) {
         toast.error(
             'Fix these issues before publishing:\n' + markerErrors.join('\n'),
@@ -526,7 +553,9 @@ async function confirmPublish(): Promise<void> {
 
         publishConfirmOpen.value = false;
         mapPublished.value = true;
-        toast.success('Map published. It appears on Explore and editing is locked.');
+        toast.success(
+            'Map published. It appears on Explore and editing is locked.',
+        );
         router.reload({ only: ['initialDocument', 'maps'] });
     } finally {
         publishBusy.value = false;
@@ -625,7 +654,9 @@ onUnmounted(() => {
         v-if="!isLargeScreen"
         class="mx-auto flex w-full max-w-md flex-col items-center gap-4 py-8 text-center sm:py-12"
     >
-        <div class="wod-panel flex w-full flex-col items-center gap-4 p-6 sm:p-8">
+        <div
+            class="wod-panel flex w-full flex-col items-center gap-4 p-6 sm:p-8"
+        >
             <div
                 class="flex size-14 items-center justify-center rounded-lg border-2 border-foreground bg-muted/40"
                 aria-hidden="true"
@@ -633,10 +664,13 @@ onUnmounted(() => {
                 <Monitor class="size-7 text-muted-foreground" />
             </div>
             <div class="space-y-2">
-                <h2 class="font-display text-xl font-bold">Use a larger screen</h2>
+                <h2 class="font-display text-xl font-bold">
+                    Use a larger screen
+                </h2>
                 <p class="text-sm leading-relaxed text-muted-foreground">
-                    The map builder needs a wide canvas, toolbars, and palettes. Open this page
-                    on a tablet in landscape or a desktop computer.
+                    The map builder needs a wide canvas, toolbars, and palettes.
+                    Open this page on a tablet in landscape or a desktop
+                    computer.
                 </p>
             </div>
             <Button as-child variant="outline" class="w-full sm:w-auto">
@@ -645,12 +679,17 @@ onUnmounted(() => {
         </div>
     </div>
 
-    <div v-else class="relative flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+    <div
+        v-else
+        class="relative flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden"
+    >
         <div
             v-if="isGuest"
             class="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background/70 backdrop-blur-sm"
         >
-            <div class="wod-panel flex max-w-sm flex-col items-center gap-4 p-8 text-center shadow-xl">
+            <div
+                class="wod-panel flex max-w-sm flex-col items-center gap-4 p-8 text-center shadow-xl"
+            >
                 <div
                     class="flex size-14 items-center justify-center rounded-lg border-2 border-foreground bg-muted/40"
                     aria-hidden="true"
@@ -658,9 +697,12 @@ onUnmounted(() => {
                     <Lock class="size-7 text-muted-foreground" />
                 </div>
                 <div class="space-y-2">
-                    <h2 class="font-display text-xl font-bold">Log in to make your own maps</h2>
+                    <h2 class="font-display text-xl font-bold">
+                        Log in to make your own maps
+                    </h2>
                     <p class="text-sm leading-relaxed text-muted-foreground">
-                        Create, edit, and publish custom maps for the community to play on.
+                        Create, edit, and publish custom maps for the community
+                        to play on.
                     </p>
                 </div>
                 <Button as-child class="w-full">
@@ -669,7 +711,7 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2 wod-surface px-3 py-2">
+        <div class="wod-surface flex flex-wrap items-center gap-2 px-3 py-2">
             <label class="sr-only" for="map-builder-name">Map name</label>
             <Input
                 id="map-builder-name"
@@ -716,7 +758,10 @@ onUnmounted(() => {
                 :disabled="mapGenerationPending"
                 @click="openGenerateDialog"
             >
-                <Loader2 v-if="mapGenerationPending" class="size-4 shrink-0 animate-spin" />
+                <Loader2
+                    v-if="mapGenerationPending"
+                    class="size-4 shrink-0 animate-spin"
+                />
                 <Sparkles v-else class="size-4 shrink-0" />
                 {{ mapGenerationPending ? 'Generating…' : 'Generate Map' }}
             </Button>
@@ -732,7 +777,10 @@ onUnmounted(() => {
                 Grid {{ editor.gridRows }}×{{ editor.gridCols }}
             </Button>
             <div v-if="!editorLocked" class="flex items-center gap-1.5">
-                <label class="text-xs font-semibold text-muted-foreground" for="map-builder-teams">
+                <label
+                    class="text-xs font-semibold text-muted-foreground"
+                    for="map-builder-teams"
+                >
                     Teams
                 </label>
                 <select
@@ -741,7 +789,9 @@ onUnmounted(() => {
                     :value="headerTeamCount"
                     @change="onTeamCountChange"
                 >
-                    <option v-for="t in teamCountOptions" :key="t" :value="t">{{ t }}</option>
+                    <option v-for="t in teamCountOptions" :key="t" :value="t">
+                        {{ t }}
+                    </option>
                 </select>
             </div>
             <div class="flex flex-1 flex-wrap items-center justify-end gap-2">
@@ -788,7 +838,9 @@ onUnmounted(() => {
                     @click="onSave"
                 >
                     <Save class="size-3.5" />
-                    {{ saving ? 'Saving…' : autoSaving ? 'Autosaving…' : 'Save' }}
+                    {{
+                        saving ? 'Saving…' : autoSaving ? 'Autosaving…' : 'Save'
+                    }}
                 </Button>
                 <Button
                     v-if="!editorLocked"
@@ -832,7 +884,7 @@ onUnmounted(() => {
         </div>
 
         <div
-            class="flex min-h-0 flex-1 gap-2 overflow-hidden min-h-[clamp(16rem,44svh,50rem)]"
+            class="flex min-h-0 min-h-[clamp(16rem,44svh,50rem)] flex-1 gap-2 overflow-hidden"
         >
             <MapListPanel
                 :editor="editor"
@@ -852,7 +904,7 @@ onUnmounted(() => {
         </div>
 
         <div
-            class="flex w-full min-w-0 shrink-0 flex-row items-stretch gap-2 border-t border-foreground/15 py-1.5 min-h-[8.5rem]"
+            class="flex min-h-[8.5rem] w-full min-w-0 shrink-0 flex-row items-stretch gap-2 border-t border-foreground/15 py-1.5"
             :class="{ 'pointer-events-none opacity-60': editorLocked }"
         >
             <MapTerrainPalette
@@ -892,7 +944,11 @@ onUnmounted(() => {
                 >
                     Cancel
                 </Button>
-                <Button type="button" :disabled="publishBusy" @click="confirmPublish">
+                <Button
+                    type="button"
+                    :disabled="publishBusy"
+                    @click="confirmPublish"
+                >
                     {{ publishBusy ? 'Publishing…' : 'Publish' }}
                 </Button>
             </template>
@@ -938,12 +994,19 @@ onUnmounted(() => {
                     class="h-auto min-h-11 w-full justify-center gap-2 py-2"
                     @click="applyTeamMarkerTool('tank')"
                 >
-                    <RectangleHorizontal class="size-4 shrink-0" stroke-width="2" />
+                    <RectangleHorizontal
+                        class="size-4 shrink-0"
+                        stroke-width="2"
+                    />
                     Tank
                 </Button>
             </div>
             <template #footer>
-                <Button type="button" variant="destructive" @click="closeTeamMarkerDialog">
+                <Button
+                    type="button"
+                    variant="destructive"
+                    @click="closeTeamMarkerDialog"
+                >
                     Cancel
                 </Button>
             </template>
@@ -959,11 +1022,14 @@ onUnmounted(() => {
                     v-if="editorDirty"
                     class="rounded-md border border-amber-300/80 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100"
                 >
-                    You have unsaved changes. Creating a new map will discard them.
+                    You have unsaved changes. Creating a new map will discard
+                    them.
                 </p>
                 <div class="flex flex-wrap items-end gap-3">
                     <div class="flex flex-col gap-1">
-                        <label class="text-xs font-semibold" for="new-map-rows">Rows</label>
+                        <label class="text-xs font-semibold" for="new-map-rows"
+                            >Rows</label
+                        >
                         <input
                             id="new-map-rows"
                             ref="newMapRowsInputRef"
@@ -976,7 +1042,9 @@ onUnmounted(() => {
                         />
                     </div>
                     <div class="flex flex-col gap-1">
-                        <label class="text-xs font-semibold" for="new-map-cols">Columns</label>
+                        <label class="text-xs font-semibold" for="new-map-cols"
+                            >Columns</label
+                        >
                         <input
                             id="new-map-cols"
                             v-model.number="newMapCols"
@@ -988,13 +1056,21 @@ onUnmounted(() => {
                         />
                     </div>
                 </div>
-                <p v-if="newMapFormError" class="text-sm text-destructive">{{ newMapFormError }}</p>
+                <p v-if="newMapFormError" class="text-sm text-destructive">
+                    {{ newMapFormError }}
+                </p>
             </div>
             <template #footer>
-                <Button type="button" variant="outline" @click="newMapDialogOpen = false">
+                <Button
+                    type="button"
+                    variant="outline"
+                    @click="newMapDialogOpen = false"
+                >
                     Cancel
                 </Button>
-                <Button type="button" @click="submitNewMapDialog">Create empty map</Button>
+                <Button type="button" @click="submitNewMapDialog"
+                    >Create empty map</Button
+                >
             </template>
         </AppModal>
     </div>

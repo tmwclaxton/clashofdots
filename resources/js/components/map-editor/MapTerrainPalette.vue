@@ -24,11 +24,11 @@ function selectTerrain(id: string): void {
     props.editor.selectedTerrain.value = id as TerrainId;
 
     if (
-        props.editor.activeTool.value === 'pan'
-        || props.editor.activeTool.value === 'capital'
-        || props.editor.activeTool.value === 'flag'
-        || props.editor.activeTool.value === 'infantry'
-        || props.editor.activeTool.value === 'tank'
+        props.editor.activeTool.value === 'pan' ||
+        props.editor.activeTool.value === 'capital' ||
+        props.editor.activeTool.value === 'flag' ||
+        props.editor.activeTool.value === 'infantry' ||
+        props.editor.activeTool.value === 'tank'
     ) {
         props.editor.activeTool.value = 'brush';
     }
@@ -40,7 +40,7 @@ function selectTerrain(id: string): void {
         class="wod-panel flex h-full min-h-0 w-full min-w-0 flex-col gap-1.5 rounded-lg border-2 border-foreground p-1.5 sm:p-2"
     >
         <p
-            class="font-display shrink-0 text-[10px] font-bold uppercase tracking-wide text-foreground sm:text-[11px]"
+            class="shrink-0 font-display text-[10px] font-bold tracking-wide text-foreground uppercase sm:text-[11px]"
         >
             Terrain
         </p>
@@ -53,7 +53,7 @@ function selectTerrain(id: string): void {
                 type="button"
                 :class="
                     cn(
-                        'flex min-w-[3.35rem] shrink-0 flex-col items-center gap-0.5 rounded-md border-2 px-1 py-1 text-[10px] font-semibold leading-tight text-foreground transition-shadow sm:min-w-[3.75rem] sm:gap-0.5 sm:px-1 sm:py-1.5 sm:text-xs',
+                        'flex min-w-[3.35rem] shrink-0 flex-col items-center gap-0.5 rounded-md border-2 px-1 py-1 text-[10px] leading-tight font-semibold text-foreground transition-shadow sm:min-w-[3.75rem] sm:gap-0.5 sm:px-1 sm:py-1.5 sm:text-xs',
                         editor.selectedTerrain.value === t.id
                             ? 'border-foreground ring-2 ring-foreground/25'
                             : 'border-transparent hover:border-muted-foreground/50',
@@ -67,7 +67,10 @@ function selectTerrain(id: string): void {
                     :style="{ backgroundColor: t.color }"
                     aria-hidden="true"
                 />
-                <span class="max-w-[5.5rem] text-center text-pretty leading-tight">{{ t.label }}</span>
+                <span
+                    class="max-w-[5.5rem] text-center leading-tight text-pretty"
+                    >{{ t.label }}</span
+                >
             </button>
         </div>
     </div>

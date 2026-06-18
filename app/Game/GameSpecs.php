@@ -56,6 +56,7 @@ final class GameSpecs
      *     label: string,
      *     marker: string,
      *     incomePerTick: int,
+     *     incomePerSecond: float,
      *     healMultiplier: float,
      *     summary: string
      * }>
@@ -68,6 +69,7 @@ final class GameSpecs
                 'label' => 'Outpost',
                 'marker' => 'Flag (star)',
                 'incomePerTick' => 1,
+                'incomePerSecond' => 30.0,
                 'healMultiplier' => 2.0,
                 'summary' => 'Capturable settlements scattered across the map. Each pays 1 credit per tick and can be toggled as a recruitment spawn point.',
             ],
@@ -76,6 +78,7 @@ final class GameSpecs
                 'label' => 'Capital',
                 'marker' => 'Capital (hexagon)',
                 'incomePerTick' => 1,
+                'incomePerSecond' => 30.0,
                 'healMultiplier' => 2.0,
                 'summary' => 'One per faction. Generates the same income as outposts but is the primary strategic objective — all enemy capitals must be captured to win.',
             ],

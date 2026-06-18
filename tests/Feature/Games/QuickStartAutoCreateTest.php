@@ -11,7 +11,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
-use Predis\Client;
 use Tests\TestCase;
 
 class QuickStartAutoCreateTest extends TestCase
@@ -22,7 +21,9 @@ class QuickStartAutoCreateTest extends TestCase
     {
         parent::setUp();
 
-        if (! extension_loaded('redis') && ! class_exists(Client::class)) {
+        try {
+            Redis::ping();
+        } catch (\Throwable) {
             $this->markTestSkipped('Redis is required for game tests.');
         }
 
@@ -31,12 +32,16 @@ class QuickStartAutoCreateTest extends TestCase
 
     protected function tearDown(): void
     {
-        $keys = Redis::keys('game:*');
-        if (! empty($keys)) {
-            Redis::del(...$keys);
-        }
+        try {
+            $keys = Redis::keys('game:*');
+            if (! empty($keys)) {
+                Redis::del(...$keys);
+            }
 
-        Redis::del('games:active');
+            Redis::del('games:active');
+        } catch (\Throwable) {
+            // Redis unavailable; nothing to clean up.
+        }
 
         parent::tearDown();
     }

@@ -15,7 +15,11 @@ import {
     ENGINE_TERRAIN_VALUES,
     engineCellFillStyle,
 } from '@/lib/terrainRender';
-import { GAME_VIEW_ZOOM_MAX, GAME_VIEW_ZOOM_MIN, useCameraStore } from '@/stores/cameraStore';
+import {
+    GAME_VIEW_ZOOM_MAX,
+    GAME_VIEW_ZOOM_MIN,
+    useCameraStore,
+} from '@/stores/cameraStore';
 import { useDraftStore } from '@/stores/draftStore';
 import { useGameStore } from '@/stores/gameStore';
 
@@ -29,9 +33,13 @@ const props = withDefaults(
         /** City id currently hovered in the recruitment panel; canvas highlights it. */
         hoveredCityId?: number | null;
     }>(),
-    { readOnly: false, snapshotFetchUrl: '', recruitmentPanelOpen: false, hoveredCityId: null },
+    {
+        readOnly: false,
+        snapshotFetchUrl: '',
+        recruitmentPanelOpen: false,
+        hoveredCityId: null,
+    },
 );
-
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const store = useGameStore();
@@ -79,8 +87,14 @@ function pathCrossesWater(points: [number, number][]): boolean {
     const waterThreshold = ENGINE_TERRAIN_VALUES.water ?? -0.1;
 
     for (const [wx, wy] of points) {
-        const gx = Math.min(store.terrain.length - 1, Math.floor(wx / cellSize));
-        const gy = Math.min((store.terrain[0]?.length ?? 1) - 1, Math.floor(wy / cellSize));
+        const gx = Math.min(
+            store.terrain.length - 1,
+            Math.floor(wx / cellSize),
+        );
+        const gy = Math.min(
+            (store.terrain[0]?.length ?? 1) - 1,
+            Math.floor(wy / cellSize),
+        );
         const tv = store.terrain[gx]?.[gy] ?? 0;
         const fv = store.forest[gx]?.[gy] ?? 0;
 
@@ -119,12 +133,14 @@ function getTouchCoords(
     touch: Touch,
 ): [number, number] {
     const rect = canvas.getBoundingClientRect();
+
     return [touch.clientX - rect.left, touch.clientY - rect.top];
 }
 
 function touchDistance(t1: Touch, t2: Touch): number {
     const dx = t1.clientX - t2.clientX;
     const dy = t1.clientY - t2.clientY;
+
     return Math.hypot(dx, dy);
 }
 
@@ -134,6 +150,7 @@ function touchMidpoint(
     t2: Touch,
 ): [number, number] {
     const rect = canvas.getBoundingClientRect();
+
     return [
         (t1.clientX + t2.clientX) / 2 - rect.left,
         (t1.clientY + t2.clientY) / 2 - rect.top,
@@ -160,25 +177,37 @@ function tryInitialCameraFit(): void {
         return;
     }
 
-    camera.fitCameraToView(store.world.width, store.world.height, r.width, r.height);
+    camera.fitCameraToView(
+        store.world.width,
+        store.world.height,
+        r.width,
+        r.height,
+    );
     initialFitDone.value = true;
     bakeTerrain();
     draw();
 }
 
 function canvasInk(): string {
-    return getComputedStyle(document.documentElement)
-        .getPropertyValue('--wod-canvas-ink')
-        .trim() || (isDark.value ? '#f7f1e3' : '#1a1a1a');
+    return (
+        getComputedStyle(document.documentElement)
+            .getPropertyValue('--wod-canvas-ink')
+            .trim() || (isDark.value ? '#f7f1e3' : '#1a1a1a')
+    );
 }
 
 function canvasField(): string {
-    return getComputedStyle(document.documentElement)
-        .getPropertyValue('--wod-canvas-field')
-        .trim() || (isDark.value ? '#2a3520' : '#c8d68a');
+    return (
+        getComputedStyle(document.documentElement)
+            .getPropertyValue('--wod-canvas-field')
+            .trim() || (isDark.value ? '#2a3520' : '#c8d68a')
+    );
 }
 
-function terrainCellsMatchGrid(cells: string[][], terrain: number[][]): boolean {
+function terrainCellsMatchGrid(
+    cells: string[][],
+    terrain: number[][],
+): boolean {
     if (cells.length === 0 || terrain.length === 0) {
         return false;
     }
@@ -213,8 +242,14 @@ function bakeTerrain() {
 
     for (let y = 0; y < height; y += cellSize) {
         for (let x = 0; x < width; x += cellSize) {
-            const gx = Math.min(store.terrain.length - 1, Math.floor(x / cellSize));
-            const gy = Math.min(store.terrain[0].length - 1, Math.floor(y / cellSize));
+            const gx = Math.min(
+                store.terrain.length - 1,
+                Math.floor(x / cellSize),
+            );
+            const gy = Math.min(
+                store.terrain[0].length - 1,
+                Math.floor(y / cellSize),
+            );
 
             if (useEditorStyle && cells) {
                 ctx.fillStyle = editorBlendedTerrainFillStyle(cells, gx, gy);
@@ -252,15 +287,19 @@ function rafLoop(nowMs: number): void {
 
     // Advance each troop's display position toward its server target.
     let anyMoving = false;
+
     for (const [id, target] of troopTargetPositions) {
         const display = troopDisplayPositions.get(id);
+
         if (!display) {
             troopDisplayPositions.set(id, [target[0], target[1]]);
             continue;
         }
+
         const dx = target[0] - display[0];
         const dy = target[1] - display[1];
         const dist = Math.hypot(dx, dy);
+
         if (dist > 0.5) {
             anyMoving = true;
             const step = Math.min(dist, SMOOTH_SPEED_WU_MS * dt);
@@ -318,17 +357,26 @@ function draw() {
         drawTerritory(ctx, state.territory, state.playerColors); // battle lines on top
     }
 
-    for (const city of state?.cities ?? store.cityPositions.map((p, i) => ({
-        position: p,
-        id: i,
-        ownerColor: null,
-        ownerSlot: null,
-        markerType: null as string | null,
-        recruitmentEnabled: true,
-    }))) {
-        const showRing = props.recruitmentPanelOpen && city.ownerSlot === store.slot;
+    for (const city of state?.cities ??
+        store.cityPositions.map((p, i) => ({
+            position: p,
+            id: i,
+            ownerColor: null,
+            ownerSlot: null,
+            markerType: null as string | null,
+            recruitmentEnabled: true,
+        }))) {
+        const showRing =
+            props.recruitmentPanelOpen && city.ownerSlot === store.slot;
         const isHovered = props.hoveredCityId === city.id;
-        drawCity(ctx, city.position, city.ownerColor, city.markerType, showRing ? (city.recruitmentEnabled ?? true) : null, isHovered);
+        drawCity(
+            ctx,
+            city.position,
+            city.ownerColor,
+            city.markerType,
+            showRing ? (city.recruitmentEnabled ?? true) : null,
+            isHovered,
+        );
     }
 
     for (const troop of state?.troops ?? []) {
@@ -370,12 +418,14 @@ function draw() {
  * the edge of visibility.  Uses a medium-opacity fill adapted to dark/light
  * mode so the terrain is still faintly perceptible rather than pitch-black.
  */
-function drawFog(
+function _drawFog(
     ctx: CanvasRenderingContext2D,
     vision: number[][] | undefined,
     territory: number[][] | undefined,
 ) {
-    if (!vision?.length || !vision[0]?.length) return;
+    if (!vision?.length || !vision[0]?.length) {
+        return;
+    }
 
     const { cellSize } = store.world;
     const w = vision.length - 1;
@@ -391,6 +441,7 @@ function drawFog(
         for (let gy = 0; gy < h; gy++) {
             // Only fog cells that are in enemy territory — own backfield stays clear.
             const owner = territory?.[gx]?.[gy] ?? -1;
+
             if (owner !== mySlot && vision[gx][gy] < ENGINE_FOREST_THRESHOLD) {
                 ctx.fillRect(gx * cellSize, gy * cellSize, cellSize, cellSize);
             }
@@ -441,15 +492,21 @@ function drawTerritory(
 
     // ── 0. Fill territory cells with the owning player's color ──────────────
     ctx.save();
+
     for (let gx = 0; gx < w; gx++) {
         for (let gy = 0; gy < h; gy++) {
             const slot = territory[gx][gy];
             const color = playerColors[slot];
-            if (!color) continue;
+
+            if (!color) {
+                continue;
+            }
+
             ctx.fillStyle = `rgba(${color[0]},${color[1]},${color[2]},0.18)`;
             ctx.fillRect(gx * cellSize, gy * cellSize, cellSize, cellSize);
         }
     }
+
     ctx.restore();
 
     // ── 1. Build per-player boundary-edge adjacency graphs ──────────────────
@@ -457,13 +514,29 @@ function drawTerritory(
     // iterating, so every edge belongs to exactly one player's graph.
     const playerAdj = new Map<number, Map<number, Set<number>>>();
 
-    function playerLink(slot: number, cx1: number, cy1: number, cx2: number, cy2: number): void {
-        if (!playerAdj.has(slot)) playerAdj.set(slot, new Map());
+    function playerLink(
+        slot: number,
+        cx1: number,
+        cy1: number,
+        cx2: number,
+        cy2: number,
+    ): void {
+        if (!playerAdj.has(slot)) {
+            playerAdj.set(slot, new Map());
+        }
+
         const adj = playerAdj.get(slot)!;
         const a = ci(cx1, cy1);
         const b = ci(cx2, cy2);
-        if (!adj.has(a)) adj.set(a, new Set());
-        if (!adj.has(b)) adj.set(b, new Set());
+
+        if (!adj.has(a)) {
+            adj.set(a, new Set());
+        }
+
+        if (!adj.has(b)) {
+            adj.set(b, new Set());
+        }
+
         adj.get(a)!.add(b);
         adj.get(b)!.add(a);
     }
@@ -471,18 +544,26 @@ function drawTerritory(
     for (let gx = 0; gx < w; gx++) {
         for (let gy = 0; gy < h; gy++) {
             const owner = territory[gx][gy];
+
             // horizontal edge: boundary below this cell
             if (gy + 1 < h && territory[gx][gy + 1] !== owner) {
                 const other = territory[gx][gy + 1];
                 // Assign to the real player's slot; neutral (-1) cells have no color of their own.
                 const edgeSlot = owner >= 0 ? owner : other;
-                if (edgeSlot >= 0) playerLink(edgeSlot, gx, gy + 1, gx + 1, gy + 1);
+
+                if (edgeSlot >= 0) {
+                    playerLink(edgeSlot, gx, gy + 1, gx + 1, gy + 1);
+                }
             }
+
             // vertical edge: boundary to the right
             if (gx + 1 < w && territory[gx + 1][gy] !== owner) {
                 const other = territory[gx + 1][gy];
                 const edgeSlot = owner >= 0 ? owner : other;
-                if (edgeSlot >= 0) playerLink(edgeSlot, gx + 1, gy, gx + 1, gy + 1);
+
+                if (edgeSlot >= 0) {
+                    playerLink(edgeSlot, gx + 1, gy, gx + 1, gy + 1);
+                }
             }
         }
     }
@@ -495,6 +576,7 @@ function drawTerritory(
     function cpx(idx: number): [number, number] {
         const cx = Math.floor(idx / cH);
         const cy = idx % cH;
+
         return [cx * cellSize, cy * cellSize];
     }
 
@@ -508,7 +590,11 @@ function drawTerritory(
 
     for (const [slot, adj] of playerAdj) {
         const color = playerColors[slot];
-        if (!color) continue;
+
+        if (!color) {
+            continue;
+        }
+
         ctx.strokeStyle = `rgba(${color[0]},${color[1]},${color[2]},1)`;
 
         const usedEdges = new Set<string>();
@@ -516,20 +602,30 @@ function drawTerritory(
         // Prefer to start from endpoints (odd-degree corners) so closed loops
         // are handled after all open paths are exhausted.
         const starts: number[] = [];
+
         for (const [c, nbrs] of adj) {
-            if (nbrs.size % 2 !== 0) starts.push(c);
+            if (nbrs.size % 2 !== 0) {
+                starts.push(c);
+            }
         }
+
         for (const [c] of adj) {
             starts.push(c);
         }
 
         for (const seed of starts) {
             const seedNbrs = adj.get(seed);
-            if (!seedNbrs) continue;
+
+            if (!seedNbrs) {
+                continue;
+            }
 
             for (const firstNbr of seedNbrs) {
                 const eKey = ek(seed, firstNbr);
-                if (usedEdges.has(eKey)) continue;
+
+                if (usedEdges.has(eKey)) {
+                    continue;
+                }
 
                 // Walk greedily, preferring straight continuation at junctions.
                 const poly: [number, number][] = [];
@@ -542,7 +638,10 @@ function drawTerritory(
                 while (true) {
                     poly.push(cpx(cur));
                     const nbrs = adj.get(cur);
-                    if (!nbrs) break;
+
+                    if (!nbrs) {
+                        break;
+                    }
 
                     const [px0, py0] = cpx(prev);
                     const [cx0, cy0] = cpx(cur);
@@ -553,27 +652,36 @@ function drawTerritory(
                     let bestDot = -Infinity;
 
                     for (const n of nbrs) {
-                        if (usedEdges.has(ek(cur, n))) continue;
+                        if (usedEdges.has(ek(cur, n))) {
+                            continue;
+                        }
+
                         const [nx, ny] = cpx(n);
                         const ndx = nx - cx0;
                         const ndy = ny - cy0;
                         const dot = dx * ndx + dy * ndy;
+
                         if (dot > bestDot) {
                             bestDot = dot;
                             bestNext = n;
                         }
                     }
 
-                    if (bestNext === -1) break;
+                    if (bestNext === -1) {
+                        break;
+                    }
 
                     usedEdges.add(ek(cur, bestNext));
                     prev = cur;
                     cur = bestNext;
                 }
 
-                if (poly.length < 2) continue;
+                if (poly.length < 2) {
+                    continue;
+                }
 
                 ctx.beginPath();
+
                 if (poly.length === 2) {
                     ctx.moveTo(poly[0][0], poly[0][1]);
                     ctx.lineTo(poly[1][0], poly[1][1]);
@@ -583,13 +691,19 @@ function drawTerritory(
                     const mx0 = (poly[0][0] + poly[1][0]) / 2;
                     const my0 = (poly[0][1] + poly[1][1]) / 2;
                     ctx.moveTo(mx0, my0);
+
                     for (let i = 1; i < poly.length - 1; i++) {
                         const mx = (poly[i][0] + poly[i + 1][0]) / 2;
                         const my = (poly[i][1] + poly[i + 1][1]) / 2;
                         ctx.quadraticCurveTo(poly[i][0], poly[i][1], mx, my);
                     }
-                    ctx.lineTo(poly[poly.length - 1][0], poly[poly.length - 1][1]);
+
+                    ctx.lineTo(
+                        poly[poly.length - 1][0],
+                        poly[poly.length - 1][1],
+                    );
                 }
+
                 ctx.stroke();
             }
         }
@@ -627,6 +741,7 @@ function drawCity(
         ctx.lineWidth = hovered ? 3 : 2;
         ctx.globalAlpha = hovered ? 1.0 : 0.8;
         ctx.stroke();
+
         if (hovered) {
             ctx.beginPath();
             ctx.arc(x, y, ringRadius + 4, 0, Math.PI * 2);
@@ -635,6 +750,7 @@ function drawCity(
             ctx.globalAlpha = 0.3;
             ctx.stroke();
         }
+
         ctx.restore();
     }
 }
@@ -656,7 +772,11 @@ const TROOP_R_INFANTRY = 9;
 const TROOP_R_TANK = 12;
 const TROOP_R_SHIP = 11;
 
-function drawTroop(ctx: CanvasRenderingContext2D, troop: TroopDraw, selected = false) {
+function drawTroop(
+    ctx: CanvasRenderingContext2D,
+    troop: TroopDraw,
+    selected = false,
+) {
     const [x, y] = troop.position;
     const morale = troop.morale ?? 100;
     const isTank = troop.type === 'tank';
@@ -667,7 +787,11 @@ function drawTroop(ctx: CanvasRenderingContext2D, troop: TroopDraw, selected = f
     const maxHp = troop.maxHealth ?? (isTank ? 200 : 100);
     const ink = canvasInk();
     const fillColor = rgb(troop.color);
-    const unitR = isTank ? TROOP_R_TANK : isShip ? TROOP_R_SHIP : TROOP_R_INFANTRY;
+    const unitR = isTank
+        ? TROOP_R_TANK
+        : isShip
+          ? TROOP_R_SHIP
+          : TROOP_R_INFANTRY;
 
     if (isShip) {
         ctx.fillStyle = fillColor;
@@ -747,7 +871,11 @@ function drawTroop(ctx: CanvasRenderingContext2D, troop: TroopDraw, selected = f
     }
 }
 
-function drawArrowPath(ctx: CanvasRenderingContext2D, points: [number, number][], dashed = false) {
+function drawArrowPath(
+    ctx: CanvasRenderingContext2D,
+    points: [number, number][],
+    dashed = false,
+) {
     if (points.length < 2) {
         return;
     }
@@ -771,9 +899,15 @@ function drawArrowPath(ctx: CanvasRenderingContext2D, points: [number, number][]
     const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
     ctx.beginPath();
     ctx.moveTo(last[0], last[1]);
-    ctx.lineTo(last[0] - Math.cos(angle - 0.4) * 10, last[1] - Math.sin(angle - 0.4) * 10);
+    ctx.lineTo(
+        last[0] - Math.cos(angle - 0.4) * 10,
+        last[1] - Math.sin(angle - 0.4) * 10,
+    );
     ctx.moveTo(last[0], last[1]);
-    ctx.lineTo(last[0] - Math.cos(angle + 0.4) * 10, last[1] - Math.sin(angle + 0.4) * 10);
+    ctx.lineTo(
+        last[0] - Math.cos(angle + 0.4) * 10,
+        last[1] - Math.sin(angle + 0.4) * 10,
+    );
     ctx.stroke();
 }
 
@@ -781,7 +915,9 @@ function rgb(color: number[]): string {
     return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
 }
 
-function findEntity(world: [number, number]): { id: number; kind: 'troop' | 'city' } | null {
+function findEntity(
+    world: [number, number],
+): { id: number; kind: 'troop' | 'city' } | null {
     const state = store.latestState;
 
     if (!state) {
@@ -851,6 +987,7 @@ function onMouseDown(e: MouseEvent) {
         // begin group drafts for all selected troops.
         if (drafts.selectedTroopIds.length > 1) {
             dragging = true;
+
             for (const id of drafts.selectedTroopIds) {
                 drafts.beginPath(id, world);
             }
@@ -912,11 +1049,19 @@ function onMouseUp() {
         const y2 = Math.max(lassoStart[1], lassoCurrent[1]);
 
         const state = store.latestState;
+
         if (state && (x2 - x1 > 4 || y2 - y1 > 4)) {
             const selected = state.troops
                 .filter((t) => {
-                    if (t.ownerSlot !== store.slot) return false;
-                    const [wx, wy] = worldToScreen(t.position[0], t.position[1]);
+                    if (t.ownerSlot !== store.slot) {
+                        return false;
+                    }
+
+                    const [wx, wy] = worldToScreen(
+                        t.position[0],
+                        t.position[1],
+                    );
+
                     return wx >= x1 && wx <= x2 && wy >= y1 && wy <= y2;
                 })
                 .map((t) => t.id);
@@ -940,6 +1085,7 @@ function onMouseUp() {
             const finished = drafts.draftPaths.find(
                 (p) => p.entityId === entityIdBeforeFinish,
             );
+
             if (finished && pathCrossesWater(finished.points)) {
                 waterModalEntityId = entityIdBeforeFinish;
                 waterModalVisible.value = true;
@@ -965,7 +1111,10 @@ function onWheel(e: WheelEvent) {
     const [wx, wy] = screenToWorld(sx, sy);
     const factor = e.deltaY > 0 ? 0.9 : 1.1;
     const prevZoom = camera.zoom;
-    const nextZoom = Math.min(GAME_VIEW_ZOOM_MAX, Math.max(GAME_VIEW_ZOOM_MIN, prevZoom * factor));
+    const nextZoom = Math.min(
+        GAME_VIEW_ZOOM_MAX,
+        Math.max(GAME_VIEW_ZOOM_MIN, prevZoom * factor),
+    );
 
     if (nextZoom === prevZoom) {
         return;
@@ -1000,7 +1149,10 @@ function onKeyDown(e: KeyboardEvent) {
     if (e.key.toLowerCase() === 's') {
         e.preventDefault();
         // Halt all own troops: submit empty-path orders for every own troop.
-        store.stopAllTroops(store.gameUuid, props.snapshotFetchUrl?.trim() || undefined);
+        store.stopAllTroops(
+            store.gameUuid,
+            props.snapshotFetchUrl?.trim() || undefined,
+        );
     }
 }
 
@@ -1019,6 +1171,7 @@ function onTouchStart(e: TouchEvent) {
         if (props.readOnly) {
             touchPanning = true;
             touchDrafting = false;
+
             return;
         }
 
@@ -1114,6 +1267,7 @@ function onTouchEnd(e: TouchEvent) {
         touchDrafting = false;
 
         const canvas = canvasRef.value;
+
         if (canvas) {
             lastMouse = getTouchCoords(canvas, e.touches[0]);
         }
@@ -1136,7 +1290,8 @@ onMounted(() => {
 
     tryInitialCameraFit();
     needsRedraw = true;
-    rafId = requestAnimationFrame(rafLoop);});
+    rafId = requestAnimationFrame(rafLoop);
+});
 
 onUnmounted(() => {
     window.removeEventListener('keydown', onKeyDown);
@@ -1177,13 +1332,16 @@ watch(
     () => [store.latestState, drafts.draftPaths, drafts.activeDraft],
     ([newState]) => {
         const troops = (newState as typeof store.latestState)?.troops ?? [];
+
         for (const t of troops) {
             troopTargetPositions.set(t.id, t.position);
+
             // Snap display to target on first appearance
             if (!troopDisplayPositions.has(t.id)) {
                 troopDisplayPositions.set(t.id, [t.position[0], t.position[1]]);
             }
         }
+
         scheduleRedraw();
     },
     { deep: true },

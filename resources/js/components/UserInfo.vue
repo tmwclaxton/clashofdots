@@ -17,13 +17,19 @@ const props = withDefaults(defineProps<Props>(), {
 const { getInitials } = useInitials();
 
 const avatarSrc = computed(() =>
-    props.user.profile_uuid ? avatarUrl(props.user.profile_uuid, props.user.avatar_style as string) : null,
+    props.user.profile_uuid
+        ? avatarUrl(props.user.profile_uuid, props.user.avatar_style as string)
+        : null,
 );
 </script>
 
 <template>
     <Avatar class="h-8 w-8 overflow-hidden rounded-lg bg-black">
-        <AvatarImage v-if="avatarSrc" :src="avatarSrc" :alt="user.game_display_name ?? user.name" />
+        <AvatarImage
+            v-if="avatarSrc"
+            :src="avatarSrc"
+            :alt="user.game_display_name ?? user.name"
+        />
         <AvatarFallback class="rounded-lg text-black dark:text-white">
             {{ getInitials(user.game_display_name ?? user.name) }}
         </AvatarFallback>
@@ -31,10 +37,8 @@ const avatarSrc = computed(() =>
 
     <div class="grid flex-1 text-left text-sm leading-tight">
         <span class="truncate font-medium">{{ user.name }}</span>
-        <span
-            v-if="showEmail"
-            class="truncate text-xs text-muted-foreground"
-            >{{ user.email }}</span
-        >
+        <span v-if="showEmail" class="truncate text-xs text-muted-foreground">{{
+            user.email
+        }}</span>
     </div>
 </template>

@@ -1,5 +1,8 @@
 import type { MapMarker } from '@/lib/mapEditorGrid';
-import { isFarEnoughFromHydraulicWaterForMapMarker, isPlaceableTerrain } from '@/lib/mapMarkers';
+import {
+    isFarEnoughFromHydraulicWaterForMapMarker,
+    isPlaceableTerrain,
+} from '@/lib/mapMarkers';
 import {
     computeMinSeparationForMapState,
     countPlaceableLandCells,
@@ -168,7 +171,13 @@ function collectAdjacentAnchorSeedsForTeam(
                 continue;
             }
 
-            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || occupied.has(k)) {
+            if (
+                nr < 0 ||
+                nr >= rows ||
+                nc < 0 ||
+                nc >= cols ||
+                occupied.has(k)
+            ) {
                 continue;
             }
 
@@ -179,9 +188,15 @@ function collectAdjacentAnchorSeedsForTeam(
             const terr = cells[nr]?.[nc];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, nr, nc)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    nr,
+                    nc,
+                )
             ) {
                 continue;
             }
@@ -225,14 +240,22 @@ function collectCoastalOwnedSeedsForTeam(
             const terr = cells[r]?.[c];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
             ) {
                 continue;
             }
 
-            if (!isShoreOrContestNeighbor(cells, owner, rows, cols, r, c, team)) {
+            if (
+                !isShoreOrContestNeighbor(cells, owner, rows, cols, r, c, team)
+            ) {
                 continue;
             }
 
@@ -273,9 +296,15 @@ function buildFrontierBandForTeam(
         const terr = cells[s.row]?.[s.col];
 
         if (
-            typeof terr !== 'string'
-            || !isPlaceableTerrain(terr)
-            || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, s.row, s.col)
+            typeof terr !== 'string' ||
+            !isPlaceableTerrain(terr) ||
+            !isFarEnoughFromHydraulicWaterForMapMarker(
+                cells,
+                rows,
+                cols,
+                s.row,
+                s.col,
+            )
         ) {
             continue;
         }
@@ -304,7 +333,14 @@ function buildFrontierBandForTeam(
             const nc = c + dc;
             const nk = cellKey(nr, nc);
 
-            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols || seen.has(nk) || occupied.has(nk)) {
+            if (
+                nr < 0 ||
+                nr >= rows ||
+                nc < 0 ||
+                nc >= cols ||
+                seen.has(nk) ||
+                occupied.has(nk)
+            ) {
                 continue;
             }
 
@@ -315,9 +351,15 @@ function buildFrontierBandForTeam(
             const terr = cells[nr]?.[nc];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, nr, nc)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    nr,
+                    nc,
+                )
             ) {
                 continue;
             }
@@ -364,7 +406,10 @@ function computeSymmetricTroopTargets(
             40,
             Math.max(12, scaleBorder + outpostInf + capitalInf),
         );
-        wantTanks = Math.min(10, Math.max(3, Math.floor(border * 0.18) + outpostTanks + 1));
+        wantTanks = Math.min(
+            10,
+            Math.max(3, Math.floor(border * 0.18) + outpostTanks + 1),
+        );
     } else {
         const scale = Math.min(2.65, 0.75 + minDim / 88);
         wantInf = Math.min(
@@ -372,11 +417,11 @@ function computeSymmetricTroopTargets(
             Math.max(
                 18,
                 Math.round(
-                    BASE_GENERATED_INFANTRY_PER_TEAM * scale
-                        + band * 0.055
-                        + border * 0.14
-                        + outpostInf
-                        + capitalInf,
+                    BASE_GENERATED_INFANTRY_PER_TEAM * scale +
+                        band * 0.055 +
+                        border * 0.14 +
+                        outpostInf +
+                        capitalInf,
                 ),
             ),
         );
@@ -384,7 +429,12 @@ function computeSymmetricTroopTargets(
             20,
             Math.max(
                 5,
-                Math.round(BASE_GENERATED_TANKS_PER_TEAM * scale + band * 0.018 + outpostTanks + 1),
+                Math.round(
+                    BASE_GENERATED_TANKS_PER_TEAM * scale +
+                        band * 0.018 +
+                        outpostTanks +
+                        1,
+                ),
             ),
         );
     }
@@ -394,7 +444,10 @@ function computeSymmetricTroopTargets(
     let cap = Math.min(wantTotal, owned);
 
     if (owned >= SYMMETRIC_TROOP_TOTAL_FLOOR) {
-        cap = Math.max(cap, Math.min(SYMMETRIC_TROOP_TOTAL_FLOOR, wantTotal, owned));
+        cap = Math.max(
+            cap,
+            Math.min(SYMMETRIC_TROOP_TOTAL_FLOOR, wantTotal, owned),
+        );
     }
 
     cap = Math.max(0, Math.min(cap, wantTotal, owned));
@@ -406,7 +459,10 @@ function computeSymmetricTroopTargets(
     infantry = Math.min(infantry, wantInf);
     tanks = Math.min(tanks, wantTanks);
 
-    while (infantry + tanks < cap && (infantry < wantInf || tanks < wantTanks)) {
+    while (
+        infantry + tanks < cap &&
+        (infantry < wantInf || tanks < wantTanks)
+    ) {
         if (tanks < wantTanks && infantry < wantInf) {
             const rInf = infantry / wantInf;
             const rTank = tanks / wantTanks;
@@ -473,7 +529,11 @@ function canPlaceTroopHere(
     return true;
 }
 
-function minManhattanToMarkers(row: number, col: number, sites: ReadonlyArray<MapMarker>): number {
+function minManhattanToMarkers(
+    row: number,
+    col: number,
+    sites: ReadonlyArray<MapMarker>,
+): number {
     if (sites.length === 0) {
         return Infinity;
     }
@@ -515,9 +575,15 @@ function minOwnedPlaceableCellsPerTeam(
             const terr = cells[r]?.[c];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
             ) {
                 continue;
             }
@@ -588,9 +654,15 @@ function buildAllFreeOwnedPlaceableCellsForTeam(
             const terr = cells[r]?.[c];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
             ) {
                 continue;
             }
@@ -604,7 +676,11 @@ function buildAllFreeOwnedPlaceableCellsForTeam(
     return out;
 }
 
-function mergeCandidateCellsUnique(a: readonly Cell[], b: readonly Cell[], rng: () => number): Cell[] {
+function mergeCandidateCellsUnique(
+    a: readonly Cell[],
+    b: readonly Cell[],
+    rng: () => number,
+): Cell[] {
     const map = new Map<string, Cell>();
 
     for (const c of a) {
@@ -648,9 +724,15 @@ function collectExtraOwnedCandidatesForTeam(
             const terr = cells[r]?.[c];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
             ) {
                 continue;
             }
@@ -677,7 +759,16 @@ function scoreTroopCandidateCell(
     rng: () => number,
 ): number {
     let s = rng() * 0.04;
-    const onFront = isTroopFrontCell(cells, owner, rows, cols, row, col, team, islandLike);
+    const onFront = isTroopFrontCell(
+        cells,
+        owner,
+        rows,
+        cols,
+        row,
+        col,
+        team,
+        islandLike,
+    );
 
     if (onFront) {
         s += 28;
@@ -784,8 +875,14 @@ function placeSymmetricTroopsRoundRobin(
     islandLike: boolean,
     rng: () => number,
 ): MapMarker[] {
-    const ownCapitalsByTeam: MapMarker[][] = Array.from({ length: teamCount }, () => []);
-    const ownFlagsByTeam: MapMarker[][] = Array.from({ length: teamCount }, () => []);
+    const ownCapitalsByTeam: MapMarker[][] = Array.from(
+        { length: teamCount },
+        () => [],
+    );
+    const ownFlagsByTeam: MapMarker[][] = Array.from(
+        { length: teamCount },
+        () => [],
+    );
 
     for (const m of markers) {
         if (m.type === 'capital' && m.team >= 0 && m.team < teamCount) {
@@ -801,14 +898,20 @@ function placeSymmetricTroopsRoundRobin(
     const troopSitesGlobal: { row: number; col: number }[] = [];
     const placedInf = new Array(teamCount).fill(0) as number[];
     const placedTank = new Array(teamCount).fill(0) as number[];
-    const sameKeysByTeam = Array.from({ length: teamCount }, () => new Set<string>());
+    const sameKeysByTeam = Array.from(
+        { length: teamCount },
+        () => new Set<string>(),
+    );
     const remainingByTeam = enrichedCandidatesByTeam.map(
         (cellsList) => new Set(cellsList.map((c) => cellKey(c.row, c.col))),
     );
 
     const allPlaced = (): boolean => {
         for (let t = 0; t < teamCount; t++) {
-            if (placedInf[t]! < targetInfantry || placedTank[t]! < targetTanks) {
+            if (
+                placedInf[t]! < targetInfantry ||
+                placedTank[t]! < targetTanks
+            ) {
                 return false;
             }
         }
@@ -933,7 +1036,10 @@ function placeSymmetricTroopsRoundRobin(
             let expanded = false;
 
             for (let team = 0; team < teamCount; team++) {
-                if (placedInf[team]! >= targetInfantry && placedTank[team]! >= targetTanks) {
+                if (
+                    placedInf[team]! >= targetInfantry &&
+                    placedTank[team]! >= targetTanks
+                ) {
                     continue;
                 }
 
@@ -1013,7 +1119,16 @@ function symmetricTrimTroopMarkers(
     const toRemove = new Set<string>();
 
     const removalTier = (m: MapMarker): number => {
-        return isTroopFrontCell(cells, owner, rows, cols, m.row, m.col, m.team, islandLike)
+        return isTroopFrontCell(
+            cells,
+            owner,
+            rows,
+            cols,
+            m.row,
+            m.col,
+            m.team,
+            islandLike,
+        )
             ? 1
             : 0;
     };
@@ -1026,7 +1141,9 @@ function symmetricTrimTroopMarkers(
                 }
 
                 const take = inf[t]! - minI;
-                const cands = troops.filter((m) => m.team === t && m.type === 'infantry');
+                const cands = troops.filter(
+                    (m) => m.team === t && m.type === 'infantry',
+                );
                 cands.sort((a, b) => removalTier(a) - removalTier(b));
 
                 for (let i = 0; i < take && i < cands.length; i++) {
@@ -1046,9 +1163,9 @@ function symmetricTrimTroopMarkers(
                 const take = tank[t]! - minT;
                 const cands = troops.filter(
                     (m) =>
-                        m.team === t
-                        && m.type === 'tank'
-                        && !toRemove.has(cellKey(m.row, m.col)),
+                        m.team === t &&
+                        m.type === 'tank' &&
+                        !toRemove.has(cellKey(m.row, m.col)),
                 );
                 cands.sort((a, b) => removalTier(a) - removalTier(b));
 
@@ -1112,18 +1229,28 @@ export function buildTroopMarkersForGeneratedMap(
     );
     const troopSep = Math.max(2, Math.floor(sep / 2));
 
-    const markersSepBlocking = markers.filter((m) => m.type === 'capital' || m.type === 'flag');
+    const markersSepBlocking = markers.filter(
+        (m) => m.type === 'capital' || m.type === 'flag',
+    );
 
-    const owner: number[][] = Array.from({ length: rows }, () => Array(cols).fill(-1));
+    const owner: number[][] = Array.from({ length: rows }, () =>
+        Array(cols).fill(-1),
+    );
 
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             const terr = cells[r]?.[c];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
             ) {
                 continue;
             }
@@ -1170,7 +1297,8 @@ export function buildTroopMarkersForGeneratedMap(
         primaryLens.push(borderByTeam.get(team)?.length ?? 0);
     }
 
-    const minPrimaryBorderLen = primaryLens.length > 0 ? Math.min(...primaryLens) : 0;
+    const minPrimaryBorderLen =
+        primaryLens.length > 0 ? Math.min(...primaryLens) : 0;
     const minDim = Math.min(rows, cols);
 
     const bandDepth = islandLike ? 3 : minDim >= 120 ? 5 : 4;
@@ -1232,7 +1360,10 @@ export function buildTroopMarkersForGeneratedMap(
         anchorsByTeam.push(anchorBand);
     }
 
-    const minBandLen = bandsByTeam.length > 0 ? Math.min(...bandsByTeam.map((b) => b.length)) : 0;
+    const minBandLen =
+        bandsByTeam.length > 0
+            ? Math.min(...bandsByTeam.map((b) => b.length))
+            : 0;
 
     const minOwnedPlaceable = minOwnedPlaceableCellsPerTeam(
         cells,
@@ -1261,8 +1392,8 @@ export function buildTroopMarkersForGeneratedMap(
 
     if (initialInfantryTarget + initialTankTarget === 0) {
         if (
-            capitals.length !== teamCount
-            || !eachTeamHasAtLeastOneFreeOwnedPlaceableCell(
+            capitals.length !== teamCount ||
+            !eachTeamHasAtLeastOneFreeOwnedPlaceableCell(
                 cells,
                 rows,
                 cols,
@@ -1282,7 +1413,11 @@ export function buildTroopMarkersForGeneratedMap(
 
     for (let team = 0; team < teamCount; team++) {
         enrichedByTeam.push(
-            mergeCandidateCellsUnique(bandsByTeam[team] ?? [], anchorsByTeam[team] ?? [], rng),
+            mergeCandidateCellsUnique(
+                bandsByTeam[team] ?? [],
+                anchorsByTeam[team] ?? [],
+                rng,
+            ),
         );
     }
 
@@ -1321,8 +1456,8 @@ export function buildTroopMarkersForGeneratedMap(
 
         const c2 = countTroopMarkersPerTeam(troops, teamCount);
         const symmetricCounts =
-            Math.min(...c2.inf) === Math.max(...c2.inf)
-            && Math.min(...c2.tank) === Math.max(...c2.tank);
+            Math.min(...c2.inf) === Math.max(...c2.inf) &&
+            Math.min(...c2.tank) === Math.max(...c2.tank);
         const hasAnyTroops = troops.length > 0;
 
         if (symmetricCounts && (hasAnyTroops || ti + tt === 0)) {
@@ -1391,8 +1526,8 @@ export function buildTroopMarkersForGeneratedMap(
             );
             const c2 = countTroopMarkersPerTeam(trimmed, teamCount);
             const symmetricCounts =
-                Math.min(...c2.inf) === Math.max(...c2.inf)
-                && Math.min(...c2.tank) === Math.max(...c2.tank);
+                Math.min(...c2.inf) === Math.max(...c2.inf) &&
+                Math.min(...c2.tank) === Math.max(...c2.tank);
 
             if (symmetricCounts && trimmed.length > 0) {
                 return trimmed;

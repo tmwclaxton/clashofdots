@@ -27,10 +27,10 @@ import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { home, login, mapBuilder, wiki } from '@/routes';
+import { index as leaderboard } from '@/routes/leaderboard';
 import { index as lobbies } from '@/routes/lobbies';
 import { explore as mapsExplore } from '@/routes/maps';
 import { ongoing, past } from '@/routes/matches';
-import { index as leaderboard } from '@/routes/leaderboard';
 import type { NavItem } from '@/types';
 
 const page = usePage();
@@ -69,7 +69,9 @@ const navItems = computed<NavItem[]>(() => {
                 >
                     <GameLogoMark />
                     <div class="hidden sm:block">
-                        <p class="font-display text-base font-bold leading-tight">
+                        <p
+                            class="font-display text-base leading-tight font-bold"
+                        >
                             Clash of Dots
                         </p>
                         <p class="wod-tagline">Plan first, fight second</p>
@@ -135,13 +137,25 @@ const navItems = computed<NavItem[]>(() => {
                                 >
                                     <AvatarImage
                                         v-if="user.profile_uuid"
-                                        :src="avatarUrl(resolveAvatarSeed(user), user.avatar_style as string)"
-                                        :alt="user.game_display_name ?? user.name"
+                                        :src="
+                                            avatarUrl(
+                                                resolveAvatarSeed(user),
+                                                user.avatar_style as string,
+                                            )
+                                        "
+                                        :alt="
+                                            user.game_display_name ?? user.name
+                                        "
                                     />
                                     <AvatarFallback
                                         class="rounded-md bg-card text-xs font-bold"
                                     >
-                                        {{ getInitials(user.game_display_name ?? user.name) }}
+                                        {{
+                                            getInitials(
+                                                user.game_display_name ??
+                                                    user.name,
+                                            )
+                                        }}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>
@@ -152,11 +166,7 @@ const navItems = computed<NavItem[]>(() => {
                     </DropdownMenu>
                 </template>
                 <template v-else>
-                    <Button
-                        variant="default"
-                        size="sm"
-                        as-child
-                    >
+                    <Button variant="default" size="sm" as-child>
                         <Link :href="loginHref">Sign in</Link>
                     </Button>
                 </template>
@@ -164,7 +174,7 @@ const navItems = computed<NavItem[]>(() => {
         </div>
 
         <nav
-            class="flex w-full gap-1 overflow-x-auto border-t border-foreground/25 px-3 py-2 sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            class="flex w-full gap-1 overflow-x-auto border-t border-foreground/25 px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:hidden [&::-webkit-scrollbar]:hidden"
             aria-label="Main"
         >
             <Button

@@ -10,7 +10,6 @@ use App\Models\Map;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Redis;
-use Predis\Client;
 use Tests\TestCase;
 
 class GameTickOrdersTest extends TestCase
@@ -21,7 +20,9 @@ class GameTickOrdersTest extends TestCase
     {
         parent::setUp();
 
-        if (! extension_loaded('redis') && ! class_exists(Client::class)) {
+        try {
+            Redis::ping();
+        } catch (\Throwable) {
             $this->markTestSkipped('Redis is required for game tick tests.');
         }
     }

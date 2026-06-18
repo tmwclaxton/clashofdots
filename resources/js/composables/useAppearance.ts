@@ -76,7 +76,8 @@ export function initializeTheme(): void {
 
 const appearance = ref<Appearance>(
     typeof window !== 'undefined'
-        ? ((localStorage.getItem('appearance') as Appearance | null) ?? 'system')
+        ? ((localStorage.getItem('appearance') as Appearance | null) ??
+              'system')
         : 'system',
 );
 

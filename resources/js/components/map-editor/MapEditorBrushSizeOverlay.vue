@@ -2,7 +2,10 @@
 import { Minus, Plus } from 'lucide-vue-next';
 import { computed } from 'vue';
 import { MAP_EDITOR_BRUSH_SIZES } from '@/composables/useMapEditor';
-import type { MapEditorBrushSize, MapEditorInstance } from '@/composables/useMapEditor';
+import type {
+    MapEditorBrushSize,
+    MapEditorInstance,
+} from '@/composables/useMapEditor';
 import { cn } from '@/lib/utils';
 
 const props = defineProps<{
@@ -19,11 +22,15 @@ const brushSizeIndex = computed(() => {
 
 const canShrinkBrush = computed(() => brushSizeIndex.value > 0);
 const canGrowBrush = computed(
-    () => brushSizeIndex.value >= 0 && brushSizeIndex.value < MAP_EDITOR_BRUSH_SIZES.length - 1,
+    () =>
+        brushSizeIndex.value >= 0 &&
+        brushSizeIndex.value < MAP_EDITOR_BRUSH_SIZES.length - 1,
 );
 
 const visible = computed(
-    () => props.editor.activeTool.value === 'brush' || props.editor.activeTool.value === 'eraser',
+    () =>
+        props.editor.activeTool.value === 'brush' ||
+        props.editor.activeTool.value === 'eraser',
 );
 
 function selectBrushSize(size: MapEditorBrushSize): void {
@@ -38,7 +45,11 @@ function selectBrushSize(size: MapEditorBrushSize): void {
         role="region"
         aria-label="Brush size"
     >
-        <p class="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Brush size</p>
+        <p
+            class="text-[10px] font-bold tracking-wide text-muted-foreground uppercase"
+        >
+            Brush size
+        </p>
         <div class="flex items-center gap-1.5">
             <button
                 type="button"
@@ -75,7 +86,11 @@ function selectBrushSize(size: MapEditorBrushSize): void {
                 <Plus class="size-3.5" stroke-width="2.5" />
             </button>
         </div>
-        <div class="flex flex-wrap gap-0.5" role="group" aria-label="Brush size presets">
+        <div
+            class="flex flex-wrap gap-0.5"
+            role="group"
+            aria-label="Brush size presets"
+        >
             <button
                 v-for="size in MAP_EDITOR_BRUSH_SIZES"
                 :key="size"

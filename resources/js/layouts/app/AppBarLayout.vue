@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core';
 import { router, usePage } from '@inertiajs/vue3';
+import { useMediaQuery } from '@vueuse/core';
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import AppBottomBar from '@/components/AppBottomBar.vue';
 import AppContent from '@/components/AppContent.vue';
@@ -38,11 +38,13 @@ function startLobbyPoll(): void {
     if (lobbyPoll !== null) {
         return;
     }
+
     lobbyPoll = setInterval(() => {
         // Show.vue polls its own 'game' prop; don't double-poll there.
         if (isOnGameShowPage() || isOnPlayPage()) {
             return;
         }
+
         if (page.props.activeGame?.status === 'lobby') {
             router.reload({ only: ['activeGame'] });
         } else {
@@ -57,7 +59,8 @@ watch(
     (ag, prevAg) => {
         // Only redirect when the game transitions lobby → playing while the user is elsewhere.
         // If they were already in a 'playing' game and chose to navigate away, respect that.
-        const justStarted = prevAg?.status === 'lobby' && ag?.status === 'playing';
+        const justStarted =
+            prevAg?.status === 'lobby' && ag?.status === 'playing';
 
         if (justStarted && !isOnPlayPage()) {
             router.visit(play(ag.uuid).url);

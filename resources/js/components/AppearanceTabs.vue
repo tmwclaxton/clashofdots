@@ -12,9 +12,7 @@ const tabs = [
 </script>
 
 <template>
-    <div
-        class="inline-flex gap-1 rounded-lg bg-muted p-1"
-    >
+    <div class="inline-flex gap-1 rounded-lg bg-muted p-1">
         <button
             v-for="{ value, Icon, label } in tabs"
             :key="value"
@@ -22,7 +20,7 @@ const tabs = [
             :class="[
                 'flex items-center rounded-md px-3.5 py-1.5 transition-colors',
                 appearance === value
-                    ? 'bg-card shadow-xs text-foreground'
+                    ? 'bg-card text-foreground shadow-xs'
                     : 'text-muted-foreground hover:bg-muted-foreground/10 hover:text-foreground',
             ]"
         >

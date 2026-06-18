@@ -9,8 +9,13 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    AVATAR_STYLES,
+    avatarUrl,
+    resolveAvatarSeed,
+} from '@/composables/useAvatar';
+import type { AvatarStyle } from '@/composables/useAvatar';
 import { edit } from '@/routes/profile';
-import { AVATAR_STYLES, avatarUrl, resolveAvatarSeed, type AvatarStyle } from '@/composables/useAvatar';
 
 type Props = {
     status?: string;
@@ -32,11 +37,15 @@ defineOptions({
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 
-const selectedStyle = ref<AvatarStyle>((user.value?.avatar_style as AvatarStyle) ?? 'pixel-art');
+const selectedStyle = ref<AvatarStyle>(
+    (user.value?.avatar_style as AvatarStyle) ?? 'pixel-art',
+);
 const previewSeed = ref<string>(resolveAvatarSeed(user.value ?? {}));
 
 function randomiseSeed(): void {
-    previewSeed.value = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    previewSeed.value =
+        Math.random().toString(36).slice(2) +
+        Math.random().toString(36).slice(2);
 }
 </script>
 
@@ -82,7 +91,8 @@ function randomiseSeed(): void {
                     placeholder="Leave blank to use your account name"
                 />
                 <p class="text-sm text-muted-foreground">
-                    The name other players see in battle lobbies and games. Defaults to your account name if left blank.
+                    The name other players see in battle lobbies and games.
+                    Defaults to your account name if left blank.
                 </p>
                 <InputError class="mt-2" :message="errors.game_display_name" />
             </div>
@@ -124,7 +134,11 @@ function randomiseSeed(): void {
                     </Button>
                 </div>
 
-                <input type="hidden" name="avatar_style" :value="selectedStyle" />
+                <input
+                    type="hidden"
+                    name="avatar_style"
+                    :value="selectedStyle"
+                />
                 <input type="hidden" name="avatar_seed" :value="previewSeed" />
 
                 <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -147,14 +161,18 @@ function randomiseSeed(): void {
                             class="size-14 rounded-full"
                             loading="lazy"
                         />
-                        <span class="text-xs font-medium leading-tight">{{ style.label }}</span>
+                        <span class="text-xs leading-tight font-medium">{{
+                            style.label
+                        }}</span>
                     </button>
                 </div>
                 <InputError :message="errors.avatar_style" />
             </div>
 
             <div class="flex items-center gap-4">
-                <Button :disabled="processing" data-test="update-profile-button">Save</Button>
+                <Button :disabled="processing" data-test="update-profile-button"
+                    >Save</Button
+                >
             </div>
         </Form>
     </div>

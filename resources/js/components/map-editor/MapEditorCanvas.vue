@@ -3,10 +3,21 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import MapEditorBrushSizeOverlay from '@/components/map-editor/MapEditorBrushSizeOverlay.vue';
 import { useIsDark } from '@/composables/useIsDark';
-import { MAP_EDITOR_MAX_ZOOM, MAP_EDITOR_MIN_ZOOM } from '@/composables/useMapEditor';
+import {
+    MAP_EDITOR_MAX_ZOOM,
+    MAP_EDITOR_MIN_ZOOM,
+} from '@/composables/useMapEditor';
 import type { MapEditorInstance } from '@/composables/useMapEditor';
-import { drawCapitalMarker, drawFlagMarker, drawInfantryMarker, drawTankMarker } from '@/lib/mapMarkers';
-import { EDITOR_TERRAIN_DIM_ALPHA_LIGHT, editorBlendedTerrainFillStyle } from '@/lib/terrainRender';
+import {
+    drawCapitalMarker,
+    drawFlagMarker,
+    drawInfantryMarker,
+    drawTankMarker,
+} from '@/lib/mapMarkers';
+import {
+    EDITOR_TERRAIN_DIM_ALPHA_LIGHT,
+    editorBlendedTerrainFillStyle,
+} from '@/lib/terrainRender';
 
 const props = defineProps<{
     editor: MapEditorInstance;
@@ -23,7 +34,9 @@ function hexForTeam(team: number): string {
         return props.teamColors.find((c) => c.slot === team)?.hex ?? '#888888';
     }
 
-    return props.teamColors.find((c) => c.slot === paletteSlot)?.hex ?? '#888888';
+    return (
+        props.teamColors.find((c) => c.slot === paletteSlot)?.hex ?? '#888888'
+    );
 }
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -39,16 +52,20 @@ let renderPending = false;
 
 /** Canvas / void outside the playable grid (letterbox). */
 function viewportVoid(): string {
-    return getComputedStyle(document.documentElement)
-        .getPropertyValue('--wod-editor-void')
-        .trim() || (isDark.value ? '#3a3f36' : '#a8ad9a');
+    return (
+        getComputedStyle(document.documentElement)
+            .getPropertyValue('--wod-editor-void')
+            .trim() || (isDark.value ? '#3a3f36' : '#a8ad9a')
+    );
 }
 
 /** Workspace behind the grid (infinite-canvas feel). */
 function workspaceFill(): string {
-    return getComputedStyle(document.documentElement)
-        .getPropertyValue('--wod-editor-workspace')
-        .trim() || (isDark.value ? '#2f3528' : '#c9cfba');
+    return (
+        getComputedStyle(document.documentElement)
+            .getPropertyValue('--wod-editor-workspace')
+            .trim() || (isDark.value ? '#2f3528' : '#c9cfba')
+    );
 }
 
 /** Semi-transparent overlay on playable cells only so markers read brighter than terrain. */
@@ -331,10 +348,10 @@ function onPointerDown(e: PointerEvent): void {
     }
 
     if (
-        props.editor.activeTool.value === 'capital'
-        || props.editor.activeTool.value === 'flag'
-        || props.editor.activeTool.value === 'infantry'
-        || props.editor.activeTool.value === 'tank'
+        props.editor.activeTool.value === 'capital' ||
+        props.editor.activeTool.value === 'flag' ||
+        props.editor.activeTool.value === 'infantry' ||
+        props.editor.activeTool.value === 'tank'
     ) {
         props.editor.placementClick(gx, gy);
         scheduleDraw();
@@ -361,8 +378,10 @@ function onPointerMove(e: PointerEvent): void {
     const sy = e.clientY - rect.top;
 
     if (panning) {
-        props.editor.camX.value += (sx - lastMouse[0]) / props.editor.zoom.value;
-        props.editor.camY.value += (sy - lastMouse[1]) / props.editor.zoom.value;
+        props.editor.camX.value +=
+            (sx - lastMouse[0]) / props.editor.zoom.value;
+        props.editor.camY.value +=
+            (sy - lastMouse[1]) / props.editor.zoom.value;
         lastMouse = [sx, sy];
         scheduleDraw();
 
@@ -435,10 +454,10 @@ function onKeyDown(e: KeyboardEvent): void {
     const target = e.target as Node | null;
 
     if (
-        target instanceof HTMLInputElement
-        || target instanceof HTMLTextAreaElement
-        || target instanceof HTMLSelectElement
-        || (target instanceof HTMLElement && target.isContentEditable)
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
     ) {
         return;
     }
@@ -521,7 +540,7 @@ watch(isDark, () => scheduleDraw());
             v-if="placementHint"
             role="status"
             aria-live="polite"
-            class="pointer-events-none absolute top-3 left-1/2 z-10 max-w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 rounded-md border-2 border-foreground/40 bg-[var(--wod-editor-void)] px-4 py-2 text-center text-xs font-medium leading-snug text-foreground shadow-sm"
+            class="pointer-events-none absolute top-3 left-1/2 z-10 max-w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 rounded-md border-2 border-foreground/40 bg-[var(--wod-editor-void)] px-4 py-2 text-center text-xs leading-snug font-medium text-foreground shadow-sm"
         >
             {{ placementHint }}
         </div>
@@ -544,15 +563,21 @@ watch(isDark, () => scheduleDraw());
                 class="relative h-1.5 rounded-sm bg-foreground/15"
                 :style="{ width: `${Math.ceil(tileScale.barWidthPx)}px` }"
             >
-                <span class="absolute top-0 left-0 h-2.5 w-0.5 -translate-y-0.5 bg-foreground" />
+                <span
+                    class="absolute top-0 left-0 h-2.5 w-0.5 -translate-y-0.5 bg-foreground"
+                />
                 <span
                     class="absolute top-0 right-0 h-2.5 w-0.5 -translate-y-0.5 bg-foreground"
                 />
             </div>
-            <p class="mt-1.5 font-mono text-[11px] font-semibold leading-none text-foreground">
+            <p
+                class="mt-1.5 font-mono text-[11px] leading-none font-semibold text-foreground"
+            >
                 {{ tileScale.label }}
             </p>
-            <p class="mt-1 font-mono text-[10px] leading-none text-muted-foreground">
+            <p
+                class="mt-1 font-mono text-[10px] leading-none text-muted-foreground"
+            >
                 {{ tileScale.visibleCols }}×{{ tileScale.visibleRows }} visible
             </p>
         </div>

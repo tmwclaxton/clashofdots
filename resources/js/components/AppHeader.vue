@@ -3,8 +3,8 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
-import GameLogoMark from '@/components/GameLogoMark.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import GameLogoMark from '@/components/GameLogoMark.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -244,13 +244,27 @@ const rightNavItems: NavItem[] = [
                                 >
                                     <AvatarImage
                                         v-if="auth.user.profile_uuid"
-                                        :src="avatarUrl(auth.user.profile_uuid, auth.user.avatar_style as string)"
-                                        :alt="auth.user.game_display_name ?? auth.user.name"
+                                        :src="
+                                            avatarUrl(
+                                                auth.user.profile_uuid,
+                                                auth.user
+                                                    .avatar_style as string,
+                                            )
+                                        "
+                                        :alt="
+                                            auth.user.game_display_name ??
+                                            auth.user.name
+                                        "
                                     />
                                     <AvatarFallback
                                         class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
                                     >
-                                        {{ getInitials(auth.user.game_display_name ?? auth.user.name) }}
+                                        {{
+                                            getInitials(
+                                                auth.user.game_display_name ??
+                                                    auth.user.name,
+                                            )
+                                        }}
                                     </AvatarFallback>
                                 </Avatar>
                             </Button>

@@ -18,7 +18,11 @@ import {
 import { login as loginRoute } from '@/routes';
 import { joinCode, leave, show, store } from '@/routes/games';
 import { update as updatePlayerTag } from '@/routes/player-tag';
-import { join as qsJoin, leave as qsLeave, status as qsStatus } from '@/routes/quick-start';
+import {
+    join as qsJoin,
+    leave as qsLeave,
+    status as qsStatus,
+} from '@/routes/quick-start';
 
 type Lobby = {
     uuid: string;
@@ -76,8 +80,12 @@ const selectedMap = computed(() =>
     props.publishedMaps.find((m) => m.uuid === createForm.map_uuid),
 );
 
-const myLobby = computed(() => props.lobbies.find((l) => l.isParticipant) ?? null);
-const otherLobbies = computed(() => props.lobbies.filter((l) => !l.isParticipant));
+const myLobby = computed(
+    () => props.lobbies.find((l) => l.isParticipant) ?? null,
+);
+const otherLobbies = computed(() =>
+    props.lobbies.filter((l) => !l.isParticipant),
+);
 
 function leaveLobby(uuid: string) {
     router.delete(leave(uuid).url);
@@ -99,13 +107,23 @@ let qsPollTimer: ReturnType<typeof setInterval> | null = null;
 let qsIdlePollTimer: ReturnType<typeof setInterval> | null = null;
 
 function startQsPoll() {
-    if (qsPollTimer !== null) return;
+    if (qsPollTimer !== null) {
+        return;
+    }
+
     qsPollTimer = setInterval(async () => {
         try {
-            const res = await fetch(qsStatus().url, { headers: { Accept: 'application/json' } });
-            if (!res.ok) return;
+            const res = await fetch(qsStatus().url, {
+                headers: { Accept: 'application/json' },
+            });
+
+            if (!res.ok) {
+                return;
+            }
+
             const data: QsStatus = await res.json();
             qsState.value = data;
+
             if (data.status === 'matched' && data.gameUuid) {
                 stopQsPoll();
                 router.visit(show(data.gameUuid).url);
@@ -127,9 +145,16 @@ function stopQsPoll() {
 
 async function fetchQueueSize(): Promise<void> {
     try {
-        const res = await fetch(qsStatus().url, { headers: { Accept: 'application/json' } });
-        if (!res.ok) return;
+        const res = await fetch(qsStatus().url, {
+            headers: { Accept: 'application/json' },
+        });
+
+        if (!res.ok) {
+            return;
+        }
+
         const data: QsStatus = await res.json();
+
         if (qsState.value.status === 'none') {
             qsState.value = { ...qsState.value, queueSize: data.queueSize };
         }
@@ -139,7 +164,10 @@ async function fetchQueueSize(): Promise<void> {
 }
 
 function startQsIdlePoll(): void {
-    if (qsIdlePollTimer !== null) return;
+    if (qsIdlePollTimer !== null) {
+        return;
+    }
+
     void fetchQueueSize();
     qsIdlePollTimer = setInterval(fetchQueueSize, 5000);
 }
@@ -154,6 +182,7 @@ function stopQsIdlePoll(): void {
 async function joinQuickStart() {
     qsLoading.value = true;
     stopQsIdlePoll();
+
     try {
         const res = await fetch(qsJoin().url, {
             method: 'POST',
@@ -165,12 +194,16 @@ async function joinQuickStart() {
                 ),
             },
         });
+
         if (!res.ok) {
             startQsIdlePoll();
+
             return;
         }
+
         const data: QsStatus = await res.json();
         qsState.value = data;
+
         if (data.status === 'matched' && data.gameUuid) {
             router.visit(show(data.gameUuid).url);
         } else if (data.status === 'queued') {
@@ -219,7 +252,10 @@ onBeforeUnmount(() => {
         />
 
         <!-- Player tag -->
-        <div v-if="page.props.auth.user" class="wod-panel flex flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-4">
+        <div
+            v-if="page.props.auth.user"
+            class="wod-panel flex flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-4"
+        >
             <div class="flex items-center gap-2 sm:shrink-0">
                 <Tag class="size-4 text-muted-foreground" aria-hidden="true" />
                 <span class="font-bold">Your player tag</span>
@@ -238,11 +274,15 @@ onBeforeUnmount(() => {
                 <Button
                     size="sm"
                     variant="outline"
-                    :disabled="playerTagForm.processing || !playerTagForm.player_tag"
+                    :disabled="
+                        playerTagForm.processing || !playerTagForm.player_tag
+                    "
                     class="shrink-0"
                     @click="savePlayerTag"
                 >
-                    {{ playerTagForm.recentlySuccessful ? 'Saved!' : 'Save tag' }}
+                    {{
+                        playerTagForm.recentlySuccessful ? 'Saved!' : 'Save tag'
+                    }}
                 </Button>
             </div>
         </div>
@@ -253,24 +293,44 @@ onBeforeUnmount(() => {
                 <div class="wod-swatch bg-wod-yellow" aria-hidden="true" />
                 <h2 class="font-bold">Your lobby</h2>
             </div>
-            <div class="flex flex-col gap-3 wod-panel p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div
+                class="wod-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
-                        <span class="font-bold tracking-widest">{{ myLobby.code }}</span>
-                        <Badge variant="outline" class="border-foreground bg-wod-green-lt">
+                        <span class="font-bold tracking-widest">{{
+                            myLobby.code
+                        }}</span>
+                        <Badge
+                            variant="outline"
+                            class="border-foreground bg-wod-green-lt"
+                        >
                             {{ myLobby.playerCount }}/{{ myLobby.maxPlayers }}
                         </Badge>
-                        <Badge v-if="myLobby.isHost" variant="outline" class="border-foreground">
+                        <Badge
+                            v-if="myLobby.isHost"
+                            variant="outline"
+                            class="border-foreground"
+                        >
                             Host
                         </Badge>
                     </div>
-                    <p class="text-sm text-muted-foreground">Host: {{ myLobby.hostName }}</p>
+                    <p class="text-sm text-muted-foreground">
+                        Host: {{ myLobby.hostName }}
+                    </p>
                 </div>
                 <div class="flex w-full gap-2 sm:w-auto">
-                    <Button variant="destructive" class="flex-1 sm:flex-none" @click="leaveLobby(myLobby.uuid)">
+                    <Button
+                        variant="destructive"
+                        class="flex-1 sm:flex-none"
+                        @click="leaveLobby(myLobby.uuid)"
+                    >
                         Leave
                     </Button>
-                    <Link :href="show(myLobby.uuid).url" class="flex-1 sm:flex-none">
+                    <Link
+                        :href="show(myLobby.uuid).url"
+                        class="flex-1 sm:flex-none"
+                    >
                         <Button variant="outline" class="w-full">View</Button>
                     </Link>
                 </div>
@@ -279,17 +339,21 @@ onBeforeUnmount(() => {
 
         <!-- Quick Start: queued / matched state (shown when not idle) -->
         <div v-if="!myLobby && qsState.status !== 'none'" class="wod-panel p-5">
-            <div class="flex items-center gap-2 mb-3">
+            <div class="mb-3 flex items-center gap-2">
                 <div class="wod-swatch bg-wod-yellow" aria-hidden="true" />
                 <h2 class="font-bold">Quick Start</h2>
             </div>
             <template v-if="qsState.status === 'queued'">
-                <div class="flex items-center gap-3 mb-4">
-                    <Loader2 class="h-5 w-5 animate-spin text-muted-foreground" />
+                <div class="mb-4 flex items-center gap-3">
+                    <Loader2
+                        class="h-5 w-5 animate-spin text-muted-foreground"
+                    />
                     <div>
                         <p class="text-sm font-semibold">Finding you a game…</p>
                         <p class="text-xs text-muted-foreground">
-                            {{ qsState.queueSize }} {{ qsState.queueSize === 1 ? 'person' : 'people' }} in the pool
+                            {{ qsState.queueSize }}
+                            {{ qsState.queueSize === 1 ? 'person' : 'people' }}
+                            in the pool
                         </p>
                     </div>
                 </div>
@@ -298,7 +362,9 @@ onBeforeUnmount(() => {
                 </Button>
             </template>
             <template v-else-if="qsState.status === 'matched'">
-                <p class="text-sm font-semibold text-green-600">Match found — redirecting…</p>
+                <p class="text-sm font-semibold text-green-600">
+                    Match found — redirecting…
+                </p>
             </template>
         </div>
 
@@ -307,13 +373,15 @@ onBeforeUnmount(() => {
             v-if="!myLobby && qsState.status === 'none'"
             class="grid gap-4 lg:grid-cols-3"
         >
-            <div class="relative wod-panel flex flex-col gap-4 p-5">
+            <div class="wod-panel relative flex flex-col gap-4 p-5">
                 <!-- Frosted glass overlay for guests -->
                 <div
                     v-if="!page.props.auth.user"
                     class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-[inherit] bg-background/70 backdrop-blur-sm"
                 >
-                    <div class="flex flex-col items-center gap-3 p-4 text-center">
+                    <div
+                        class="flex flex-col items-center gap-3 p-4 text-center"
+                    >
                         <div
                             class="flex size-12 items-center justify-center rounded-lg border-2 border-foreground bg-muted/40"
                             aria-hidden="true"
@@ -336,8 +404,12 @@ onBeforeUnmount(() => {
                     <div class="wod-swatch bg-wod-red" aria-hidden="true" />
                     <h2 class="font-bold">Create lobby</h2>
                 </div>
-                <div v-if="publishedMaps.length === 0" class="text-sm text-muted-foreground">
-                    No published maps yet. Publish one from the Map Builder or explore the gallery.
+                <div
+                    v-if="publishedMaps.length === 0"
+                    class="text-sm text-muted-foreground"
+                >
+                    No published maps yet. Publish one from the Map Builder or
+                    explore the gallery.
                 </div>
                 <template v-else>
                     <div class="flex-1 space-y-2">
@@ -352,7 +424,8 @@ onBeforeUnmount(() => {
                                     :key="m.uuid"
                                     :value="m.uuid"
                                 >
-                                    {{ m.name }} · {{ m.teamCount }} teams · {{ m.ownerName }}
+                                    {{ m.name }} · {{ m.teamCount }} teams ·
+                                    {{ m.ownerName }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -367,7 +440,9 @@ onBeforeUnmount(() => {
                         </p>
                     </div>
                     <Button
-                        :disabled="createForm.processing || !createForm.map_uuid"
+                        :disabled="
+                            createForm.processing || !createForm.map_uuid
+                        "
                         @click="createLobby"
                     >
                         <Plus class="mr-2 h-4 w-4" />
@@ -380,19 +455,24 @@ onBeforeUnmount(() => {
             <div class="wod-panel flex flex-col gap-4 p-5">
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                        <div class="wod-swatch bg-wod-yellow" aria-hidden="true" />
+                        <div
+                            class="wod-swatch bg-wod-yellow"
+                            aria-hidden="true"
+                        />
                         <h2 class="font-bold">Quick Start</h2>
                     </div>
                     <span
                         v-if="qsState.queueSize > 0"
-                        class="inline-flex items-center gap-1 rounded-full border border-foreground/20 bg-muted/60 px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground"
+                        class="inline-flex items-center gap-1 rounded-full border border-foreground/20 bg-muted/60 px-2 py-0.5 text-xs font-semibold text-muted-foreground tabular-nums"
                     >
                         <Users class="size-3 shrink-0" aria-hidden="true" />
                         {{ qsState.queueSize }} waiting
                     </span>
                 </div>
                 <p class="flex-1 text-sm text-muted-foreground">
-                    Don't mind what you play? Join the pool and we'll drop you straight into a lobby the moment there's a fit — no browsing required.
+                    Don't mind what you play? Join the pool and we'll drop you
+                    straight into a lobby the moment there's a fit — no browsing
+                    required.
                 </p>
                 <Button :disabled="qsLoading" @click="joinQuickStart">
                     <Zap class="mr-2 h-4 w-4" />
@@ -411,7 +491,7 @@ onBeforeUnmount(() => {
                         id="code"
                         v-model="joinForm.code"
                         maxlength="6"
-                        class="uppercase tracking-widest"
+                        class="tracking-widest uppercase"
                         placeholder="ABC123"
                     />
                     <InputError :message="joinForm.errors.code" />
@@ -429,11 +509,17 @@ onBeforeUnmount(() => {
         <div class="space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
-                    <div class="wod-swatch bg-wod-green-lt" aria-hidden="true" />
+                    <div
+                        class="wod-swatch bg-wod-green-lt"
+                        aria-hidden="true"
+                    />
                     <h2 class="font-bold">Open lobbies</h2>
                 </div>
                 <div class="wod-chip" role="status">
-                    <span class="relative flex size-2 shrink-0" aria-hidden="true">
+                    <span
+                        class="relative flex size-2 shrink-0"
+                        aria-hidden="true"
+                    >
                         <span
                             class="absolute inline-flex size-full animate-ping rounded-full bg-wod-green-dk opacity-50"
                         />
@@ -441,7 +527,9 @@ onBeforeUnmount(() => {
                             class="relative inline-flex size-2 rounded-full border border-foreground bg-wod-green-dk"
                         />
                     </span>
-                    <span class="text-xs font-semibold uppercase tracking-wide text-wod-green-dk">
+                    <span
+                        class="text-xs font-semibold tracking-wide text-wod-green-dk uppercase"
+                    >
                         Live
                     </span>
                 </div>
@@ -455,11 +543,13 @@ onBeforeUnmount(() => {
             <div
                 v-for="lobby in otherLobbies"
                 :key="lobby.uuid"
-                class="flex flex-col gap-3 wod-panel p-4 sm:flex-row sm:items-center sm:justify-between"
+                class="wod-panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
             >
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
-                        <span class="font-bold tracking-widest">{{ lobby.code }}</span>
+                        <span class="font-bold tracking-widest">{{
+                            lobby.code
+                        }}</span>
                         <Badge
                             variant="outline"
                             class="border-foreground bg-wod-green-lt"
@@ -480,7 +570,10 @@ onBeforeUnmount(() => {
                     >
                         Leave
                     </Button>
-                    <Link :href="show(lobby.uuid).url" class="flex-1 sm:flex-none">
+                    <Link
+                        :href="show(lobby.uuid).url"
+                        class="flex-1 sm:flex-none"
+                    >
                         <Button variant="outline" class="w-full">View</Button>
                     </Link>
                 </div>

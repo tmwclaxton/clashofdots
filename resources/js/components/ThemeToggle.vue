@@ -8,7 +8,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAppearance, type Appearance } from '@/composables/useAppearance';
+import { useAppearance } from '@/composables/useAppearance';
+import type { Appearance } from '@/composables/useAppearance';
 
 const { appearance, updateAppearance } = useAppearance();
 
@@ -49,15 +50,15 @@ function selectTheme(value: Appearance): void {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
             <DropdownMenuItem
-                v-for="{ value, label, Icon } in options"
-                :key="value"
+                v-for="option in options"
+                :key="option.value"
                 class="cursor-pointer"
-                @click="selectTheme(value)"
+                @click="selectTheme(option.value)"
             >
-                <Icon class="mr-2 size-4" />
-                <span>{{ label }}</span>
+                <component :is="option.Icon" class="mr-2 size-4" />
+                <span>{{ option.label }}</span>
                 <span
-                    v-if="appearance === value"
+                    v-if="appearance === option.value"
                     class="ml-auto text-xs text-muted-foreground"
                 >
                     ✓

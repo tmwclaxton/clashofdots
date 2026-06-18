@@ -27,7 +27,7 @@ type LobbyCard = {
     players: Array<{ slot: number; name: string; color: string }>;
 };
 
-const props = withDefaults(
+withDefaults(
     defineProps<{
         matches: Match[];
         spectatableMatches?: LobbyCard[];
@@ -53,7 +53,10 @@ const props = withDefaults(
         >
             <Clock3 class="mx-auto mb-2 size-7 opacity-60" />
             <p class="font-bold">No active battles for you</p>
-            <p class="mt-1 text-sm">Join a lobby — your browser keeps a guest session so you can come back here after a disconnect.</p>
+            <p class="mt-1 text-sm">
+                Join a lobby — your browser keeps a guest session so you can
+                come back here after a disconnect.
+            </p>
         </div>
 
         <div v-else class="space-y-3">
@@ -61,7 +64,7 @@ const props = withDefaults(
             <article
                 v-for="match in matches"
                 :key="match.uuid"
-                class="flex flex-col gap-4 wod-panel p-5 sm:flex-row sm:items-center sm:justify-between"
+                class="wod-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
             >
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
@@ -107,16 +110,19 @@ const props = withDefaults(
                 Live now
             </h2>
             <p class="text-sm text-muted-foreground">
-                Spectating uses the same map state as commander slot 1 (not a global observer view).
+                Spectating uses the same map state as commander slot 1 (not a
+                global observer view).
             </p>
             <article
                 v-for="match in spectatableMatches"
                 :key="`spec-${match.uuid}`"
-                class="flex flex-col gap-4 wod-panel p-5 sm:flex-row sm:items-center sm:justify-between"
+                class="wod-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
             >
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="font-bold tracking-widest">{{ match.code }}</span>
+                        <span class="font-bold tracking-widest">{{
+                            match.code
+                        }}</span>
                         <Badge variant="outline">
                             {{ match.playerCount }}/{{ match.maxPlayers }}
                         </Badge>
@@ -126,7 +132,9 @@ const props = withDefaults(
                     </p>
                 </div>
                 <Link :href="spectate(match.uuid).url" class="w-full sm:w-auto">
-                    <Button variant="outline" class="w-full sm:w-auto">Watch</Button>
+                    <Button variant="outline" class="w-full sm:w-auto"
+                        >Watch</Button
+                    >
                 </Link>
             </article>
         </div>

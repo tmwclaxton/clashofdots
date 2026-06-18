@@ -39,10 +39,7 @@ function formatDate(value: string | null): string {
     <Head title="Past Matches" />
 
     <div class="flex flex-col gap-8">
-        <Heading
-            title="Past Matches"
-            description="Your campaign history."
-        />
+        <Heading title="Past Matches" description="Your campaign history." />
 
         <div
             v-if="matches.length === 0"
@@ -56,7 +53,7 @@ function formatDate(value: string | null): string {
             <article
                 v-for="match in matches"
                 :key="match.uuid"
-                class="flex flex-col gap-4 wod-panel p-5 sm:flex-row sm:items-center sm:justify-between"
+                class="wod-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
             >
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
@@ -100,10 +97,20 @@ function formatDate(value: string | null): string {
                     </div>
                 </div>
                 <div class="flex w-full gap-2 sm:w-auto">
-                    <Link :href="show(match.uuid).url" class="flex-1 sm:flex-none">
-                        <Button variant="outline" class="w-full sm:w-auto">View summary</Button>
+                    <Link
+                        :href="show(match.uuid).url"
+                        class="flex-1 sm:flex-none"
+                    >
+                        <Button variant="outline" class="w-full sm:w-auto"
+                            >View summary</Button
+                        >
                     </Link>
-                    <ShareButton :share-links="match.shareLinks" :copy-url="match.gameUrl" label="Share" size="default" />
+                    <ShareButton
+                        :share-links="match.shareLinks"
+                        :copy-url="match.gameUrl"
+                        label="Share"
+                        size="default"
+                    />
                 </div>
             </article>
         </div>

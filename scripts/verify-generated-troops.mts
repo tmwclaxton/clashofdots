@@ -2,7 +2,8 @@
  * Run: npx vite-node --config vite.config.ts scripts/verify-generated-troops.mts
  * Asserts symmetric troop counts and non-empty troops for random seeds / styles.
  */
-import { generateRandomMap, type GeneratedMapData, type MapGenerationType } from '@/lib/generateRandomMap';
+import { generateRandomMap   } from '@/lib/generateRandomMap';
+import type {GeneratedMapData, MapGenerationType} from '@/lib/generateRandomMap';
 
 function assert(cond: boolean, msg: string): void {
     if (!cond) {

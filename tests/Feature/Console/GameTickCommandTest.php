@@ -5,7 +5,6 @@ namespace Tests\Feature\Console;
 use App\Games\Services\GameManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Redis;
-use Predis\Client;
 use Tests\TestCase;
 
 class GameTickCommandTest extends TestCase
@@ -16,7 +15,9 @@ class GameTickCommandTest extends TestCase
     {
         parent::setUp();
 
-        if (! extension_loaded('redis') && ! class_exists(Client::class)) {
+        try {
+            Redis::ping();
+        } catch (\Throwable) {
             $this->markTestSkipped('Redis is required for the game tick command.');
         }
     }

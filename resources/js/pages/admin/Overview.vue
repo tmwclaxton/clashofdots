@@ -94,7 +94,7 @@ const activityColors: Record<string, string> = {
                     </p>
                     <Users class="size-4 text-muted-foreground" />
                 </div>
-                <p class="font-display mt-2 text-3xl font-bold">
+                <p class="mt-2 font-display text-3xl font-bold">
                     {{ formatNumber(stats.summary.totalUsers) }}
                 </p>
             </article>
@@ -106,7 +106,7 @@ const activityColors: Record<string, string> = {
                     </p>
                     <Swords class="size-4 text-muted-foreground" />
                 </div>
-                <p class="font-display mt-2 text-3xl font-bold">
+                <p class="mt-2 font-display text-3xl font-bold">
                     {{ formatNumber(stats.summary.activeGames) }}
                 </p>
             </article>
@@ -118,7 +118,7 @@ const activityColors: Record<string, string> = {
                     </p>
                     <Activity class="size-4 text-muted-foreground" />
                 </div>
-                <p class="font-display mt-2 text-3xl font-bold">
+                <p class="mt-2 font-display text-3xl font-bold">
                     {{ formatNumber(stats.summary.matchesToday) }}
                 </p>
             </article>
@@ -130,7 +130,7 @@ const activityColors: Record<string, string> = {
                     </p>
                     <Map class="size-4 text-muted-foreground" />
                 </div>
-                <p class="font-display mt-2 text-3xl font-bold">
+                <p class="mt-2 font-display text-3xl font-bold">
                     {{ formatNumber(stats.summary.publishedMaps) }}
                 </p>
             </article>
@@ -151,7 +151,9 @@ const activityColors: Record<string, string> = {
                         </dd>
                     </div>
                     <div class="flex items-center justify-between gap-3">
-                        <dt class="text-sm text-muted-foreground">In progress</dt>
+                        <dt class="text-sm text-muted-foreground">
+                            In progress
+                        </dt>
                         <dd class="font-bold">
                             {{ formatNumber(stats.games.playing) }}
                         </dd>
@@ -173,7 +175,9 @@ const activityColors: Record<string, string> = {
 
                 <dl class="space-y-3">
                     <div class="flex items-center justify-between gap-3">
-                        <dt class="text-sm text-muted-foreground">Total maps</dt>
+                        <dt class="text-sm text-muted-foreground">
+                            Total maps
+                        </dt>
                         <dd class="font-bold">
                             {{ formatNumber(stats.maps.total) }}
                         </dd>
@@ -197,7 +201,9 @@ const activityColors: Record<string, string> = {
                         </dd>
                     </div>
                     <div class="flex items-center justify-between gap-3">
-                        <dt class="text-sm text-muted-foreground">Votes cast</dt>
+                        <dt class="text-sm text-muted-foreground">
+                            Votes cast
+                        </dt>
                         <dd class="font-bold">
                             {{ formatNumber(stats.maps.votes) }}
                         </dd>
@@ -207,7 +213,10 @@ const activityColors: Record<string, string> = {
 
             <section class="wod-panel space-y-4 p-5 lg:col-span-1">
                 <div class="flex items-center gap-2">
-                    <div class="wod-swatch bg-wod-green-lt" aria-hidden="true" />
+                    <div
+                        class="wod-swatch bg-wod-green-lt"
+                        aria-hidden="true"
+                    />
                     <h2 class="font-bold">Engagement</h2>
                 </div>
 
@@ -241,7 +250,9 @@ const activityColors: Record<string, string> = {
                             New users this week
                         </dt>
                         <dd class="font-bold">
-                            {{ formatNumber(stats.engagement.newUsersThisWeek) }}
+                            {{
+                                formatNumber(stats.engagement.newUsersThisWeek)
+                            }}
                         </dd>
                     </div>
                 </dl>
@@ -263,7 +274,7 @@ const activityColors: Record<string, string> = {
                     >
                         <div class="flex min-w-0 items-center gap-3">
                             <span
-                                class="font-display flex size-7 shrink-0 items-center justify-center rounded-md border-2 border-foreground bg-card text-sm font-bold"
+                                class="flex size-7 shrink-0 items-center justify-center rounded-md border-2 border-foreground bg-card font-display text-sm font-bold"
                             >
                                 {{ index + 1 }}
                             </span>

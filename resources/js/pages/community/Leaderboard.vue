@@ -30,6 +30,7 @@ const highlightedUuid = ref<string | null>(null);
 
 onMounted(async () => {
     const hash = window.location.hash.slice(1);
+
     if (!hash) {
         return;
     }
@@ -39,6 +40,7 @@ onMounted(async () => {
     await nextTick();
 
     const el = document.getElementById(hash);
+
     if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -63,7 +65,7 @@ onMounted(async () => {
             <p class="mt-1 text-sm">Finish a match to appear here.</p>
         </div>
 
-        <div v-else class="overflow-x-auto wod-panel">
+        <div v-else class="wod-panel overflow-x-auto">
             <table class="w-full min-w-[32rem] text-left text-sm">
                 <thead class="border-b-2 border-foreground bg-muted/40">
                     <tr>
@@ -82,17 +84,29 @@ onMounted(async () => {
                         :id="row.profileUuid"
                         :key="row.profileUuid"
                         class="border-b border-foreground/15 transition-colors hover:bg-muted/30"
-                        :class="{ 'bg-wod-green-lt/40 outline outline-2 outline-foreground/30': highlightedUuid === row.profileUuid }"
+                        :class="{
+                            'bg-wod-green-lt/40 outline outline-2 outline-foreground/30':
+                                highlightedUuid === row.profileUuid,
+                        }"
                     >
-                        <td class="px-4 py-3 font-mono font-bold">{{ row.rank }}</td>
+                        <td class="px-4 py-3 font-mono font-bold">
+                            {{ row.rank }}
+                        </td>
                         <td class="px-4 py-3">
                             <Link
                                 :href="profileShow.url(row.profileUuid)"
                                 class="flex items-center gap-3 font-medium text-foreground underline-offset-4 hover:underline"
                             >
-                                <Avatar class="size-9 border-2 border-foreground bg-black">
+                                <Avatar
+                                    class="size-9 border-2 border-foreground bg-black"
+                                >
                                     <AvatarImage
-                                        :src="avatarUrl(row.profileUuid, row.avatarStyle)"
+                                        :src="
+                                            avatarUrl(
+                                                row.profileUuid,
+                                                row.avatarStyle,
+                                            )
+                                        "
                                         :alt="row.name"
                                     />
                                     <AvatarFallback class="text-xs font-bold">
@@ -112,7 +126,9 @@ onMounted(async () => {
                             </Badge>
                             <span v-else>{{ row.wins }}</span>
                         </td>
-                        <td class="px-4 py-3 text-muted-foreground">{{ row.losses }}</td>
+                        <td class="px-4 py-3 text-muted-foreground">
+                            {{ row.losses }}
+                        </td>
                         <td class="px-4 py-3">{{ row.matchesPlayed }}</td>
                         <td class="px-4 py-3">{{ row.winRate }}%</td>
                         <td class="px-4 py-3 text-muted-foreground">

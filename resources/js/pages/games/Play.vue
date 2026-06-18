@@ -20,7 +20,12 @@ type GamePayload = {
     maxPlayers: number;
     slot: number;
     color: string;
-    players: Array<{ slot: number; name: string; color: string; teamIndex: number }>;
+    players: Array<{
+        slot: number;
+        name: string;
+        color: string;
+        teamIndex: number;
+    }>;
 };
 
 type GameConstants = {
@@ -42,8 +47,6 @@ const props = withDefaults(
     },
 );
 
-const TICK_RATE = computed(() => props.gameConstants.tickRate);
-
 const page = usePage();
 const store = useGameStore();
 const draftStore = useDraftStore();
@@ -57,7 +60,9 @@ const SIMULATION_STALL_POLL_THRESHOLD = 5;
 
 const spectatePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
 const participatePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
-const participateLivePollTimer = ref<ReturnType<typeof setInterval> | null>(null);
+const participateLivePollTimer = ref<ReturnType<typeof setInterval> | null>(
+    null,
+);
 const showSlowLoadHint = ref(false);
 const lastCityOwners = ref<Record<number, number | null>>({});
 const simulationStallPolls = ref(0);
@@ -67,6 +72,7 @@ const devHudOpen = ref(false);
 
 function hasDevQuery(url: string): boolean {
     const i = url.indexOf('?');
+
     if (i === -1) {
         return false;
     }
@@ -148,7 +154,11 @@ const victoryTitle = computed(() => {
         return store.winnerName ? `${store.winnerName} wins` : 'Match over';
     }
 
-    if (store.matchEnded && store.winnerSlot === null && store.winnerUserId === null) {
+    if (
+        store.matchEnded &&
+        store.winnerSlot === null &&
+        store.winnerUserId === null
+    ) {
         return store.winnerName ?? 'Match ended';
     }
 
@@ -156,7 +166,10 @@ const victoryTitle = computed(() => {
         return 'Victory!';
     }
 
-    if (store.winnerUserId !== null && store.winnerUserId === page.props.auth.user?.id) {
+    if (
+        store.winnerUserId !== null &&
+        store.winnerUserId === page.props.auth.user?.id
+    ) {
         return 'Victory!';
     }
 
@@ -170,6 +183,7 @@ const myCredits = computed(() => myEconomy.value?.credits ?? null);
 /** Cities owned by this player, for the recruitment panel. */
 const ownedCities = computed(() => {
     const cities = store.latestState?.cities ?? [];
+
     return cities.filter((c) => c.ownerSlot === props.game.slot);
 });
 
@@ -189,8 +203,13 @@ function scheduleProductionSave() {
     if (productionSaveTimer !== null) {
         clearTimeout(productionSaveTimer);
     }
+
     productionSaveTimer = setTimeout(() => {
-        store.setPlayerProduction(props.game.uuid, localTankRatio.value, localSpeedMultiplier.value);
+        store.setPlayerProduction(
+            props.game.uuid,
+            localTankRatio.value,
+            localSpeedMultiplier.value,
+        );
         productionSaveTimer = null;
     }, 300);
 }
@@ -208,9 +227,11 @@ function openRecruitment() {
 
 async function submitChat() {
     const body = chatInput.value.trim();
+
     if (!body) {
         return;
     }
+
     await store.sendChatMessage(props.game.uuid, body);
     chatInput.value = '';
 }
@@ -223,16 +244,12 @@ watch(chatPanelOpen, (open) => {
 
 const incomePerTick = computed(() => myEconomy.value?.incomePerTick ?? 0);
 
-const incomePerSecondHint = computed(
-    () => Math.round((incomePerTick.value / TICK_RATE.value) * 100) / 100,
-);
-
 const showSimulationStallHint = computed(
     () =>
-        !props.spectatorMode
-        && store.initialized
-        && !store.matchEnded
-        && simulationStallPolls.value >= SIMULATION_STALL_POLL_THRESHOLD,
+        !props.spectatorMode &&
+        store.initialized &&
+        !store.matchEnded &&
+        simulationStallPolls.value >= SIMULATION_STALL_POLL_THRESHOLD,
 );
 
 watch(
@@ -271,7 +288,10 @@ watch(
 );
 
 onMounted(() => {
-    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('wod_dev_hud_open') === '1') {
+    if (
+        typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem('wod_dev_hud_open') === '1'
+    ) {
         devHudOpen.value = true;
     }
 
@@ -279,7 +299,9 @@ onMounted(() => {
         store.disconnect();
         void store.pullSnapshot(props.snapshotUrl, { treat404AsEnded: true });
         spectatePollTimer.value = setInterval(() => {
-            void store.pullSnapshot(props.snapshotUrl, { treat404AsEnded: true });
+            void store.pullSnapshot(props.snapshotUrl, {
+                treat404AsEnded: true,
+            });
         }, 1500);
 
         return;
@@ -368,16 +390,27 @@ onUnmounted(() => {
 <template>
     <Head title="Battlefield" />
 
-    <div class="flex h-svh min-h-0 flex-col overflow-hidden bg-background text-foreground">
+    <div
+        class="flex h-svh min-h-0 flex-col overflow-hidden bg-background text-foreground"
+    >
         <!-- Slim top bar -->
-        <header class="wod-bar-top shrink-0 flex items-center gap-3 border-b border-foreground/10 px-3 py-2 sm:px-4">
+        <header
+            class="wod-bar-top flex shrink-0 items-center gap-3 border-b border-foreground/10 px-3 py-2 sm:px-4"
+        >
             <div class="min-w-0 shrink-0">
-                <p class="text-[0.55rem] font-semibold uppercase tracking-widest text-muted-foreground">
+                <p
+                    class="text-[0.55rem] font-semibold tracking-widest text-muted-foreground uppercase"
+                >
                     War of Dots
                 </p>
-                <p class="font-mono text-sm font-bold leading-none tracking-widest">
+                <p
+                    class="font-mono text-sm leading-none font-bold tracking-widest"
+                >
                     {{ game.code }}
-                    <span v-if="spectatorMode" class="ml-1 text-xs font-normal text-muted-foreground">
+                    <span
+                        v-if="spectatorMode"
+                        class="ml-1 text-xs font-normal text-muted-foreground"
+                    >
                         · spectating
                     </span>
                 </p>
@@ -387,7 +420,9 @@ onUnmounted(() => {
                 class="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
                 <span
-                    v-for="player in [...game.players].sort((a, b) => a.slot - b.slot)"
+                    v-for="player in [...game.players].sort(
+                        (a, b) => a.slot - b.slot,
+                    )"
                     :key="player.slot"
                     class="wod-chip shrink-0"
                 >
@@ -429,21 +464,33 @@ onUnmounted(() => {
         <div class="relative min-h-0 flex-1">
             <!-- Loading overlays -->
             <div
-                v-if="!store.initialized && !store.matchEnded && store.winnerUserId === null && store.winnerSlot === null"
+                v-if="
+                    !store.initialized &&
+                    !store.matchEnded &&
+                    store.winnerUserId === null &&
+                    store.winnerSlot === null
+                "
                 class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/90 text-center"
             >
                 <p class="text-sm font-semibold text-muted-foreground">
                     Loading battlefield…
                 </p>
-                <p v-if="!spectatorMode" class="max-w-xs text-xs text-muted-foreground">
+                <p
+                    v-if="!spectatorMode"
+                    class="max-w-xs text-xs text-muted-foreground"
+                >
                     Map data loads over HTTP even without websockets.
                 </p>
                 <p
-                    v-if="!spectatorMode && showSlowLoadHint && !store.initialized"
+                    v-if="
+                        !spectatorMode && showSlowLoadHint && !store.initialized
+                    "
                     class="max-w-xs text-xs text-muted-foreground"
                 >
                     Still loading? Refresh or run
-                    <code class="rounded bg-muted px-1 font-mono">php artisan reverb:start</code>.
+                    <code class="rounded bg-muted px-1 font-mono"
+                        >php artisan reverb:start</code
+                    >.
                 </p>
             </div>
 
@@ -456,11 +503,20 @@ onUnmounted(() => {
 
             <!-- Victory / defeat overlay -->
             <div
-                v-if="!spectatorMode && (store.matchEnded || store.winnerUserId !== null || store.winnerSlot !== null)"
+                v-if="
+                    !spectatorMode &&
+                    (store.matchEnded ||
+                        store.winnerUserId !== null ||
+                        store.winnerSlot !== null)
+                "
                 class="absolute inset-0 z-20 flex items-center justify-center bg-foreground/50"
             >
-                <div class="wod-panel px-6 py-6 text-center shadow-2xl sm:px-10 sm:py-8">
-                    <p class="font-display text-3xl font-bold">{{ victoryTitle }}</p>
+                <div
+                    class="wod-panel px-6 py-6 text-center shadow-2xl sm:px-10 sm:py-8"
+                >
+                    <p class="font-display text-3xl font-bold">
+                        {{ victoryTitle }}
+                    </p>
                     <Link :href="lobbies().url" class="mt-5 inline-block">
                         <Button size="lg">Return to lobbies</Button>
                     </Link>
@@ -470,9 +526,13 @@ onUnmounted(() => {
                 v-else-if="spectatorMode && store.matchEnded"
                 class="absolute inset-0 z-20 flex items-center justify-center bg-foreground/50"
             >
-                <div class="wod-panel px-6 py-6 text-center shadow-2xl sm:px-10 sm:py-8">
+                <div
+                    class="wod-panel px-6 py-6 text-center shadow-2xl sm:px-10 sm:py-8"
+                >
                     <p class="font-display text-3xl font-bold">Match ended</p>
-                    <p class="mt-2 text-sm text-muted-foreground">The live state is no longer available.</p>
+                    <p class="mt-2 text-sm text-muted-foreground">
+                        The live state is no longer available.
+                    </p>
                     <Link :href="lobbies().url" class="mt-5 inline-block">
                         <Button size="lg">Return to lobbies</Button>
                     </Link>
@@ -482,31 +542,35 @@ onUnmounted(() => {
             <!-- Simulation stall alert (canvas overlay) -->
             <div
                 v-if="showSimulationStallHint"
-                class="absolute left-3 right-3 top-3 z-10 rounded-md border border-destructive/60 bg-background/95 px-3 py-2 text-xs text-destructive shadow-md backdrop-blur-sm"
+                class="absolute top-3 right-3 left-3 z-10 rounded-md border border-destructive/60 bg-background/95 px-3 py-2 text-xs text-destructive shadow-md backdrop-blur-sm"
                 role="alert"
             >
                 World time is not advancing — ensure
-                <code class="rounded bg-muted px-1 font-mono text-foreground">game:tick --daemon</code>
+                <code class="rounded bg-muted px-1 font-mono text-foreground"
+                    >game:tick --daemon</code
+                >
                 is running.
             </div>
 
             <!-- Left-side panel toggles (Chat & Recruitment) -->
             <div
                 v-if="!spectatorMode && store.initialized && !store.matchEnded"
-                class="pointer-events-none absolute left-0 top-0 p-3"
+                class="pointer-events-none absolute top-0 left-0 p-3"
             >
                 <div class="pointer-events-auto flex flex-col gap-1.5">
                     <Button
                         size="sm"
                         variant="outline"
                         class="relative gap-1.5"
-                        @click="chatPanelOpen ? (chatPanelOpen = false) : openChat()"
+                        @click="
+                            chatPanelOpen ? (chatPanelOpen = false) : openChat()
+                        "
                     >
                         <MessageSquare class="size-3.5" />
                         <span class="hidden sm:inline">Chat</span>
                         <Badge
                             v-if="store.unreadChatCount > 0 && !chatPanelOpen"
-                            class="absolute -right-1.5 -top-1.5 size-4 justify-center p-0 text-[0.55rem]"
+                            class="absolute -top-1.5 -right-1.5 size-4 justify-center p-0 text-[0.55rem]"
                         >
                             {{ store.unreadChatCount }}
                         </Badge>
@@ -516,7 +580,11 @@ onUnmounted(() => {
                         size="sm"
                         variant="outline"
                         class="gap-1.5"
-                        @click="recruitmentPanelOpen ? (recruitmentPanelOpen = false) : openRecruitment()"
+                        @click="
+                            recruitmentPanelOpen
+                                ? (recruitmentPanelOpen = false)
+                                : openRecruitment()
+                        "
                     >
                         <Building2 class="size-3.5" />
                         <span class="hidden sm:inline">Recruit</span>
@@ -534,24 +602,37 @@ onUnmounted(() => {
                     <div
                         class="pointer-events-auto shrink-0 rounded-xl border border-border/60 bg-background/90 px-3 py-2.5 shadow-lg backdrop-blur-sm"
                     >
-                        <p class="text-[0.55rem] font-semibold uppercase tracking-widest text-muted-foreground">Credits</p>
                         <p
-                            class="font-mono text-xl font-bold leading-none"
-                            :class="(myCredits ?? 0) < 0 ? 'text-destructive' : ''"
+                            class="text-[0.55rem] font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
+                            Credits
+                        </p>
+                        <p
+                            class="font-mono text-xl leading-none font-bold"
+                            :class="
+                                (myCredits ?? 0) < 0 ? 'text-destructive' : ''
+                            "
                         >
                             {{ myCredits ?? '—' }}
                         </p>
                         <p
                             v-if="incomePerTick !== 0"
                             class="mt-0.5 text-[0.6rem]"
-                            :class="incomePerTick < 0 ? 'text-destructive' : 'text-muted-foreground'"
+                            :class="
+                                incomePerTick < 0
+                                    ? 'text-destructive'
+                                    : 'text-muted-foreground'
+                            "
                         >
-                            {{ incomePerTick > 0 ? '+' : '' }}{{ incomePerTick }}/tick
+                            {{ incomePerTick > 0 ? '+' : ''
+                            }}{{ incomePerTick }}/tick
                         </p>
                     </div>
 
                     <!-- Orders -->
-                    <div class="pointer-events-auto flex flex-1 justify-center gap-1.5">
+                    <div
+                        class="pointer-events-auto flex flex-1 justify-center gap-1.5"
+                    >
                         <Button
                             v-if="draftStore.draftPaths.length > 0"
                             size="sm"
@@ -566,7 +647,11 @@ onUnmounted(() => {
                             size="sm"
                             class="whitespace-nowrap"
                             title="Send drafted orders to the server (Space)"
-                            @click="store.submitOrders(game.uuid, { snapshotFetchUrl: snapshotUrl })"
+                            @click="
+                                store.submitOrders(game.uuid, {
+                                    snapshotFetchUrl: snapshotUrl,
+                                })
+                            "
                         >
                             Execute Orders
                             <span class="ml-1.5 opacity-60">(Spacebar)</span>
@@ -586,9 +671,11 @@ onUnmounted(() => {
             <!-- Chat floating panel -->
             <div
                 v-if="chatPanelOpen && store.initialized"
-                class="absolute left-3 top-28 z-10 w-72 rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-sm"
+                class="absolute top-28 left-3 z-10 w-72 rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-sm"
             >
-                <div class="flex items-center justify-between border-b border-border/40 px-3 py-2">
+                <div
+                    class="flex items-center justify-between border-b border-border/40 px-3 py-2"
+                >
                     <span class="text-xs font-semibold">Chat</span>
                     <button
                         class="text-muted-foreground hover:text-foreground"
@@ -598,8 +685,13 @@ onUnmounted(() => {
                     </button>
                 </div>
                 <div class="flex flex-col gap-2 p-3">
-                    <div class="h-36 overflow-y-auto rounded-lg bg-muted/40 p-2 text-xs">
-                        <p v-if="store.chatMessages.length === 0" class="text-muted-foreground">
+                    <div
+                        class="h-36 overflow-y-auto rounded-lg bg-muted/40 p-2 text-xs"
+                    >
+                        <p
+                            v-if="store.chatMessages.length === 0"
+                            class="text-muted-foreground"
+                        >
                             No messages yet.
                         </p>
                         <div
@@ -607,8 +699,12 @@ onUnmounted(() => {
                             :key="msg.id"
                             class="mb-1 leading-snug"
                         >
-                            <span class="font-semibold">{{ msg.senderName }}: </span>
-                            <span class="text-muted-foreground">{{ msg.body }}</span>
+                            <span class="font-semibold"
+                                >{{ msg.senderName }}:
+                            </span>
+                            <span class="text-muted-foreground">{{
+                                msg.body
+                            }}</span>
                         </div>
                     </div>
                     <form
@@ -620,7 +716,7 @@ onUnmounted(() => {
                             v-model="chatInput"
                             maxlength="200"
                             placeholder="Message…"
-                            class="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                            class="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-xs focus:ring-1 focus:ring-ring focus:outline-none"
                         />
                         <Button type="submit" size="sm">Send</Button>
                     </form>
@@ -629,10 +725,17 @@ onUnmounted(() => {
 
             <!-- Recruitment floating panel -->
             <div
-                v-if="recruitmentPanelOpen && !spectatorMode && store.initialized && ownedCities.length > 0"
-                class="absolute left-3 top-28 z-10 w-80 rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-sm"
+                v-if="
+                    recruitmentPanelOpen &&
+                    !spectatorMode &&
+                    store.initialized &&
+                    ownedCities.length > 0
+                "
+                class="absolute top-28 left-3 z-10 w-80 rounded-xl border border-border/60 bg-background/95 shadow-xl backdrop-blur-sm"
             >
-                <div class="flex items-center justify-between border-b border-border/40 px-3 py-2">
+                <div
+                    class="flex items-center justify-between border-b border-border/40 px-3 py-2"
+                >
                     <span class="text-xs font-semibold">Recruitment</span>
                     <button
                         class="text-muted-foreground hover:text-foreground"
@@ -646,12 +749,23 @@ onUnmounted(() => {
                     <!-- Global spawn speed slider -->
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
-                            <label class="text-[0.65rem] font-medium text-muted-foreground">Spawn Speed</label>
+                            <label
+                                class="text-[0.65rem] font-medium text-muted-foreground"
+                                >Spawn Speed</label
+                            >
                             <span
                                 class="text-[0.65rem] font-semibold"
-                                :class="localSpeedMultiplier <= 0 ? 'text-muted-foreground' : 'text-foreground'"
+                                :class="
+                                    localSpeedMultiplier <= 0
+                                        ? 'text-muted-foreground'
+                                        : 'text-foreground'
+                                "
                             >
-                                {{ localSpeedMultiplier <= 0 ? 'Off' : localSpeedMultiplier.toFixed(1) + '×' }}
+                                {{
+                                    localSpeedMultiplier <= 0
+                                        ? 'Off'
+                                        : localSpeedMultiplier.toFixed(1) + '×'
+                                }}
                             </span>
                         </div>
                         <input
@@ -661,9 +775,18 @@ onUnmounted(() => {
                             step="0.1"
                             :value="localSpeedMultiplier"
                             class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
-                            @input="(e) => { localSpeedMultiplier = parseFloat((e.target as HTMLInputElement).value); scheduleProductionSave(); }"
+                            @input="
+                                (e) => {
+                                    localSpeedMultiplier = parseFloat(
+                                        (e.target as HTMLInputElement).value,
+                                    );
+                                    scheduleProductionSave();
+                                }
+                            "
                         />
-                        <div class="flex justify-between text-[0.6rem] text-muted-foreground">
+                        <div
+                            class="flex justify-between text-[0.6rem] text-muted-foreground"
+                        >
                             <span>Off</span>
                             <span>Fast</span>
                         </div>
@@ -672,9 +795,20 @@ onUnmounted(() => {
                     <!-- Global tank/infantry ratio slider -->
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
-                            <label class="text-[0.65rem] font-medium text-muted-foreground">Unit Mix</label>
-                            <span class="text-[0.65rem] font-semibold text-foreground">
-                                {{ localTankRatio === 0 ? 'Infantry only' : localTankRatio === 100 ? 'Tanks only' : localTankRatio + '% Tanks' }}
+                            <label
+                                class="text-[0.65rem] font-medium text-muted-foreground"
+                                >Unit Mix</label
+                            >
+                            <span
+                                class="text-[0.65rem] font-semibold text-foreground"
+                            >
+                                {{
+                                    localTankRatio === 0
+                                        ? 'Infantry only'
+                                        : localTankRatio === 100
+                                          ? 'Tanks only'
+                                          : localTankRatio + '% Tanks'
+                                }}
                             </span>
                         </div>
                         <input
@@ -684,9 +818,18 @@ onUnmounted(() => {
                             step="10"
                             :value="localTankRatio"
                             class="h-2 w-full cursor-pointer appearance-none rounded-lg bg-muted accent-primary"
-                            @input="(e) => { localTankRatio = parseInt((e.target as HTMLInputElement).value); scheduleProductionSave(); }"
+                            @input="
+                                (e) => {
+                                    localTankRatio = parseInt(
+                                        (e.target as HTMLInputElement).value,
+                                    );
+                                    scheduleProductionSave();
+                                }
+                            "
                         />
-                        <div class="flex justify-between text-[0.6rem] text-muted-foreground">
+                        <div
+                            class="flex justify-between text-[0.6rem] text-muted-foreground"
+                        >
                             <span>Infantry</span>
                             <span>Tanks</span>
                         </div>
@@ -694,26 +837,58 @@ onUnmounted(() => {
 
                     <!-- Per-city recruitment toggles -->
                     <div class="space-y-1">
-                        <p class="text-[0.6rem] font-semibold uppercase tracking-widest text-muted-foreground">Spawn points</p>
+                        <p
+                            class="text-[0.6rem] font-semibold tracking-widest text-muted-foreground uppercase"
+                        >
+                            Spawn points
+                        </p>
                         <div
-                            v-for="city in [...ownedCities].sort((a, b) => (a.markerType === 'capital' ? -1 : b.markerType === 'capital' ? 1 : 0))"
+                            v-for="city in [...ownedCities].sort((a, b) =>
+                                a.markerType === 'capital'
+                                    ? -1
+                                    : b.markerType === 'capital'
+                                      ? 1
+                                      : 0,
+                            )"
                             :key="city.id"
                             class="flex cursor-pointer items-center justify-between rounded-lg border border-border/40 bg-muted/20 px-3 py-2 transition-colors hover:bg-muted/40"
                             @mouseenter="hoveredCityId = city.id"
                             @mouseleave="hoveredCityId = null"
-                            @click="store.setCityRecruitment(props.game.uuid, city.id, !(city.recruitmentEnabled ?? true))"
+                            @click="
+                                store.setCityRecruitment(
+                                    props.game.uuid,
+                                    city.id,
+                                    !(city.recruitmentEnabled ?? true),
+                                )
+                            "
                         >
-                            <span class="text-[0.7rem] font-medium text-foreground">
-                                {{ city.markerType === 'capital' ? '★ Capital' : '⬠ Outpost' }}
+                            <span
+                                class="text-[0.7rem] font-medium text-foreground"
+                            >
+                                {{
+                                    city.markerType === 'capital'
+                                        ? '★ Capital'
+                                        : '⬠ Outpost'
+                                }}
                             </span>
                             <span
                                 class="flex size-4 items-center justify-center rounded-full border-2 text-[0.5rem] font-bold"
-                                :class="(city.recruitmentEnabled ?? true)
-                                    ? 'border-green-500 bg-green-500/20 text-green-600'
-                                    : 'border-red-500 bg-red-500/20 text-red-600'"
-                                :title="(city.recruitmentEnabled ?? true) ? 'Recruitment on — click to disable' : 'Recruitment off — click to enable'"
+                                :class="
+                                    (city.recruitmentEnabled ?? true)
+                                        ? 'border-green-500 bg-green-500/20 text-green-600'
+                                        : 'border-red-500 bg-red-500/20 text-red-600'
+                                "
+                                :title="
+                                    (city.recruitmentEnabled ?? true)
+                                        ? 'Recruitment on — click to disable'
+                                        : 'Recruitment off — click to enable'
+                                "
                             >
-                                {{ (city.recruitmentEnabled ?? true) ? '✓' : '✕' }}
+                                {{
+                                    (city.recruitmentEnabled ?? true)
+                                        ? '✓'
+                                        : '✕'
+                                }}
                             </span>
                         </div>
                     </div>
@@ -728,17 +903,32 @@ onUnmounted(() => {
                     role="complementary"
                     aria-label="Developer diagnostics"
                 >
-                    <div class="mb-2 flex items-center justify-between gap-2 border-b border-border pb-2">
-                        <span class="font-semibold text-foreground">Sim / net</span>
-                        <Button type="button" size="sm" variant="ghost" class="h-7 px-2 text-xs" @click="devHudOpen = false">
+                    <div
+                        class="mb-2 flex items-center justify-between gap-2 border-b border-border pb-2"
+                    >
+                        <span class="font-semibold text-foreground"
+                            >Sim / net</span
+                        >
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            class="h-7 px-2 text-xs"
+                            @click="devHudOpen = false"
+                        >
                             Close
                         </Button>
                     </div>
-                    <dl class="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-x-2 gap-y-1.5 text-muted-foreground">
+                    <dl
+                        class="grid grid-cols-[minmax(0,7.5rem)_1fr] gap-x-2 gap-y-1.5 text-muted-foreground"
+                    >
                         <dt class="text-foreground/80">worldTick</dt>
                         <dd>{{ store.worldTick }}</dd>
                         <dt class="text-foreground/80">stall polls</dt>
-                        <dd>{{ simulationStallPolls }} / {{ SIMULATION_STALL_POLL_THRESHOLD }}</dd>
+                        <dd>
+                            {{ simulationStallPolls }} /
+                            {{ SIMULATION_STALL_POLL_THRESHOLD }}
+                        </dd>
                         <dt class="text-foreground/80">snapshot poll</dt>
                         <dd>{{ MATCH_SNAPSHOT_POLL_MS }} ms</dd>
                         <dt class="text-foreground/80">Echo</dt>
@@ -750,50 +940,91 @@ onUnmounted(() => {
                         <dt class="text-foreground/80">game</dt>
                         <dd class="break-all">{{ game.uuid }}</dd>
                         <dt class="text-foreground/80">broadcast</dt>
-                        <dd class="break-all">{{ broadcastConnection ?? '—' }}</dd>
+                        <dd class="break-all">
+                            {{ broadcastConnection ?? '—' }}
+                        </dd>
                         <dt class="text-foreground/80">snapshot</dt>
                         <dd class="break-all">{{ snapshotPath }}</dd>
                         <dt class="text-foreground/80">snap Δtick</dt>
-                        <dd>{{ store.devDiagnostics.lastWorldTickDeltaViaSnapshot ?? '—' }}</dd>
+                        <dd>
+                            {{
+                                store.devDiagnostics
+                                    .lastWorldTickDeltaViaSnapshot ?? '—'
+                            }}
+                        </dd>
                         <dt class="text-foreground/80">snap RTT</dt>
                         <dd>
                             {{
-                                store.devDiagnostics.lastSnapshotDurationMs !== null
+                                store.devDiagnostics.lastSnapshotDurationMs !==
+                                null
                                     ? `${store.devDiagnostics.lastSnapshotDurationMs} ms`
                                     : '—'
                             }}
                         </dd>
                         <dt class="text-foreground/80">snap HTTP</dt>
-                        <dd>{{ store.devDiagnostics.lastSnapshotHttpStatus ?? '—' }}</dd>
+                        <dd>
+                            {{
+                                store.devDiagnostics.lastSnapshotHttpStatus ??
+                                '—'
+                            }}
+                        </dd>
                         <dt class="text-foreground/80">snap @</dt>
-                        <dd>{{ formatTickTime(store.devDiagnostics.lastSnapshotAt) }}</dd>
+                        <dd>
+                            {{
+                                formatTickTime(
+                                    store.devDiagnostics.lastSnapshotAt,
+                                )
+                            }}
+                        </dd>
                         <dt class="text-foreground/80">snap err</dt>
                         <dd class="break-words text-destructive">
                             {{ store.devDiagnostics.lastSnapshotError ?? '—' }}
                         </dd>
                         <dt class="text-foreground/80">echo Δtick</dt>
-                        <dd>{{ store.devDiagnostics.lastEchoWorldTickDelta ?? '—' }}</dd>
+                        <dd>
+                            {{
+                                store.devDiagnostics.lastEchoWorldTickDelta ??
+                                '—'
+                            }}
+                        </dd>
                         <dt class="text-foreground/80">echo @</dt>
-                        <dd>{{ formatTickTime(store.devDiagnostics.lastEchoPushAt) }}</dd>
+                        <dd>
+                            {{
+                                formatTickTime(
+                                    store.devDiagnostics.lastEchoPushAt,
+                                )
+                            }}
+                        </dd>
                         <dt class="text-foreground/80">Vite</dt>
                         <dd>{{ viteMode }}</dd>
                         <dt class="text-foreground/80">appDebug</dt>
                         <dd>{{ page.props.appDebug === true }}</dd>
                     </dl>
-                    <p class="mt-2 border-t border-border pt-2 text-[0.6rem] leading-snug text-muted-foreground">
-                        Open with <code class="rounded bg-muted px-1 text-foreground">?dev=1</code> or local Vite / APP_DEBUG.
+                    <p
+                        class="mt-2 border-t border-border pt-2 text-[0.6rem] leading-snug text-muted-foreground"
+                    >
+                        Open with
+                        <code class="rounded bg-muted px-1 text-foreground"
+                            >?dev=1</code
+                        >
+                        or local Vite / APP_DEBUG.
                     </p>
                 </div>
             </template>
         </div>
 
         <!-- Thin controls hint bar -->
-        <footer class="wod-bar-bottom shrink-0 px-3 py-1.5 text-center text-[0.6rem] text-muted-foreground sm:px-4 sm:text-left">
+        <footer
+            class="wod-bar-bottom shrink-0 px-3 py-1.5 text-center text-[0.6rem] text-muted-foreground sm:px-4 sm:text-left"
+        >
             <template v-if="!spectatorMode">
                 <span class="hidden sm:inline">
-                    Drag to plan paths · Right-click to pan · Scroll to zoom · Space to execute · C to clear
+                    Drag to plan paths · Right-click to pan · Scroll to zoom ·
+                    Space to execute · C to clear
                 </span>
-                <span class="sm:hidden">Tap-drag to plan · Two-finger pan · Pinch zoom</span>
+                <span class="sm:hidden"
+                    >Tap-drag to plan · Two-finger pan · Pinch zoom</span
+                >
             </template>
         </footer>
     </div>

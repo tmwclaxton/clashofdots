@@ -1,6 +1,9 @@
 import { MAP_MAX_TEAMS, MAP_MIN_TEAMS } from '@/lib/mapEditorGrid';
 import type { MapMarker } from '@/lib/mapEditorGrid';
-import { isFarEnoughFromHydraulicWaterForMapMarker, isPlaceableTerrain } from '@/lib/mapMarkers';
+import {
+    isFarEnoughFromHydraulicWaterForMapMarker,
+    isPlaceableTerrain,
+} from '@/lib/mapMarkers';
 import {
     clampMinBetweenFlagsForSmallLand,
     computeMinManhattanMarkerSeparation,
@@ -28,7 +31,11 @@ function shuffleInPlace<T>(arr: T[], rng: () => number): void {
     }
 }
 
-function collectPlaceableCells(cells: string[][], rows: number, cols: number): Cell[] {
+function collectPlaceableCells(
+    cells: string[][],
+    rows: number,
+    cols: number,
+): Cell[] {
     const out: Cell[] = [];
 
     for (let r = 0; r < rows; r++) {
@@ -38,7 +45,13 @@ function collectPlaceableCells(cells: string[][], rows: number, cols: number): C
             if (
                 typeof t === 'string' &&
                 isPlaceableTerrain(t) &&
-                isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)
+                isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
             ) {
                 out.push({ row: r, col: c });
             }
@@ -51,7 +64,11 @@ function collectPlaceableCells(cells: string[][], rows: number, cols: number): C
 /**
  * Greedy pick in fixed visit order: each cell at least `minDist` Manhattan from all chosen.
  */
-function greedyFromOrder(order: readonly Cell[], minDist: number, maxPick: number): Cell[] {
+function greedyFromOrder(
+    order: readonly Cell[],
+    minDist: number,
+    maxPick: number,
+): Cell[] {
     const picked: Cell[] = [];
 
     for (const cell of order) {
@@ -73,7 +90,10 @@ function greedyFromOrder(order: readonly Cell[], minDist: number, maxPick: numbe
  * Score for adding a candidate capital: maximize minimum distance to existing capitals, then
  * total distance (uses map area more evenly than min-distance alone).
  */
-function capitalSpreadScore(candidate: Cell, existing: readonly Cell[]): { minD: number; sumD: number } {
+function capitalSpreadScore(
+    candidate: Cell,
+    existing: readonly Cell[],
+): { minD: number; sumD: number } {
     let minD = Infinity;
     let sumD = 0;
 
@@ -90,7 +110,11 @@ function capitalSpreadScore(candidate: Cell, existing: readonly Cell[]): { minD:
  * Farthest-point sampling on placeable land (Manhattan): iteratively pick the cell whose
  * distance to already-chosen capitals is largest, breaking ties by larger total distance then RNG.
  */
-function pickFarthestCapitals(placeable: readonly Cell[], k: number, rng: () => number): Cell[] {
+function pickFarthestCapitals(
+    placeable: readonly Cell[],
+    k: number,
+    rng: () => number,
+): Cell[] {
     if (k <= 0 || placeable.length === 0) {
         return [];
     }
@@ -139,7 +163,11 @@ function pickFarthestCapitals(placeable: readonly Cell[], k: number, rng: () => 
     return picked;
 }
 
-function padCapitalsToMinTeams(capitals: Cell[], placeable: Cell[], minTeams: number): Cell[] {
+function padCapitalsToMinTeams(
+    capitals: Cell[],
+    placeable: Cell[],
+    minTeams: number,
+): Cell[] {
     const out = capitals.slice();
     const used = new Set(out.map((p) => `${p.row},${p.col}`));
 
@@ -181,7 +209,15 @@ function buildOrderedPlaceableNear(
                 continue;
             }
 
-            if (!isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)) {
+            if (
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
+            ) {
                 continue;
             }
 
@@ -214,7 +250,10 @@ function buildOrderedPlaceableNear(
  * If placement stalls unevenly, drop surplus flags so every team has the same count (minimum
  * achieved across teams).
  */
-function balanceFlagsPerTeamEquality(flags: MapMarker[], teamCount: number): MapMarker[] {
+function balanceFlagsPerTeamEquality(
+    flags: MapMarker[],
+    teamCount: number,
+): MapMarker[] {
     const buckets: MapMarker[][] = Array.from({ length: teamCount }, () => []);
 
     for (const f of flags) {
@@ -267,7 +306,13 @@ function placeFlagsNearCapitals(
 ): MapMarker[] {
     const minDim = Math.min(rows, cols);
     const preliminaryMaxR = preliminaryMaxRForMarkerSpacing(rows, cols);
-    let minHalo = minPlaceableHaloAmongCapitals(cells, rows, cols, capitals, preliminaryMaxR);
+    let minHalo = minPlaceableHaloAmongCapitals(
+        cells,
+        rows,
+        cols,
+        capitals,
+        preliminaryMaxR,
+    );
 
     if (!Number.isFinite(minHalo) || minHalo < 6) {
         minHalo = Math.max(12, Math.floor(nLand / Math.max(8, teamCount * 4)));
@@ -282,11 +327,19 @@ function placeFlagsNearCapitals(
         capitalSpacing,
         minHaloLandCells: minHalo,
     });
-    minBetweenFlags = clampMinBetweenFlagsForSmallLand(minBetweenFlags, nLand, minDim);
+    minBetweenFlags = clampMinBetweenFlagsForSmallLand(
+        minBetweenFlags,
+        nLand,
+        minDim,
+    );
 
     const maxR = Math.min(
         rows + cols - 2,
-        Math.max(preliminaryMaxR, minBetweenFlags * 5, Math.floor(minDim * 0.52)),
+        Math.max(
+            preliminaryMaxR,
+            minBetweenFlags * 5,
+            Math.floor(minDim * 0.52),
+        ),
     );
     const queues = capitals.map((cap) =>
         buildOrderedPlaceableNear(cells, rows, cols, cap, maxR, rng),
@@ -382,7 +435,10 @@ function eachTeamHasTroopFeasibleLand(
 
     const capitalPositions = capitals.map((c) => ({ row: c.row, col: c.col }));
     const nLand = countPlaceableLandCells(cells, rows, cols);
-    const flagBudget = Math.max(teamCount * 2, Math.min(320, Math.max(48, Math.floor(nLand / 3))));
+    const flagBudget = Math.max(
+        teamCount * 2,
+        Math.min(320, Math.max(48, Math.floor(nLand / 3))),
+    );
     const sep = Math.min(
         computeMinSeparationForMapState({
             cells,
@@ -395,16 +451,24 @@ function eachTeamHasTroopFeasibleLand(
         Math.max(MAP_MARKER_MIN_MANHATTAN_SEP, inferCapitalSpacing(capitals)),
     );
 
-    const owner: number[][] = Array.from({ length: rows }, () => Array(cols).fill(-1));
+    const owner: number[][] = Array.from({ length: rows }, () =>
+        Array(cols).fill(-1),
+    );
 
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             const terr = cells[r]?.[c];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
             ) {
                 continue;
             }
@@ -444,9 +508,15 @@ function eachTeamHasTroopFeasibleLand(
             const terr = cells[r]?.[c];
 
             if (
-                typeof terr !== 'string'
-                || !isPlaceableTerrain(terr)
-                || !isFarEnoughFromHydraulicWaterForMapMarker(cells, rows, cols, r, c)
+                typeof terr !== 'string' ||
+                !isPlaceableTerrain(terr) ||
+                !isFarEnoughFromHydraulicWaterForMapMarker(
+                    cells,
+                    rows,
+                    cols,
+                    r,
+                    c,
+                )
             ) {
                 continue;
             }
@@ -455,9 +525,17 @@ function eachTeamHasTroopFeasibleLand(
 
             for (let ot = 0; ot < capitals.length; ot++) {
                 const capCell = capitals[ot]!;
-                const need = troopManhattanClearanceToMarker(sep, ot, t, 'capital');
+                const need = troopManhattanClearanceToMarker(
+                    sep,
+                    ot,
+                    t,
+                    'capital',
+                );
 
-                if (Math.abs(r - capCell.row) + Math.abs(c - capCell.col) < need) {
+                if (
+                    Math.abs(r - capCell.row) + Math.abs(c - capCell.col) <
+                    need
+                ) {
                     ok = false;
 
                     break;
@@ -504,7 +582,14 @@ function widenCapitalsForTroopLegroom(
         }
     }
 
-    for (let d = Math.min(22, Math.max(MAP_MARKER_MIN_MANHATTAN_SEP, Math.floor(minDim * 0.55))); d >= MAP_MARKER_MIN_MANHATTAN_SEP; d -= 1) {
+    for (
+        let d = Math.min(
+            22,
+            Math.max(MAP_MARKER_MIN_MANHATTAN_SEP, Math.floor(minDim * 0.55)),
+        );
+        d >= MAP_MARKER_MIN_MANHATTAN_SEP;
+        d -= 1
+    ) {
         for (let rep = 0; rep < 20; rep += 1) {
             const order = placeable.slice();
 
@@ -512,8 +597,14 @@ function widenCapitalsForTroopLegroom(
             const spread = greedyFromOrder(order, d, teamCount);
 
             if (
-                spread.length >= teamCount
-                && eachTeamHasTroopFeasibleLand(cells, rows, cols, spread.slice(0, teamCount), teamCount)
+                spread.length >= teamCount &&
+                eachTeamHasTroopFeasibleLand(
+                    cells,
+                    rows,
+                    cols,
+                    spread.slice(0, teamCount),
+                    teamCount,
+                )
             ) {
                 return spread.slice(0, teamCount);
             }
@@ -553,10 +644,10 @@ export function buildMarkersForGeneratedTerrain(
     let teamCount: number;
 
     if (
-        typeof requestedTeamCount === 'number'
-        && Number.isInteger(requestedTeamCount)
-        && requestedTeamCount >= MAP_MIN_TEAMS
-        && requestedTeamCount <= MAP_MAX_TEAMS
+        typeof requestedTeamCount === 'number' &&
+        Number.isInteger(requestedTeamCount) &&
+        requestedTeamCount >= MAP_MIN_TEAMS &&
+        requestedTeamCount <= MAP_MAX_TEAMS
     ) {
         const k = requestedTeamCount;
         capitals = pickFarthestCapitals(placeable, k, rng);
@@ -565,7 +656,10 @@ export function buildMarkersForGeneratedTerrain(
             capitals = padCapitalsToMinTeams(capitals, placeable, k);
         }
 
-        teamCount = Math.min(MAP_MAX_TEAMS, Math.max(MAP_MIN_TEAMS, capitals.length));
+        teamCount = Math.min(
+            MAP_MAX_TEAMS,
+            Math.max(MAP_MIN_TEAMS, capitals.length),
+        );
         capitals = pickFarthestCapitals(placeable, teamCount, rng);
         capitals = widenCapitalsForTroopLegroom(
             cells,
@@ -590,7 +684,10 @@ export function buildMarkersForGeneratedTerrain(
             const c = greedyFromOrder(order, d, MAP_MAX_TEAMS);
 
             if (c.length >= MAP_MIN_TEAMS) {
-                if (c.length > best.length || (c.length === best.length && d > bestD)) {
+                if (
+                    c.length > best.length ||
+                    (c.length === best.length && d > bestD)
+                ) {
                     best = c;
                     bestD = d;
                 }
@@ -604,10 +701,17 @@ export function buildMarkersForGeneratedTerrain(
         }
 
         if (capitals.length < MAP_MIN_TEAMS) {
-            capitals = padCapitalsToMinTeams(capitals, placeable, MAP_MIN_TEAMS);
+            capitals = padCapitalsToMinTeams(
+                capitals,
+                placeable,
+                MAP_MIN_TEAMS,
+            );
         }
 
-        teamCount = Math.min(MAP_MAX_TEAMS, Math.max(MAP_MIN_TEAMS, capitals.length));
+        teamCount = Math.min(
+            MAP_MAX_TEAMS,
+            Math.max(MAP_MIN_TEAMS, capitals.length),
+        );
         capitals = pickFarthestCapitals(placeable, teamCount, rng);
         capitals = widenCapitalsForTroopLegroom(
             cells,

@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, ExternalLink, History, Swords, Trophy } from 'lucide-vue-next';
+import {
+    Calendar,
+    ExternalLink,
+    History,
+    Swords,
+    Trophy,
+} from 'lucide-vue-next';
 import Heading from '@/components/Heading.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { avatarUrl } from '@/composables/useAvatar';
 import { getInitials } from '@/composables/useInitials';
@@ -60,6 +66,7 @@ function formatDate(iso: string | null): string {
     if (!iso) {
         return '—';
     }
+
     try {
         return new Intl.DateTimeFormat(undefined, {
             year: 'numeric',
@@ -76,11 +83,15 @@ function formatDate(iso: string | null): string {
     <Head :title="`${profile.playerTag} · Profile`" />
 
     <div class="mx-auto flex max-w-3xl flex-col gap-8">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+        >
             <div class="flex items-start gap-4">
                 <Avatar class="size-20 border-2 border-foreground bg-black">
                     <AvatarImage
-                        :src="avatarUrl(profile.profileUuid, profile.avatarStyle)"
+                        :src="
+                            avatarUrl(profile.profileUuid, profile.avatarStyle)
+                        "
                         :alt="profile.playerTag"
                     />
                     <AvatarFallback class="text-lg font-bold">
@@ -98,14 +109,25 @@ function formatDate(iso: string | null): string {
                         <Calendar class="size-4 shrink-0" />
                         Member since {{ formatDate(profile.memberSince) }}
                     </p>
-                    <p v-if="isOwnProfile" class="mt-2 text-xs text-muted-foreground">
-                        This is your public profile — others see the same stats (no email shown).
+                    <p
+                        v-if="isOwnProfile"
+                        class="mt-2 text-xs text-muted-foreground"
+                    >
+                        This is your public profile — others see the same stats
+                        (no email shown).
                     </p>
                 </div>
             </div>
             <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <Button variant="outline" size="sm" as-child class="w-full sm:w-auto">
-                    <Link :href="`${leaderboardIndex().url}#${profile.profileUuid}`">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    as-child
+                    class="w-full sm:w-auto"
+                >
+                    <Link
+                        :href="`${leaderboardIndex().url}#${profile.profileUuid}`"
+                    >
                         <Trophy class="mr-2 size-4" />
                         Leaderboard
                     </Link>
@@ -127,28 +149,64 @@ function formatDate(iso: string | null): string {
 
         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div class="wod-panel p-4">
-                <p class="text-xs font-semibold uppercase text-muted-foreground">Wins</p>
-                <p class="mt-1 font-display text-3xl font-bold">{{ stats.wins }}</p>
+                <p
+                    class="text-xs font-semibold text-muted-foreground uppercase"
+                >
+                    Wins
+                </p>
+                <p class="mt-1 font-display text-3xl font-bold">
+                    {{ stats.wins }}
+                </p>
             </div>
             <div class="wod-panel p-4">
-                <p class="text-xs font-semibold uppercase text-muted-foreground">Losses</p>
-                <p class="mt-1 font-display text-3xl font-bold">{{ stats.losses }}</p>
+                <p
+                    class="text-xs font-semibold text-muted-foreground uppercase"
+                >
+                    Losses
+                </p>
+                <p class="mt-1 font-display text-3xl font-bold">
+                    {{ stats.losses }}
+                </p>
             </div>
             <div class="wod-panel p-4">
-                <p class="text-xs font-semibold uppercase text-muted-foreground">Matches played</p>
-                <p class="mt-1 font-display text-3xl font-bold">{{ stats.matchesPlayed }}</p>
+                <p
+                    class="text-xs font-semibold text-muted-foreground uppercase"
+                >
+                    Matches played
+                </p>
+                <p class="mt-1 font-display text-3xl font-bold">
+                    {{ stats.matchesPlayed }}
+                </p>
             </div>
             <div class="wod-panel p-4">
-                <p class="text-xs font-semibold uppercase text-muted-foreground">Win rate</p>
-                <p class="mt-1 font-display text-3xl font-bold">{{ stats.winRate }}%</p>
+                <p
+                    class="text-xs font-semibold text-muted-foreground uppercase"
+                >
+                    Win rate
+                </p>
+                <p class="mt-1 font-display text-3xl font-bold">
+                    {{ stats.winRate }}%
+                </p>
             </div>
             <div class="wod-panel p-4">
-                <p class="text-xs font-semibold uppercase text-muted-foreground">Hosted (finished)</p>
-                <p class="mt-1 font-display text-3xl font-bold">{{ stats.finishedHosts }}</p>
+                <p
+                    class="text-xs font-semibold text-muted-foreground uppercase"
+                >
+                    Hosted (finished)
+                </p>
+                <p class="mt-1 font-display text-3xl font-bold">
+                    {{ stats.finishedHosts }}
+                </p>
             </div>
             <div class="wod-panel p-4">
-                <p class="text-xs font-semibold uppercase text-muted-foreground">Published maps</p>
-                <p class="mt-1 font-display text-3xl font-bold">{{ stats.publishedMapCount }}</p>
+                <p
+                    class="text-xs font-semibold text-muted-foreground uppercase"
+                >
+                    Published maps
+                </p>
+                <p class="mt-1 font-display text-3xl font-bold">
+                    {{ stats.publishedMapCount }}
+                </p>
             </div>
         </div>
 
@@ -176,7 +234,10 @@ function formatDate(iso: string | null): string {
             </ul>
         </div>
 
-        <div v-else class="wod-panel-dashed p-6 text-center text-sm text-muted-foreground">
+        <div
+            v-else
+            class="wod-panel-dashed p-6 text-center text-sm text-muted-foreground"
+        >
             <Swords class="mx-auto mb-2 size-6 opacity-50" />
             No published maps yet.
         </div>
@@ -199,21 +260,29 @@ function formatDate(iso: string | null): string {
             <article
                 v-for="match in battleHistory"
                 :key="match.uuid"
-                class="flex flex-col gap-4 wod-panel p-4 sm:flex-row sm:items-center sm:justify-between"
+                class="wod-panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
             >
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="font-bold tracking-widest">{{ match.code }}</span>
+                        <span class="font-bold tracking-widest">{{
+                            match.code
+                        }}</span>
                         <Badge
                             variant="outline"
-                            :class="match.isWinner ? 'border-foreground bg-wod-green-lt' : 'border-foreground'"
+                            :class="
+                                match.isWinner
+                                    ? 'border-foreground bg-wod-green-lt'
+                                    : 'border-foreground'
+                            "
                         >
                             {{ match.isWinner ? 'Victory' : 'Defeat' }}
                         </Badge>
                     </div>
                     <p class="mt-1 text-sm text-muted-foreground">
                         Winner:
-                        <span class="font-semibold text-foreground">{{ match.winnerName ?? 'Unknown' }}</span>
+                        <span class="font-semibold text-foreground">{{
+                            match.winnerName ?? 'Unknown'
+                        }}</span>
                         <template v-if="match.finishedAt">
                             · {{ formatDate(match.finishedAt) }}
                         </template>
@@ -235,9 +304,18 @@ function formatDate(iso: string | null): string {
 
                 <div class="flex shrink-0 gap-2">
                     <Link :href="match.gameUrl" class="flex-1 sm:flex-none">
-                        <Button variant="outline" size="sm" class="w-full sm:w-auto">View</Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            class="w-full sm:w-auto"
+                            >View</Button
+                        >
                     </Link>
-                    <ShareButton :share-links="match.shareLinks" :copy-url="match.gameUrl" label="Share" />
+                    <ShareButton
+                        :share-links="match.shareLinks"
+                        :copy-url="match.gameUrl"
+                        label="Share"
+                    />
                 </div>
             </article>
         </div>

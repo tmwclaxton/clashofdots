@@ -12,7 +12,10 @@ import {
 } from 'lucide-vue-next';
 import type { LucideIcon } from 'lucide-vue-next';
 import { watch } from 'vue';
-import type { MapEditorInstance, MapEditorTool } from '@/composables/useMapEditor';
+import type {
+    MapEditorInstance,
+    MapEditorTool,
+} from '@/composables/useMapEditor';
 import { cn } from '@/lib/utils';
 
 const props = defineProps<{
@@ -52,7 +55,7 @@ function setTool(id: MapEditorTool): void {
 
 <template>
     <div
-        class="flex w-fit shrink-0 flex-col items-center gap-1 wod-surface px-1.5 py-1.5"
+        class="wod-surface flex w-fit shrink-0 flex-col items-center gap-1 px-1.5 py-1.5"
         role="toolbar"
         aria-label="Map tools"
     >

@@ -162,15 +162,24 @@ function speedClass(speed: number, impassable: boolean): string {
                     <BookOpen class="size-5" />
                 </div>
                 <div>
-                    <p class="font-display text-sm font-bold text-foreground">Map Builder</p>
-                    <p class="mt-1 max-w-prose text-sm leading-relaxed text-muted-foreground">
-                        Author terrain, place capitals and troops, and roll new maps with the same
-                        generation styles documented below. Brush, eraser, and fill work on the
-                        vertex grid; marker tools snap to valid tiles.
+                    <p class="font-display text-sm font-bold text-foreground">
+                        Map Builder
+                    </p>
+                    <p
+                        class="mt-1 max-w-prose text-sm leading-relaxed text-muted-foreground"
+                    >
+                        Author terrain, place capitals and troops, and roll new
+                        maps with the same generation styles documented below.
+                        Brush, eraser, and fill work on the vertex grid; marker
+                        tools snap to valid tiles.
                     </p>
                 </div>
             </div>
-            <Button as-child variant="outline" class="shrink-0 self-start sm:self-center">
+            <Button
+                as-child
+                variant="outline"
+                class="shrink-0 self-start sm:self-center"
+            >
                 <Link :href="mapBuilderHref">Open map builder</Link>
             </Button>
         </div>
@@ -184,8 +193,8 @@ function speedClass(speed: number, impassable: boolean): string {
                     <h2 class="font-display text-xl font-bold">Combat units</h2>
                     <p class="mt-1 text-sm text-muted-foreground">
                         Two unit types share the same upkeep but trade speed for
-                        durability. Defense is flat - there is no bonus for holding
-                        ground.
+                        durability. Defense is flat - there is no bonus for
+                        holding ground.
                     </p>
                 </div>
             </div>
@@ -210,13 +219,17 @@ function speedClass(speed: number, impassable: boolean): string {
                         </div>
                         <span class="wod-chip">{{ troop.role }}</span>
                     </div>
-                    <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    <p
+                        class="mt-2 text-sm leading-relaxed text-muted-foreground"
+                    >
                         {{ troop.summary }}
                     </p>
                     <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         <div>
                             <dt class="text-muted-foreground">Health</dt>
-                            <dd class="font-display font-bold">{{ troop.health }}</dd>
+                            <dd class="font-display font-bold">
+                                {{ troop.health }}
+                            </dd>
                         </div>
                         <div>
                             <dt class="text-muted-foreground">Recruit cost</dt>
@@ -251,13 +264,20 @@ function speedClass(speed: number, impassable: boolean): string {
                         Settlements & economy
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Capitals and outposts pay income and can be toggled as troop spawn points. Icons match the map editor:
+                        Capitals and outposts pay income and can be toggled as
+                        troop spawn points. Icons match the map editor:
                         <span class="whitespace-nowrap"
-                            ><Landmark class="inline size-3.5 align-text-bottom" stroke-width="2" />
+                            ><Landmark
+                                class="inline size-3.5 align-text-bottom"
+                                stroke-width="2"
+                            />
                             capital</span
                         >,
                         <span class="whitespace-nowrap"
-                            ><Flag class="inline size-3.5 align-text-bottom" stroke-width="2" />
+                            ><Flag
+                                class="inline size-3.5 align-text-bottom"
+                                stroke-width="2"
+                            />
                             outpost</span
                         >.
                     </p>
@@ -286,7 +306,9 @@ function speedClass(speed: number, impassable: boolean): string {
                             {{ settlement.marker }}
                         </span>
                     </div>
-                    <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    <p
+                        class="mt-2 text-sm leading-relaxed text-muted-foreground"
+                    >
                         {{ settlement.summary }}
                     </p>
                     <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -339,14 +361,19 @@ function speedClass(speed: number, impassable: boolean): string {
                     <Layers class="size-5" />
                 </div>
                 <div>
-                    <h2 class="font-display text-xl font-bold">Terrain types</h2>
+                    <h2 class="font-display text-xl font-bold">
+                        Terrain types
+                    </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Speed and attack use the War of Dots scale (plains infantry
-                        speed&nbsp;=&nbsp;0.5, attack&nbsp;=&nbsp;0.08). The pixel
-                        under a unit’s center determines which terrain applies. Mountains are
-                        impassable. When a drafted path crosses water a prompt lets you choose
-                        <strong>Wade</strong> (instant, continuous HP drain, blocked from deep
-                        water) or <strong>Embark</strong> (~3&nbsp;s shore conversion to a
+                        Speed and attack use the War of Dots scale (plains
+                        infantry speed&nbsp;=&nbsp;0.5,
+                        attack&nbsp;=&nbsp;0.08). The pixel under a unit’s
+                        center determines which terrain applies. Mountains are
+                        impassable. When a drafted path crosses water a prompt
+                        lets you choose
+                        <strong>Wade</strong> (instant, continuous HP drain,
+                        blocked from deep water) or
+                        <strong>Embark</strong> (~3&nbsp;s shore conversion to a
                         ship — faster on water, no drain, can cross deep water).
                     </p>
                 </div>
@@ -422,7 +449,12 @@ function speedClass(speed: number, impassable: boolean): string {
                             </td>
                             <td
                                 class="px-3 py-2.5 text-center tabular-nums"
-                                :class="speedClass(tile.infantry.speed, tile.impassable)"
+                                :class="
+                                    speedClass(
+                                        tile.infantry.speed,
+                                        tile.impassable,
+                                    )
+                                "
                             >
                                 {{ formatStat(tile.infantry.speed) }}
                             </td>
@@ -434,7 +466,9 @@ function speedClass(speed: number, impassable: boolean): string {
                             </td>
                             <td
                                 class="px-3 py-2.5 text-center tabular-nums"
-                                :class="speedClass(tile.tank.speed, tile.impassable)"
+                                :class="
+                                    speedClass(tile.tank.speed, tile.impassable)
+                                "
                             >
                                 {{ formatStat(tile.tank.speed) }}
                             </td>
@@ -444,7 +478,9 @@ function speedClass(speed: number, impassable: boolean): string {
                             <td class="px-3 py-2.5 text-center tabular-nums">
                                 {{ formatStat(tile.tank.defense, 1) }}
                             </td>
-                            <td class="max-w-xs px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+                            <td
+                                class="max-w-xs px-3 py-2.5 text-xs leading-relaxed text-muted-foreground"
+                            >
                                 {{ tile.description }}
                                 <span
                                     v-if="!tile.impassable"
@@ -475,9 +511,10 @@ function speedClass(speed: number, impassable: boolean): string {
                         Map generation styles
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Choose a style in the Map Builder’s generate dialog (same team count and
-                        optional seed as in-game). Previews below are 48×56-cell samples (seed
-                        4&nbsp;242&nbsp;42) rendered with the editor terrain palette - not full
+                        Choose a style in the Map Builder’s generate dialog
+                        (same team count and optional seed as in-game). Previews
+                        below are 48×56-cell samples (seed 4&nbsp;242&nbsp;42)
+                        rendered with the editor terrain palette - not full
                         battlefield dimensions.
                     </p>
                 </div>
@@ -489,11 +526,13 @@ function speedClass(speed: number, impassable: boolean): string {
                     :key="style.id"
                     class="overflow-hidden rounded-lg border-2 border-foreground bg-card shadow-sm"
                 >
-                    <figure class="border-b-2 border-foreground bg-[var(--wod-editor-void)]">
+                    <figure
+                        class="border-b-2 border-foreground bg-[var(--wod-editor-void)]"
+                    >
                         <img
                             :src="style.preview"
                             :alt="`Terrain preview for ${style.label} map generation`"
-                            class="mx-auto block h-auto w-full max-h-56 object-contain"
+                            class="mx-auto block h-auto max-h-56 w-full object-contain"
                             width="224"
                             height="192"
                             loading="lazy"
@@ -502,12 +541,17 @@ function speedClass(speed: number, impassable: boolean): string {
                     </figure>
                     <div class="p-5">
                         <div class="flex items-center gap-2">
-                            <Map class="size-4 shrink-0 text-muted-foreground" stroke-width="2" />
+                            <Map
+                                class="size-4 shrink-0 text-muted-foreground"
+                                stroke-width="2"
+                            />
                             <h3 class="font-display text-lg font-bold">
                                 {{ style.label }}
                             </h3>
                         </div>
-                        <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        <p
+                            class="mt-2 text-sm leading-relaxed text-muted-foreground"
+                        >
                             {{ style.description }}
                         </p>
                         <ul class="mt-3 flex flex-wrap gap-2">

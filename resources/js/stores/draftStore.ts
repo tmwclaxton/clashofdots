@@ -29,7 +29,10 @@ export const useDraftStore = defineStore('draft', {
             this.selectedTroopIds = [];
         },
         beginPath(entityId: number, start: Point) {
-            if (this.activeDraft !== null && this.activeDraft.entityId !== entityId) {
+            if (
+                this.activeDraft !== null &&
+                this.activeDraft.entityId !== entityId
+            ) {
                 this.finishPath();
             }
 
@@ -73,6 +76,7 @@ export const useDraftStore = defineStore('draft', {
         },
         setWaterMode(entityId: number, mode: 'wade' | 'embark') {
             const draft = this.draftPaths.find((p) => p.entityId === entityId);
+
             if (draft) {
                 draft.waterMode = mode;
             }

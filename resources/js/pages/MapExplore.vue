@@ -92,11 +92,11 @@ watch(
 
 const hasActiveFilters = computed(() => {
     return (
-        filterForm.q.trim() !== ''
-        || filterForm.author.trim() !== ''
-        || filterForm.uuid.trim() !== ''
-        || filterForm.sort !== 'newest'
-        || filterForm.per_page !== 12
+        filterForm.q.trim() !== '' ||
+        filterForm.author.trim() !== '' ||
+        filterForm.uuid.trim() !== '' ||
+        filterForm.sort !== 'newest' ||
+        filterForm.per_page !== 12
     );
 });
 
@@ -106,10 +106,9 @@ const lobbyForm = useForm({
     map_uuid: '',
 });
 
-function buildExploreQuery(overrides: Partial<ExploreFilters> & { page?: number } = {}): Record<
-    string,
-    string | number | boolean
-> {
+function buildExploreQuery(
+    overrides: Partial<ExploreFilters> & { page?: number } = {},
+): Record<string, string | number | boolean> {
     const q = { ...filterForm, ...overrides };
     const out: Record<string, string | number | boolean> = {};
 
@@ -142,7 +141,9 @@ function buildExploreQuery(overrides: Partial<ExploreFilters> & { page?: number 
     return out;
 }
 
-function visitExplore(overrides: Partial<ExploreFilters> & { page?: number } = {}): void {
+function visitExplore(
+    overrides: Partial<ExploreFilters> & { page?: number } = {},
+): void {
     router.visit(mapsExplore.url({ query: buildExploreQuery(overrides) }), {
         preserveState: true,
         preserveScroll: true,
@@ -171,12 +172,16 @@ function getCookie(name: string): string {
 
 function csrfToken(): string {
     return (
-        document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ??
-        getCookie('XSRF-TOKEN')
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? getCookie('XSRF-TOKEN')
     );
 }
 
-async function jsonPost(url: string, body: Record<string, unknown>): Promise<Response> {
+async function jsonPost(
+    url: string,
+    body: Record<string, unknown>,
+): Promise<Response> {
     return fetch(url, {
         method: 'POST',
         credentials: 'same-origin',
@@ -199,7 +204,10 @@ function mergeCard(uuid: string, next: ExploreMapCard): void {
     }
 }
 
-async function submitVote(mapUuid: string, choice: 'like' | 'dislike' | 'clear'): Promise<void> {
+async function submitVote(
+    mapUuid: string,
+    choice: 'like' | 'dislike' | 'clear',
+): Promise<void> {
     const res = await jsonPost(vote.url(mapUuid), { vote: choice });
 
     if (!res.ok) {
@@ -284,32 +292,45 @@ const sortOptions = [
     <Head title="Explore maps" />
 
     <div class="flex flex-col gap-8">
-        <h1 class="font-display text-xl font-bold tracking-tight sm:text-2xl md:text-3xl">
+        <h1
+            class="font-display text-xl font-bold tracking-tight sm:text-2xl md:text-3xl"
+        >
             Explore maps
         </h1>
 
         <div
             v-if="hasUuidFilter"
-            class="flex flex-wrap items-center justify-between gap-3 wod-panel px-4 py-3"
+            class="wod-panel flex flex-wrap items-center justify-between gap-3 px-4 py-3"
         >
             <p class="text-sm text-muted-foreground">
                 Showing one published map from your builder link.
             </p>
-            <Button type="button" size="sm" variant="outline" @click="resetFilters">
+            <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                @click="resetFilters"
+            >
                 Show all maps
             </Button>
         </div>
 
         <form
-            class="flex flex-col gap-4 wod-panel p-4"
+            class="wod-panel flex flex-col gap-4 p-4"
             @submit.prevent="applyFilters"
         >
-            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <p
+                class="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+            >
                 Search &amp; sort
             </p>
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-medium text-foreground" for="explore-q">Map name</label>
+                    <label
+                        class="text-xs font-medium text-foreground"
+                        for="explore-q"
+                        >Map name</label
+                    >
                     <Input
                         id="explore-q"
                         v-model="filterForm.q"
@@ -321,7 +342,11 @@ const sortOptions = [
                     />
                 </div>
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-medium text-foreground" for="explore-author">Author</label>
+                    <label
+                        class="text-xs font-medium text-foreground"
+                        for="explore-author"
+                        >Author</label
+                    >
                     <Input
                         id="explore-author"
                         v-model="filterForm.author"
@@ -333,7 +358,11 @@ const sortOptions = [
                     />
                 </div>
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-medium text-foreground" for="explore-sort">Sort by</label>
+                    <label
+                        class="text-xs font-medium text-foreground"
+                        for="explore-sort"
+                        >Sort by</label
+                    >
                     <select
                         id="explore-sort"
                         v-model="filterForm.sort"
@@ -349,28 +378,24 @@ const sortOptions = [
                     </select>
                 </div>
                 <div class="flex flex-col gap-1.5">
-                    <label class="text-xs font-medium text-foreground" for="explore-per">Per page</label>
+                    <label
+                        class="text-xs font-medium text-foreground"
+                        for="explore-per"
+                        >Per page</label
+                    >
                     <select
                         id="explore-per"
                         v-model.number="filterForm.per_page"
                         class="wod-field h-9 rounded-md border-2 border-foreground px-2 text-sm"
                     >
-                        <option :value="12">
-                            12
-                        </option>
-                        <option :value="24">
-                            24
-                        </option>
-                        <option :value="48">
-                            48
-                        </option>
+                        <option :value="12">12</option>
+                        <option :value="24">24</option>
+                        <option :value="48">48</option>
                     </select>
                 </div>
             </div>
             <div class="flex flex-wrap gap-2">
-                <Button type="submit" size="sm">
-                    Apply filters
-                </Button>
+                <Button type="submit" size="sm"> Apply filters </Button>
                 <Button
                     v-if="hasActiveFilters"
                     type="button"
@@ -385,11 +410,17 @@ const sortOptions = [
 
         <p v-if="pagination.total > 0" class="text-sm text-muted-foreground">
             Showing
-            <span class="font-medium text-foreground">{{ pagination.from ?? 0 }}</span>
+            <span class="font-medium text-foreground">{{
+                pagination.from ?? 0
+            }}</span>
             –
-            <span class="font-medium text-foreground">{{ pagination.to ?? 0 }}</span>
+            <span class="font-medium text-foreground">{{
+                pagination.to ?? 0
+            }}</span>
             of
-            <span class="font-medium text-foreground">{{ pagination.total }}</span>
+            <span class="font-medium text-foreground">{{
+                pagination.total
+            }}</span>
             published maps
         </p>
 
@@ -408,11 +439,17 @@ const sortOptions = [
                 </button>
             </template>
             <template v-else-if="pagination.total === 0">
-                No published maps yet. Publish yours from the map builder when it is ready.
+                No published maps yet. Publish yours from the map builder when
+                it is ready.
             </template>
             <template v-else>
                 <p>No maps on this page.</p>
-                <Button type="button" variant="link" class="mt-2 h-auto p-0 text-foreground" @click="visitExplore({ page: 1 })">
+                <Button
+                    type="button"
+                    variant="link"
+                    class="mt-2 h-auto p-0 text-foreground"
+                    @click="visitExplore({ page: 1 })"
+                >
                     Back to first page
                 </Button>
             </template>
@@ -422,29 +459,36 @@ const sortOptions = [
             <article
                 v-for="m in cards"
                 :key="m.uuid"
-                class="flex flex-col gap-3 wod-panel p-4"
+                class="wod-panel flex flex-col gap-3 p-4"
             >
                 <Link
                     :href="mapBuilder.url(m.uuid)"
-                    class="group block overflow-hidden rounded-md ring-offset-background outline-none transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    class="group block overflow-hidden rounded-md ring-offset-background transition outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     title="View in map builder (read-only)"
                 >
-                    <MapExplorePreview class="transition group-hover:opacity-95" :data="m.data" />
+                    <MapExplorePreview
+                        class="transition group-hover:opacity-95"
+                        :data="m.data"
+                    />
                 </Link>
 
                 <div>
-                    <h2 class="font-bold leading-tight">
+                    <h2 class="leading-tight font-bold">
                         <Link
                             :href="mapBuilder.url(m.uuid)"
-                            class="rounded-sm outline-none ring-offset-background transition hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            class="rounded-sm ring-offset-background transition outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
                             {{ m.name }}
                         </Link>
                     </h2>
                     <p class="mt-1 text-xs text-muted-foreground">
                         By {{ m.ownerName }}
-                        <span v-if="m.publishedAt" class="text-muted-foreground/80">
-                            · published {{ new Date(m.publishedAt).toLocaleDateString() }}
+                        <span
+                            v-if="m.publishedAt"
+                            class="text-muted-foreground/80"
+                        >
+                            · published
+                            {{ new Date(m.publishedAt).toLocaleDateString() }}
                         </span>
                     </p>
                     <p
@@ -452,7 +496,9 @@ const sortOptions = [
                         class="mt-2 rounded border border-dashed border-foreground/20 bg-muted/40 px-2 py-1.5 text-xs text-muted-foreground"
                     >
                         Fork of
-                        <span class="font-medium text-foreground">{{ m.forkAttribution.parentName }}</span>
+                        <span class="font-medium text-foreground">{{
+                            m.forkAttribution.parentName
+                        }}</span>
                         by {{ m.forkAttribution.parentAuthorName }}
                     </p>
                 </div>
@@ -462,30 +508,61 @@ const sortOptions = [
                     <span>·</span>
                     <span>{{ m.forksCount }} forks</span>
                     <span>·</span>
-                    <span>{{ m.likesCount }} likes / {{ m.dislikesCount }} dislikes</span>
+                    <span
+                        >{{ m.likesCount }} likes /
+                        {{ m.dislikesCount }} dislikes</span
+                    >
                 </div>
 
-                <div class="mt-auto flex flex-col gap-2 border-t border-foreground/10 pt-3 sm:flex-row sm:flex-wrap">
-                    <Button type="button" size="sm" variant="outline" class="w-full gap-1 sm:w-auto" as-child>
-                        <Link :href="mapBuilder.url(m.uuid)" title="View in map builder (read-only)">
+                <div
+                    class="mt-auto flex flex-col gap-2 border-t border-foreground/10 pt-3 sm:flex-row sm:flex-wrap"
+                >
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        class="w-full gap-1 sm:w-auto"
+                        as-child
+                    >
+                        <Link
+                            :href="mapBuilder.url(m.uuid)"
+                            title="View in map builder (read-only)"
+                        >
                             View in builder
                         </Link>
                     </Button>
-                    <Button type="button" size="sm" variant="outline" class="w-full gap-1 sm:w-auto" @click="copyToBuilder(m)">
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        class="w-full gap-1 sm:w-auto"
+                        @click="copyToBuilder(m)"
+                    >
                         <Copy class="size-3.5" />
                         Copy to my maps
                     </Button>
-                    <Button type="button" size="sm" class="w-full gap-1 sm:w-auto" @click="startLobby(m)">
+                    <Button
+                        type="button"
+                        size="sm"
+                        class="w-full gap-1 sm:w-auto"
+                        @click="startLobby(m)"
+                    >
                         <Users class="size-3.5" />
                         Start lobby
                     </Button>
-                    <div class="flex items-center justify-center gap-1 sm:ml-auto sm:justify-end">
+                    <div
+                        class="flex items-center justify-center gap-1 sm:ml-auto sm:justify-end"
+                    >
                         <Button
                             type="button"
                             size="icon"
                             variant="ghost"
                             class="size-8"
-                            :class="m.viewerVote === 'like' ? 'text-green-700 dark:text-green-400' : ''"
+                            :class="
+                                m.viewerVote === 'like'
+                                    ? 'text-green-700 dark:text-green-400'
+                                    : ''
+                            "
                             :title="auth.user ? 'Like' : 'Sign in to like'"
                             @click="toggleLike(m)"
                         >
@@ -496,8 +573,14 @@ const sortOptions = [
                             size="icon"
                             variant="ghost"
                             class="size-8"
-                            :class="m.viewerVote === 'dislike' ? 'text-red-700 dark:text-red-400' : ''"
-                            :title="auth.user ? 'Dislike' : 'Sign in to dislike'"
+                            :class="
+                                m.viewerVote === 'dislike'
+                                    ? 'text-red-700 dark:text-red-400'
+                                    : ''
+                            "
+                            :title="
+                                auth.user ? 'Dislike' : 'Sign in to dislike'
+                            "
                             @click="toggleDislike(m)"
                         >
                             <ThumbsDown class="size-4" />
@@ -572,7 +655,10 @@ const sortOptions = [
         </nav>
 
         <p v-if="!auth.user" class="text-center text-sm text-muted-foreground">
-            <Link :href="login().url" class="font-medium text-foreground underline underline-offset-2">
+            <Link
+                :href="login().url"
+                class="font-medium text-foreground underline underline-offset-2"
+            >
                 Sign in
             </Link>
             to fork maps, vote, or start lobbies.

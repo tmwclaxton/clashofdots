@@ -31,10 +31,10 @@ const emit = defineEmits<{
 
 const isPlacementTool = computed(
     () =>
-        props.editor.activeTool.value === 'capital'
-        || props.editor.activeTool.value === 'flag'
-        || props.editor.activeTool.value === 'infantry'
-        || props.editor.activeTool.value === 'tank',
+        props.editor.activeTool.value === 'capital' ||
+        props.editor.activeTool.value === 'flag' ||
+        props.editor.activeTool.value === 'infantry' ||
+        props.editor.activeTool.value === 'tank',
 );
 
 const selectedTeamSlot = computed(() => props.editor.selectedTeam.value);
@@ -57,8 +57,8 @@ const visibleTeamRows = computed(() => {
     for (let i = 0; i < n; i++) {
         const ps = slots[i] ?? i;
         const colorRow =
-            props.teamColors.find((c) => c.slot === ps)
-            ?? ({
+            props.teamColors.find((c) => c.slot === ps) ??
+            ({
                 slot: ps,
                 hex: '#888888',
                 label: `Team ${i + 1}`,
@@ -119,7 +119,9 @@ function formatTeamCountsTitle(teamIndex: number): string {
 
 const canAddTeam = computed(() => props.editor.teamCount.value < MAP_MAX_TEAMS);
 
-const canRemoveTeam = computed(() => props.editor.teamCount.value > MAP_MIN_TEAMS);
+const canRemoveTeam = computed(
+    () => props.editor.teamCount.value > MAP_MIN_TEAMS,
+);
 
 function addTeam(): void {
     if (!canAddTeam.value) {
@@ -132,9 +134,9 @@ function addTeam(): void {
 /** `teamIndex` is contiguous logical team; colour/label come from {@link teamPaletteSlots}. */
 function removeTeamForSlot(teamIndex: number): void {
     if (
-        !Number.isInteger(teamIndex)
-        || teamIndex < 0
-        || teamIndex >= props.editor.teamCount.value
+        !Number.isInteger(teamIndex) ||
+        teamIndex < 0 ||
+        teamIndex >= props.editor.teamCount.value
     ) {
         return;
     }
@@ -147,19 +149,24 @@ function removeTeamForSlot(teamIndex: number): void {
     <div
         class="wod-panel flex h-full min-h-0 w-full min-w-0 flex-col gap-1 rounded-lg border-2 border-foreground p-1.5"
     >
-        <div class="flex shrink-0 flex-wrap items-center justify-between gap-x-1.5 gap-y-0">
-            <p class="font-display text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+        <div
+            class="flex shrink-0 flex-wrap items-center justify-between gap-x-1.5 gap-y-0"
+        >
+            <p
+                class="font-display text-[10px] font-bold tracking-wide text-muted-foreground uppercase"
+            >
                 Teams
             </p>
             <p class="sr-only">
-                Per-team counts use the same icons as the toolbar: capital, flag, infantry spawn, tank
-                spawn.
+                Per-team counts use the same icons as the toolbar: capital,
+                flag, infantry spawn, tank spawn.
             </p>
             <p
                 v-if="!isPlacementTool"
                 class="max-w-[min(18rem,55vw)] text-[8px] leading-tight text-muted-foreground sm:max-w-prose sm:text-[9px]"
             >
-                Click a swatch to arm that team, then use marker tools on the map.
+                Click a swatch to arm that team, then use marker tools on the
+                map.
             </p>
         </div>
         <div
@@ -171,7 +178,8 @@ function removeTeamForSlot(teamIndex: number): void {
                 :class="
                     cn(
                         'isolate flex w-full min-w-0 flex-col rounded border-2 px-0.5 py-0.5 text-[8px] font-medium normal-case transition-shadow',
-                        selectedTeamSlot !== null && selectedTeamSlot === t.teamIndex
+                        selectedTeamSlot !== null &&
+                            selectedTeamSlot === t.teamIndex
                             ? 'border-foreground ring-1 ring-foreground/25'
                             : 'border-transparent hover:border-muted-foreground/40',
                     )
@@ -189,9 +197,10 @@ function removeTeamForSlot(teamIndex: number): void {
                             :style="{ backgroundColor: t.colorRow.hex }"
                             aria-hidden="true"
                         />
-                        <span class="min-w-0 truncate text-[9px] text-muted-foreground">{{
-                            t.colorRow.label
-                        }}</span>
+                        <span
+                            class="min-w-0 truncate text-[9px] text-muted-foreground"
+                            >{{ t.colorRow.label }}</span
+                        >
                     </button>
                     <button
                         v-if="canRemoveTeam"
@@ -201,40 +210,70 @@ function removeTeamForSlot(teamIndex: number): void {
                         :aria-label="`Remove ${t.colorRow.label} team`"
                         @click.stop.prevent="removeTeamForSlot(t.teamIndex)"
                     >
-                        <X class="pointer-events-none size-2.5" stroke-width="2.5" />
+                        <X
+                            class="pointer-events-none size-2.5"
+                            stroke-width="2.5"
+                        />
                     </button>
                 </div>
                 <div
                     class="mt-px border-t border-foreground/15 pt-0.5"
                     :title="formatTeamCountsTitle(t.teamIndex)"
                 >
-                    <span class="sr-only">{{ formatTeamCountsTitle(t.teamIndex) }}</span>
+                    <span class="sr-only">{{
+                        formatTeamCountsTitle(t.teamIndex)
+                    }}</span>
                     <div
                         class="flex items-end justify-between gap-px text-foreground"
                         aria-hidden="true"
                     >
                         <div class="flex flex-1 flex-col items-center gap-px">
-                            <Landmark class="size-3 shrink-0" stroke-width="2" />
-                            <span class="text-[9px] font-semibold tabular-nums leading-none">
-                                {{ markerTotalsByTeam[t.teamIndex]?.capitals ?? 0 }}
+                            <Landmark
+                                class="size-3 shrink-0"
+                                stroke-width="2"
+                            />
+                            <span
+                                class="text-[9px] leading-none font-semibold tabular-nums"
+                            >
+                                {{
+                                    markerTotalsByTeam[t.teamIndex]?.capitals ??
+                                    0
+                                }}
                             </span>
                         </div>
                         <div class="flex flex-1 flex-col items-center gap-px">
                             <Flag class="size-3 shrink-0" stroke-width="2" />
-                            <span class="text-[9px] font-semibold tabular-nums leading-none">
-                                {{ markerTotalsByTeam[t.teamIndex]?.outposts ?? 0 }}
+                            <span
+                                class="text-[9px] leading-none font-semibold tabular-nums"
+                            >
+                                {{
+                                    markerTotalsByTeam[t.teamIndex]?.outposts ??
+                                    0
+                                }}
                             </span>
                         </div>
                         <div class="flex flex-1 flex-col items-center gap-px">
                             <Circle class="size-3 shrink-0" stroke-width="2" />
-                            <span class="text-[9px] font-semibold tabular-nums leading-none">
-                                {{ markerTotalsByTeam[t.teamIndex]?.infantry ?? 0 }}
+                            <span
+                                class="text-[9px] leading-none font-semibold tabular-nums"
+                            >
+                                {{
+                                    markerTotalsByTeam[t.teamIndex]?.infantry ??
+                                    0
+                                }}
                             </span>
                         </div>
                         <div class="flex flex-1 flex-col items-center gap-px">
-                            <RectangleHorizontal class="size-3 shrink-0" stroke-width="2" />
-                            <span class="text-[9px] font-semibold tabular-nums leading-none">
-                                {{ markerTotalsByTeam[t.teamIndex]?.tanks ?? 0 }}
+                            <RectangleHorizontal
+                                class="size-3 shrink-0"
+                                stroke-width="2"
+                            />
+                            <span
+                                class="text-[9px] leading-none font-semibold tabular-nums"
+                            >
+                                {{
+                                    markerTotalsByTeam[t.teamIndex]?.tanks ?? 0
+                                }}
                             </span>
                         </div>
                     </div>

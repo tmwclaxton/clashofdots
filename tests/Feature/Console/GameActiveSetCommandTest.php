@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Console;
 
-use Predis\Client;
+use Illuminate\Support\Facades\Redis;
 use Tests\TestCase;
 
 class GameActiveSetCommandTest extends TestCase
@@ -11,7 +11,9 @@ class GameActiveSetCommandTest extends TestCase
     {
         parent::setUp();
 
-        if (! extension_loaded('redis') && ! class_exists(Client::class)) {
+        try {
+            Redis::ping();
+        } catch (\Throwable) {
             $this->markTestSkipped('Redis is required for game:active-set tests.');
         }
     }

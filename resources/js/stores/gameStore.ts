@@ -15,6 +15,7 @@ function csrfHeaders(): Record<string, string> {
         .split('; ')
         .find((row) => row.startsWith('XSRF-TOKEN='))
         ?.split('=')[1];
+
     return {
         'Content-Type': 'application/json',
         Accept: 'application/json',
@@ -200,7 +201,12 @@ export const useGameStore = defineStore('game', {
             useCameraStore().reset();
             useDraftStore().reset();
         },
-        connect(gameUuid: string, broadcastConnection: string, slot: number, color: string) {
+        connect(
+            gameUuid: string,
+            broadcastConnection: string,
+            slot: number,
+            color: string,
+        ) {
             this.disconnect();
             this.gameUuid = gameUuid;
             this.slot = slot;
@@ -212,46 +218,68 @@ export const useGameStore = defineStore('game', {
                 .subscribed(() => {
                     this.connected = true;
                 })
-                .listen('.GameInitialized', (payload: Record<string, unknown>) => {
-                    this.applySnapshotPayload(payload);
-                })
-                .listen('.GameStateUpdated', (payload: Record<string, unknown>) => {
-                    const prevTick = this.worldTick;
-                    this.latestState = payload.state as GameState;
-                    const eco = parseEconomy(payload.economy);
+                .listen(
+                    '.GameInitialized',
+                    (payload: Record<string, unknown>) => {
+                        this.applySnapshotPayload(payload);
+                    },
+                )
+                .listen(
+                    '.GameStateUpdated',
+                    (payload: Record<string, unknown>) => {
+                        const prevTick = this.worldTick;
+                        this.latestState = payload.state as GameState;
+                        const eco = parseEconomy(payload.economy);
 
-                    if (eco) {
-                        this.economy = eco;
-                    }
+                        if (eco) {
+                            this.economy = eco;
+                        }
 
-                    if (payload.worldTick !== undefined && payload.worldTick !== null) {
-                        this.worldTick = Number(payload.worldTick);
-                        this.devDiagnostics.lastEchoPushAt = Date.now();
-                        this.devDiagnostics.lastEchoWorldTickDelta = this.worldTick - prevTick;
-                    }
-                })
+                        if (
+                            payload.worldTick !== undefined &&
+                            payload.worldTick !== null
+                        ) {
+                            this.worldTick = Number(payload.worldTick);
+                            this.devDiagnostics.lastEchoPushAt = Date.now();
+                            this.devDiagnostics.lastEchoWorldTickDelta =
+                                this.worldTick - prevTick;
+                        }
+                    },
+                )
                 .listen('.GameEnded', (payload: Record<string, unknown>) => {
                     this.matchEnded = true;
                     this.winnerUserId =
-                        payload.winnerUserId === undefined || payload.winnerUserId === null
+                        payload.winnerUserId === undefined ||
+                        payload.winnerUserId === null
                             ? null
                             : Number(payload.winnerUserId);
                     this.winnerSlot =
-                        payload.winnerSlot === undefined || payload.winnerSlot === null
+                        payload.winnerSlot === undefined ||
+                        payload.winnerSlot === null
                             ? null
                             : Number(payload.winnerSlot);
                     this.winnerName =
-                        typeof payload.winnerName === 'string' ? payload.winnerName : null;
+                        typeof payload.winnerName === 'string'
+                            ? payload.winnerName
+                            : null;
                 })
-                .listen('.ChatMessageSent', (payload: Record<string, unknown>) => {
-                    this.chatMessages.push(payload as unknown as ChatMessage);
-                    this.unreadChatCount++;
-                });
+                .listen(
+                    '.ChatMessageSent',
+                    (payload: Record<string, unknown>) => {
+                        this.chatMessages.push(
+                            payload as unknown as ChatMessage,
+                        );
+                        this.unreadChatCount++;
+                    },
+                );
         },
         applySnapshotPayload(payload: Record<string, unknown>) {
             this.terrain = payload.terrain as number[][];
             this.forest = payload.forest as number[][];
-            this.terrainCells = coerceTerrainCellsFromSnapshot(payload.terrainCells, this.terrain);
+            this.terrainCells = coerceTerrainCellsFromSnapshot(
+                payload.terrainCells,
+                this.terrain,
+            );
             this.cityPositions = payload.cityPositions as Point[];
 
             if (payload.world && typeof payload.world === 'object') {
@@ -282,9 +310,13 @@ export const useGameStore = defineStore('game', {
 
             this.initialized = true;
         },
-        async pullSnapshot(url: string, options?: { treat404AsEnded?: boolean }) {
+        async pullSnapshot(
+            url: string,
+            options?: { treat404AsEnded?: boolean },
+        ) {
             const prevTick = this.worldTick;
-            const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+            const t0 =
+                typeof performance !== 'undefined' ? performance.now() : 0;
 
             try {
                 const raw = document.cookie
@@ -306,7 +338,9 @@ export const useGameStore = defineStore('game', {
                 });
 
                 const elapsedMs =
-                    typeof performance !== 'undefined' ? Math.round(performance.now() - t0) : null;
+                    typeof performance !== 'undefined'
+                        ? Math.round(performance.now() - t0)
+                        : null;
 
                 if (!res.ok) {
                     if (options?.treat404AsEnded && res.status === 404) {
@@ -328,7 +362,8 @@ export const useGameStore = defineStore('game', {
                 this.devDiagnostics.lastSnapshotAt = Date.now();
                 this.devDiagnostics.lastSnapshotDurationMs = elapsedMs;
                 this.devDiagnostics.lastSnapshotHttpStatus = res.status;
-                this.devDiagnostics.lastWorldTickDeltaViaSnapshot = this.worldTick - prevTick;
+                this.devDiagnostics.lastWorldTickDeltaViaSnapshot =
+                    this.worldTick - prevTick;
                 this.devDiagnostics.lastSnapshotError = null;
             } catch (e) {
                 this.devDiagnostics.lastSnapshotAt = Date.now();
@@ -357,15 +392,22 @@ export const useGameStore = defineStore('game', {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: csrfHeaders(),
-                    body: JSON.stringify({ troop_orders: troopOrders, city_orders: [] }),
+                    body: JSON.stringify({
+                        troop_orders: troopOrders,
+                        city_orders: [],
+                    }),
                 });
 
                 if (!res.ok) {
                     toast.error('Could not send stop orders.');
+
                     return;
                 }
 
-                if (snapshotFetchUrl !== undefined && snapshotFetchUrl.length > 0) {
+                if (
+                    snapshotFetchUrl !== undefined &&
+                    snapshotFetchUrl.length > 0
+                ) {
                     await this.pullSnapshot(snapshotFetchUrl);
                 }
             } catch {
@@ -373,12 +415,21 @@ export const useGameStore = defineStore('game', {
             }
         },
 
-        async submitOrders(gameUuid: string, options?: { snapshotFetchUrl?: string }) {
+        async submitOrders(
+            gameUuid: string,
+            options?: { snapshotFetchUrl?: string },
+        ) {
             const drafts = useDraftStore();
             const toast = useToastStore();
 
-            const troopOrders = drafts.draftPaths
-                .map((p) => [p.entityId, p.points, p.waterMode ?? 'embark'] as [number, Point[], string]);
+            const troopOrders = drafts.draftPaths.map(
+                (p) =>
+                    [p.entityId, p.points, p.waterMode ?? 'embark'] as [
+                        number,
+                        Point[],
+                        string,
+                    ],
+            );
 
             try {
                 const res = await fetch(orders(gameUuid).url, {
@@ -389,20 +440,29 @@ export const useGameStore = defineStore('game', {
                 });
 
                 if (!res.ok) {
-                    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-                    const errors = data.errors as Record<string, string> | undefined;
+                    const data = (await res.json().catch(() => ({}))) as Record<
+                        string,
+                        unknown
+                    >;
+                    const errors = data.errors as
+                        | Record<string, string>
+                        | undefined;
                     const message =
                         errors?.troop_orders ??
                         errors?.city_orders ??
-                        (typeof data.message === 'string' ? data.message : null) ??
+                        (typeof data.message === 'string'
+                            ? data.message
+                            : null) ??
                         'Orders could not be submitted.';
                     toast.error(message);
+
                     return;
                 }
 
                 drafts.clearDrafts();
 
                 const snapshotUrl = options?.snapshotFetchUrl;
+
                 if (snapshotUrl !== undefined && snapshotUrl.length > 0) {
                     await this.pullSnapshot(snapshotUrl);
                 }
@@ -425,7 +485,10 @@ export const useGameStore = defineStore('game', {
                 const res = await fetch(chatRoute({ game: gameUuid }).url, {
                     method: 'POST',
                     credentials: 'same-origin',
-                    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
+                    headers: {
+                        ...csrfHeaders(),
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({ body }),
                 });
 
@@ -437,21 +500,36 @@ export const useGameStore = defineStore('game', {
             }
         },
 
-        async setCityRecruitment(gameUuid: string, cityId: number, enabled: boolean) {
+        async setCityRecruitment(
+            gameUuid: string,
+            cityId: number,
+            enabled: boolean,
+        ) {
             const toast = useToastStore();
 
             try {
-                const res = await fetch(cityRecruitmentRoute({ game: gameUuid }).url, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ city_id: cityId, enabled }),
-                });
+                const res = await fetch(
+                    cityRecruitmentRoute({ game: gameUuid }).url,
+                    {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            ...csrfHeaders(),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ city_id: cityId, enabled }),
+                    },
+                );
 
                 if (!res.ok) {
-                    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+                    const data = (await res.json().catch(() => ({}))) as Record<
+                        string,
+                        unknown
+                    >;
                     const message =
-                        typeof data.message === 'string' ? data.message : 'Could not update city recruitment.';
+                        typeof data.message === 'string'
+                            ? data.message
+                            : 'Could not update city recruitment.';
                     toast.error(message);
                 }
             } catch {
@@ -459,21 +537,39 @@ export const useGameStore = defineStore('game', {
             }
         },
 
-        async setPlayerProduction(gameUuid: string, tankRatio: number, speedMultiplier: number) {
+        async setPlayerProduction(
+            gameUuid: string,
+            tankRatio: number,
+            speedMultiplier: number,
+        ) {
             const toast = useToastStore();
 
             try {
-                const res = await fetch(playerProductionRoute({ game: gameUuid }).url, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { ...csrfHeaders(), 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tank_ratio: tankRatio, speed_multiplier: speedMultiplier }),
-                });
+                const res = await fetch(
+                    playerProductionRoute({ game: gameUuid }).url,
+                    {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            ...csrfHeaders(),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            tank_ratio: tankRatio,
+                            speed_multiplier: speedMultiplier,
+                        }),
+                    },
+                );
 
                 if (!res.ok) {
-                    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+                    const data = (await res.json().catch(() => ({}))) as Record<
+                        string,
+                        unknown
+                    >;
                     const message =
-                        typeof data.message === 'string' ? data.message : 'Could not update production settings.';
+                        typeof data.message === 'string'
+                            ? data.message
+                            : 'Could not update production settings.';
                     toast.error(message);
                 }
             } catch {

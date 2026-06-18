@@ -1,4 +1,5 @@
-import { onMounted, onUnmounted, ref, type Ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
+import type { Ref } from 'vue';
 
 export type UseIsDarkReturn = {
     isDark: Ref<boolean>;

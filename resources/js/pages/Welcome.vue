@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Github, Swords, Trophy, Users } from 'lucide-vue-next';
-import { Button, buttonVariants } from '@/components/ui/button';
 import GameLogoMark from '@/components/GameLogoMark.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { cn } from '@/lib/utils';
 import { login, wiki } from '@/routes';
@@ -52,17 +52,20 @@ const steps = [
     {
         number: '01',
         title: 'Join a lobby',
-        description: 'Host a match or enter a six-character code to rally your rivals.',
+        description:
+            'Host a match or enter a six-character code to rally your rivals.',
     },
     {
         number: '02',
         title: 'Draft your advance',
-        description: 'Sketch paths across the map before anyone moves a single sphere.',
+        description:
+            'Sketch paths across the map before anyone moves a single sphere.',
     },
     {
         number: '03',
         title: 'Execute & adapt',
-        description: 'Commit orders, watch the clash unfold, and redraw as the front line shifts.',
+        description:
+            'Commit orders, watch the clash unfold, and redraw as the front line shifts.',
     },
 ] as const;
 </script>
@@ -74,18 +77,24 @@ const steps = [
         <div class="relative flex min-h-svh min-w-0 flex-col">
             <header class="wod-bar-top relative shrink-0">
                 <div
-                    class="relative mx-auto flex w-full min-w-0 max-w-6xl flex-col gap-4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-4"
+                    class="relative mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-4"
                 >
                     <div class="flex min-w-0 items-center gap-2.5 sm:gap-3">
                         <GameLogoMark class="size-8 sm:size-9" />
                         <div class="min-w-0">
-                            <p class="font-display text-base font-bold leading-tight sm:text-lg">
+                            <p
+                                class="font-display text-base leading-tight font-bold sm:text-lg"
+                            >
                                 Clash of Dots
                             </p>
-                            <p class="wod-tagline text-xs sm:text-sm">Plan first, fight second</p>
+                            <p class="wod-tagline text-xs sm:text-sm">
+                                Plan first, fight second
+                            </p>
                         </div>
                     </div>
-                    <nav class="flex w-full min-w-0 flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
+                    <nav
+                        class="flex w-full min-w-0 flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2"
+                    >
                         <ThemeToggle />
                         <Button
                             variant="ghost"
@@ -124,7 +133,11 @@ const steps = [
                                 Leaderboard
                             </Link>
                         </Button>
-                        <Button size="sm" as-child class="shrink-0 sm:h-10 sm:px-4 sm:text-sm">
+                        <Button
+                            size="sm"
+                            as-child
+                            class="shrink-0 sm:h-10 sm:px-4 sm:text-sm"
+                        >
                             <Link :href="lobbiesIndex().url">
                                 <Users class="size-4" />
                                 Play Now
@@ -135,21 +148,30 @@ const steps = [
                             :href="login().url"
                             :class="
                                 cn(
-                                    buttonVariants({ variant: 'outline', size: 'sm' }),
+                                    buttonVariants({
+                                        variant: 'outline',
+                                        size: 'sm',
+                                    }),
                                     'shrink-0 sm:h-10 sm:px-4 sm:text-sm',
                                 )
                             "
                         >
                             <GameLogoMark class="size-4 rounded-sm sm:size-5" />
-                            <span class="hidden min-[380px]:inline">Sign in</span>
+                            <span class="hidden min-[380px]:inline"
+                                >Sign in</span
+                            >
                             <span class="min-[380px]:hidden">Login</span>
                         </Link>
                     </nav>
                 </div>
             </header>
 
-            <section class="relative flex min-w-0 flex-1 flex-col justify-center">
-                <div class="mx-auto w-full min-w-0 max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+            <section
+                class="relative flex min-w-0 flex-1 flex-col justify-center"
+            >
+                <div
+                    class="mx-auto w-full max-w-6xl min-w-0 px-4 py-8 sm:px-6 sm:py-10"
+                >
                     <div class="max-w-3xl">
                         <a
                             :href="GITHUB_REPOSITORY_URL"
@@ -161,12 +183,12 @@ const steps = [
                             <span class="truncate">Open source on GitHub</span>
                         </a>
                         <h1
-                            class="font-display text-3xl font-bold leading-[1.08] tracking-tight text-balance sm:text-5xl sm:leading-[1.05] md:text-6xl"
+                            class="font-display text-3xl leading-[1.08] font-bold tracking-tight text-balance sm:text-5xl sm:leading-[1.05] md:text-6xl"
                         >
                             Draw the plan. Win the war.
                         </h1>
                         <p
-                            class="mt-4 text-pretty text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg"
+                            class="mt-4 text-base leading-relaxed text-pretty text-muted-foreground sm:mt-5 sm:text-lg"
                         >
                             A real-time strategy game inspired by
                             <em class="font-display not-italic">
@@ -175,7 +197,8 @@ const steps = [
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="wod-link text-foreground"
-                                >War of Dots</a>
+                                    >War of Dots</a
+                                >
                             </em>
                             and the tactical clarity of
                             <em class="font-display not-italic">
@@ -184,10 +207,13 @@ const steps = [
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="wod-link text-foreground"
-                                >Historia Civilis</a>
-                            </em>.
+                                    >Historia Civilis</a
+                                > </em
+                            >.
                         </p>
-                        <div class="mt-6 flex w-full min-w-0 flex-col gap-3 sm:mt-7 sm:flex-row sm:flex-wrap">
+                        <div
+                            class="mt-6 flex w-full min-w-0 flex-col gap-3 sm:mt-7 sm:flex-row sm:flex-wrap"
+                        >
                             <Button as-child class="w-full sm:w-auto" size="lg">
                                 <Link :href="lobbiesIndex().url">
                                     <Swords class="size-5" />
@@ -199,7 +225,10 @@ const steps = [
                                 :href="login().url"
                                 :class="
                                     cn(
-                                        buttonVariants({ variant: 'outline', size: 'lg' }),
+                                        buttonVariants({
+                                            variant: 'outline',
+                                            size: 'lg',
+                                        }),
                                         'w-full sm:w-auto',
                                     )
                                 "
@@ -213,7 +242,9 @@ const steps = [
             </section>
         </div>
 
-        <main class="mx-auto w-full min-w-0 max-w-6xl px-4 pb-12 sm:px-6 sm:pb-16">
+        <main
+            class="mx-auto w-full max-w-6xl min-w-0 px-4 pb-12 sm:px-6 sm:pb-16"
+        >
             <section class="grid gap-4 sm:grid-cols-2">
                 <article
                     v-for="feature in features"
@@ -228,7 +259,9 @@ const steps = [
                         <h2 class="font-display text-lg font-bold">
                             {{ feature.title }}
                         </h2>
-                        <p class="mt-1 text-sm leading-relaxed text-muted-foreground">
+                        <p
+                            class="mt-1 text-sm leading-relaxed text-muted-foreground"
+                        >
                             {{ feature.description }}
                         </p>
                     </div>
@@ -236,7 +269,9 @@ const steps = [
             </section>
 
             <section class="wod-panel-dark mt-10 p-5 sm:mt-12 sm:p-8 md:p-10">
-                <h2 class="font-display text-xl font-bold sm:text-2xl md:text-3xl">
+                <h2
+                    class="font-display text-xl font-bold sm:text-2xl md:text-3xl"
+                >
                     How it plays
                 </h2>
                 <ol class="mt-8 grid gap-6 md:grid-cols-3">
@@ -248,7 +283,7 @@ const steps = [
                         <p class="text-sm font-bold text-wod-green-lt">
                             {{ step.number }}
                         </p>
-                        <h3 class="font-display mt-2 text-lg font-bold">
+                        <h3 class="mt-2 font-display text-lg font-bold">
                             {{ step.title }}
                         </h3>
                         <p class="mt-1 text-sm leading-relaxed text-card/80">
@@ -259,17 +294,20 @@ const steps = [
             </section>
 
             <section
-                class="mt-10 flex w-full min-w-0 flex-col gap-5 wod-panel p-5 sm:mt-12 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+                class="wod-panel mt-10 flex w-full min-w-0 flex-col gap-5 p-5 sm:mt-12 sm:flex-row sm:items-center sm:justify-between sm:p-6"
             >
                 <div class="min-w-0">
                     <h2 class="font-display text-xl font-bold md:text-2xl">
                         Ready when you are.
                     </h2>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Open a lobby with a code, or sign in to publish maps and track past matches.
+                        Open a lobby with a code, or sign in to publish maps and
+                        track past matches.
                     </p>
                 </div>
-                <div class="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:items-end">
+                <div
+                    class="flex w-full min-w-0 shrink-0 flex-col gap-2 sm:w-auto sm:items-end"
+                >
                     <Button as-child class="w-full sm:w-auto" size="lg">
                         <Link :href="lobbiesIndex().url">
                             <Users class="size-5" />
@@ -281,7 +319,10 @@ const steps = [
                         :href="login().url"
                         :class="
                             cn(
-                                buttonVariants({ variant: 'outline', size: 'lg' }),
+                                buttonVariants({
+                                    variant: 'outline',
+                                    size: 'lg',
+                                }),
                                 'w-full sm:w-auto',
                             )
                         "
@@ -294,13 +335,16 @@ const steps = [
         </main>
 
         <footer class="wod-bar-bottom px-4 py-3 text-center text-sm sm:px-6">
-            <p class="font-display text-pretty font-bold leading-snug text-foreground">
+            <p
+                class="font-display leading-snug font-bold text-pretty text-foreground"
+            >
                 <a
                     :href="GITHUB_REPOSITORY_URL"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="wod-link break-words"
-                >Open source on GitHub</a>
+                    >Open source on GitHub</a
+                >
                 <span class="text-muted-foreground"> · </span>
                 <span class="whitespace-nowrap">Built with Irish Love ☘️</span>
             </p>

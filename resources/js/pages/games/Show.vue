@@ -6,7 +6,13 @@ import ShareButton from '@/components/ShareButton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { MapDataPayload } from '@/lib/mapEditorGrid';
-import { join, leave, play, replay as replayRoute, start } from '@/routes/games';
+import {
+    join,
+    leave,
+    play,
+    replay as replayRoute,
+    start,
+} from '@/routes/games';
 import { index as lobbies } from '@/routes/lobbies';
 
 type Lobby = {
@@ -19,7 +25,12 @@ type Lobby = {
     isParticipant: boolean;
     canStart: boolean;
     hostName: string;
-    players: Array<{ slot: number; name: string; color: string; teamIndex: number }>;
+    players: Array<{
+        slot: number;
+        name: string;
+        color: string;
+        teamIndex: number;
+    }>;
     sourceMap: { uuid: string; name: string; by: string } | null;
     mapPreviewData: MapDataPayload | null;
     abortedReason?: string | null;
@@ -35,9 +46,11 @@ const props = defineProps<{
 
 const commanderByDisplaySlot = computed(() => {
     const out: Record<number, Lobby['players'][0] | undefined> = {};
+
     for (let i = 1; i <= props.game.maxPlayers; i++) {
         out[i] = props.game.players.find((p) => p.slot === i - 1);
     }
+
     return out;
 });
 
@@ -99,10 +112,15 @@ async function copyCode(): Promise<void> {
 
     <div class="mx-auto flex max-w-2xl flex-col gap-5">
         <div
-            v-if="game.status === 'finished' && game.abortedReason === 'lobby_timeout'"
+            v-if="
+                game.status === 'finished' &&
+                game.abortedReason === 'lobby_timeout'
+            "
             class="wod-panel border-2 border-dashed border-foreground/40 bg-card/80 p-4 text-center text-sm"
         >
-            <p class="font-semibold text-foreground">This lobby closed automatically</p>
+            <p class="font-semibold text-foreground">
+                This lobby closed automatically
+            </p>
             <p class="mt-1 text-muted-foreground">
                 Open lobbies expire after one hour if the battle never starts.
             </p>
@@ -113,7 +131,9 @@ async function copyCode(): Promise<void> {
                 Lobby code
             </p>
             <div class="mt-2 flex items-center justify-center gap-3">
-                <p class="font-display text-3xl font-bold tracking-widest sm:text-4xl">
+                <p
+                    class="font-display text-3xl font-bold tracking-widest sm:text-4xl"
+                >
                     {{ game.code }}
                 </p>
                 <Button
@@ -132,20 +152,20 @@ async function copyCode(): Promise<void> {
                 v-if="game.status === 'lobby'"
                 class="mt-2 text-xs text-muted-foreground"
             >
-                Waiting for all commanders. The battle starts the moment everyone joins.
+                Waiting for all commanders. The battle starts the moment
+                everyone joins.
             </p>
         </div>
 
-        <div
-            v-if="game.sourceMap"
-            class="wod-panel border-dashed p-4 text-sm"
-        >
-            <p class="text-xs font-semibold uppercase text-muted-foreground">
+        <div v-if="game.sourceMap" class="wod-panel border-dashed p-4 text-sm">
+            <p class="text-xs font-semibold text-muted-foreground uppercase">
                 Battlefield map
             </p>
             <p class="mt-1 font-medium">
                 {{ game.sourceMap.name }}
-                <span class="text-muted-foreground font-normal">by {{ game.sourceMap.by }}</span>
+                <span class="font-normal text-muted-foreground"
+                    >by {{ game.sourceMap.by }}</span
+                >
             </p>
             <div
                 v-if="game.mapPreviewData"
@@ -167,15 +187,21 @@ async function copyCode(): Promise<void> {
                     <span class="flex items-center gap-2 text-sm">
                         <span
                             class="wod-swatch !size-3 rounded-full"
-                            :style="{ backgroundColor: commanderByDisplaySlot[slotNum]!.color }"
+                            :style="{
+                                backgroundColor:
+                                    commanderByDisplaySlot[slotNum]!.color,
+                            }"
                         />
                         {{ commanderByDisplaySlot[slotNum]!.name }}
                         <Badge
-                            v-if="commanderByDisplaySlot[slotNum]!.teamIndex > 0"
+                            v-if="
+                                commanderByDisplaySlot[slotNum]!.teamIndex > 0
+                            "
                             variant="outline"
                             class="text-[0.6rem]"
                         >
-                            Team {{ commanderByDisplaySlot[slotNum]!.teamIndex }}
+                            Team
+                            {{ commanderByDisplaySlot[slotNum]!.teamIndex }}
                         </Badge>
                     </span>
                 </template>
@@ -187,7 +213,12 @@ async function copyCode(): Promise<void> {
             <Link :href="lobbies().url" class="w-full sm:w-auto">
                 <Button variant="outline" class="w-full sm:w-auto">Back</Button>
             </Link>
-            <ShareButton :share-links="shareLinks" :copy-url="gameUrl" label="Share Lobby" size="default" />
+            <ShareButton
+                :share-links="shareLinks"
+                :copy-url="gameUrl"
+                label="Share Lobby"
+                size="default"
+            />
             <Button
                 v-if="game.isParticipant && game.status === 'lobby'"
                 variant="destructive"
@@ -196,7 +227,11 @@ async function copyCode(): Promise<void> {
             >
                 Leave lobby
             </Button>
-            <Button v-if="!game.isParticipant" class="w-full sm:w-auto" @click="joinGame">
+            <Button
+                v-if="!game.isParticipant"
+                class="w-full sm:w-auto"
+                @click="joinGame"
+            >
                 Join lobby
             </Button>
             <Button

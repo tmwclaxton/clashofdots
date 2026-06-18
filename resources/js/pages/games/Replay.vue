@@ -25,14 +25,18 @@ const currentIndex = ref(0);
 const playing = ref(false);
 let playInterval: ReturnType<typeof setInterval> | null = null;
 
-const currentSnapshot = computed(() => props.snapshots[currentIndex.value] ?? null);
+const currentSnapshot = computed(
+    () => props.snapshots[currentIndex.value] ?? null,
+);
 const total = computed(() => props.snapshots.length);
 
 function applySnapshot(index: number) {
     const snap = props.snapshots[index];
+
     if (!snap) {
         return;
     }
+
     const state = snap.state as Record<string, unknown>;
     store.latestState = (state.latestState ?? null) as typeof store.latestState;
     store.economy = (state.economy ?? null) as typeof store.economy;
@@ -63,14 +67,17 @@ function startPlay() {
     playInterval = setInterval(() => {
         if (currentIndex.value >= total.value - 1) {
             stopPlay();
+
             return;
         }
+
         currentIndex.value++;
     }, 1000);
 }
 
 function stopPlay() {
     playing.value = false;
+
     if (playInterval !== null) {
         clearInterval(playInterval);
         playInterval = null;
@@ -88,7 +95,8 @@ onUnmounted(stopPlay);
         <div class="flex items-center justify-between border-b px-4 py-2">
             <h1 class="text-sm font-semibold">Match Replay</h1>
             <span class="text-xs text-muted-foreground">
-                Tick {{ currentSnapshot?.worldTick ?? 0 }} / {{ snapshots.at(-1)?.worldTick ?? 0 }}
+                Tick {{ currentSnapshot?.worldTick ?? 0 }} /
+                {{ snapshots.at(-1)?.worldTick ?? 0 }}
             </span>
         </div>
 

@@ -19,12 +19,18 @@ export function clampMinBetweenFlagsForSmallLand(
     }
 
     if (nLand < 70) {
-        return Math.max(MAP_MARKER_MIN_MANHATTAN_SEP, Math.min(minBetweenFlags, 6));
+        return Math.max(
+            MAP_MARKER_MIN_MANHATTAN_SEP,
+            Math.min(minBetweenFlags, 6),
+        );
     }
 
     const relaxedCap = Math.max(4, Math.min(10, Math.floor(minDim / 4)));
 
-    return Math.max(MAP_MARKER_MIN_MANHATTAN_SEP, Math.min(minBetweenFlags, relaxedCap));
+    return Math.max(
+        MAP_MARKER_MIN_MANHATTAN_SEP,
+        Math.min(minBetweenFlags, relaxedCap),
+    );
 }
 
 /**
@@ -51,7 +57,10 @@ export function troopManhattanClearanceToMarker(
     );
 }
 
-export function manhattanDistance(a: MarkerSpacingCell, b: MarkerSpacingCell): number {
+export function manhattanDistance(
+    a: MarkerSpacingCell,
+    b: MarkerSpacingCell,
+): number {
     return Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
 }
 
@@ -59,7 +68,9 @@ export function manhattanDistance(a: MarkerSpacingCell, b: MarkerSpacingCell): n
  * Minimum pairwise Manhattan distance between capitals (for density heuristic).
  * When there is only one capital, returns a neutral default.
  */
-export function inferCapitalSpacing(capitals: ReadonlyArray<MarkerSpacingCell>): number {
+export function inferCapitalSpacing(
+    capitals: ReadonlyArray<MarkerSpacingCell>,
+): number {
     if (capitals.length < 2) {
         return 4;
     }
@@ -114,7 +125,10 @@ export function countPlaceableLandInManhattanHalo(
     return n;
 }
 
-export function preliminaryMaxRForMarkerSpacing(rows: number, cols: number): number {
+export function preliminaryMaxRForMarkerSpacing(
+    rows: number,
+    cols: number,
+): number {
     const minDim = Math.min(rows, cols);
 
     return Math.min(rows + cols - 2, Math.max(18, Math.floor(minDim * 0.52)));
@@ -134,7 +148,13 @@ export function minPlaceableHaloAmongCapitals(
     let minHalo = Infinity;
 
     for (const cap of capitals) {
-        const h = countPlaceableLandInManhattanHalo(cells, rows, cols, cap, preliminaryMaxR);
+        const h = countPlaceableLandInManhattanHalo(
+            cells,
+            rows,
+            cols,
+            cap,
+            preliminaryMaxR,
+        );
         minHalo = Math.min(minHalo, h);
     }
 
@@ -155,8 +175,18 @@ export type MarkerSeparationInputs = {
  * Minimum Manhattan gap between flags, and between any flag and any capital (capitals act like
  * spacing anchors the same as flags).
  */
-export function computeMinManhattanMarkerSeparation(input: MarkerSeparationInputs): number {
-    const { rows, cols, nLand, teamCount, flagBudget, capitalSpacing, minHaloLandCells } = input;
+export function computeMinManhattanMarkerSeparation(
+    input: MarkerSeparationInputs,
+): number {
+    const {
+        rows,
+        cols,
+        nLand,
+        teamCount,
+        flagBudget,
+        capitalSpacing,
+        minHaloLandCells,
+    } = input;
     const minDim = Math.min(rows, cols);
     const dCap = Math.max(1, capitalSpacing);
 
@@ -167,7 +197,9 @@ export function computeMinManhattanMarkerSeparation(input: MarkerSeparationInput
     }
 
     const flagsEach = Math.max(1, flagBudget / teamCount);
-    const densitySpacing = Math.round(Math.sqrt(Math.max(1, minHalo) / (flagsEach * 0.55)));
+    const densitySpacing = Math.round(
+        Math.sqrt(Math.max(1, minHalo) / (flagsEach * 0.55)),
+    );
     const fromCapitalSep = Math.floor(dCap * 0.52) + 2;
     const maxGap = minDim > 140 ? 36 : 28;
 
@@ -177,7 +209,11 @@ export function computeMinManhattanMarkerSeparation(input: MarkerSeparationInput
     );
 }
 
-export function countPlaceableLandCells(cells: string[][], rows: number, cols: number): number {
+export function countPlaceableLandCells(
+    cells: string[][],
+    rows: number,
+    cols: number,
+): number {
     let nLand = 0;
 
     for (let r = 0; r < rows; r++) {
@@ -204,10 +240,17 @@ export function computeMinSeparationForMapState(options: {
     capitalPositions: ReadonlyArray<MarkerSpacingCell>;
     flagBudget: number;
 }): number {
-    const { cells, rows, cols, teamCount, capitalPositions, flagBudget } = options;
+    const { cells, rows, cols, teamCount, capitalPositions, flagBudget } =
+        options;
     const nLand = countPlaceableLandCells(cells, rows, cols);
     const preliminaryMaxR = preliminaryMaxRForMarkerSpacing(rows, cols);
-    const minHalo = minPlaceableHaloAmongCapitals(cells, rows, cols, capitalPositions, preliminaryMaxR);
+    const minHalo = minPlaceableHaloAmongCapitals(
+        cells,
+        rows,
+        cols,
+        capitalPositions,
+        preliminaryMaxR,
+    );
     const capitalSpacing = inferCapitalSpacing(capitalPositions);
 
     return computeMinManhattanMarkerSeparation({

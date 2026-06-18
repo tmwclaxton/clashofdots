@@ -1,6 +1,9 @@
 import { computed, ref, shallowRef, watch } from 'vue';
 import { generateRandomMap } from '@/lib/generateRandomMap';
-import type { GeneratedMapData, MapGenerationType } from '@/lib/generateRandomMap';
+import type {
+    GeneratedMapData,
+    MapGenerationType,
+} from '@/lib/generateRandomMap';
 import {
     MAP_EDITOR_CELL_PX,
     MAP_MAX_TEAMS,
@@ -13,7 +16,10 @@ import {
     validateMapGridData,
 } from '@/lib/mapEditorGrid';
 import type { MapDataPayload, MapMarker } from '@/lib/mapEditorGrid';
-import { isFarEnoughFromHydraulicWaterForMapMarker, isPlaceableTerrain } from '@/lib/mapMarkers';
+import {
+    isFarEnoughFromHydraulicWaterForMapMarker,
+    isPlaceableTerrain,
+} from '@/lib/mapMarkers';
 import {
     computeMinSeparationForMapState,
     countPlaceableLandCells,
@@ -21,7 +27,12 @@ import {
 } from '@/lib/mapMarkerSpacing';
 import type { TerrainId } from '@/lib/terrainCatalog';
 import { randomWackyMapName } from '@/lib/wackyMapName';
-import mapsRoutes, { destroy as destroyMap, show, store, update } from '@/routes/maps';
+import mapsRoutes, {
+    destroy as destroyMap,
+    show,
+    store,
+    update,
+} from '@/routes/maps';
 import { useToastStore } from '@/stores/toastStore';
 
 let lastPlacementToastAtMs = 0;
@@ -39,7 +50,15 @@ function notifyPlacementBlocked(message: string): void {
     useToastStore().warning(message, 5600);
 }
 
-export type MapEditorTool = 'brush' | 'eraser' | 'fill' | 'pan' | 'capital' | 'flag' | 'infantry' | 'tank';
+export type MapEditorTool =
+    | 'brush'
+    | 'eraser'
+    | 'fill'
+    | 'pan'
+    | 'capital'
+    | 'flag'
+    | 'infantry'
+    | 'tank';
 
 export type { MapDataPayload, MapMarker } from '@/lib/mapEditorGrid';
 
@@ -85,8 +104,9 @@ function getCookie(name: string): string {
 
 function csrfToken(): string {
     return (
-        document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ??
-        getCookie('XSRF-TOKEN')
+        document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? getCookie('XSRF-TOKEN')
     );
 }
 
@@ -140,16 +160,19 @@ function isGenericInvalidMessage(message: string): boolean {
     const t = message.trim();
 
     return (
-        /^The .+ was invalid\.?$/i.test(t)
-        || /^The given data was invalid\.?$/i.test(t)
-        || t === 'validation.required'
+        /^The .+ was invalid\.?$/i.test(t) ||
+        /^The given data was invalid\.?$/i.test(t) ||
+        t === 'validation.required'
     );
 }
 
 /**
  * Builds a readable error string from a failed map save (JSON) response.
  */
-export function formatMapSaveErrorFromResponse(status: number, responseText: string): string {
+export function formatMapSaveErrorFromResponse(
+    status: number,
+    responseText: string,
+): string {
     let parsed: unknown;
 
     try {
@@ -165,7 +188,11 @@ export function formatMapSaveErrorFromResponse(status: number, responseText: str
     const body = parsed as LaravelJsonErrors;
     const lines: string[] = [];
 
-    if (body.errors !== undefined && body.errors !== null && typeof body.errors === 'object') {
+    if (
+        body.errors !== undefined &&
+        body.errors !== null &&
+        typeof body.errors === 'object'
+    ) {
         for (const [key, raw] of Object.entries(body.errors)) {
             const label = humanizeValidationFieldKey(key);
             const msgs: string[] = Array.isArray(raw)
@@ -182,10 +209,14 @@ export function formatMapSaveErrorFromResponse(status: number, responseText: str
         }
     }
 
-    const rawMessage = typeof body.message === 'string' ? body.message.trim() : '';
+    const rawMessage =
+        typeof body.message === 'string' ? body.message.trim() : '';
 
     if (lines.length > 0) {
-        const headline = rawMessage && !isGenericInvalidMessage(rawMessage) ? `${rawMessage}\n` : 'Could not save this map:\n';
+        const headline =
+            rawMessage && !isGenericInvalidMessage(rawMessage)
+                ? `${rawMessage}\n`
+                : 'Could not save this map:\n';
 
         return `${headline}${lines.join('\n')}`.slice(0, 4000);
     }
@@ -250,9 +281,14 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
 
     const cells = ref<string[][]>(cloneCells(initialNormalized.cells));
     const teamCount = ref(initialNormalized.teamCount ?? MAP_MIN_TEAMS);
-    const markers = ref<MapMarker[]>(cloneMarkerList(initialNormalized.markers ?? []));
+    const markers = ref<MapMarker[]>(
+        cloneMarkerList(initialNormalized.markers ?? []),
+    );
     const teamPaletteSlots = ref<number[]>(
-        normalizeTeamPaletteSlots(teamCount.value, initialNormalized.teamPaletteSlots),
+        normalizeTeamPaletteSlots(
+            teamCount.value,
+            initialNormalized.teamPaletteSlots,
+        ),
     );
     /** `null` when painting terrain so the team strip does not look “armed” for markers. */
     const selectedTeam = ref<number | null>(null);
@@ -282,7 +318,12 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     }
 
     watch(activeTool, (tool) => {
-        if (tool === 'capital' || tool === 'flag' || tool === 'infantry' || tool === 'tank') {
+        if (
+            tool === 'capital' ||
+            tool === 'flag' ||
+            tool === 'infantry' ||
+            tool === 'tank'
+        ) {
             if (selectedTeam.value === null) {
                 selectedTeam.value = 0;
             }
@@ -310,15 +351,27 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     const worldWidth = computed(() => gridRows.value * cellSize);
     const worldHeight = computed(() => gridCols.value * cellSize);
 
-    function fitMapToView(viewportWidthPx: number, viewportHeightPx: number): void {
+    function fitMapToView(
+        viewportWidthPx: number,
+        viewportHeightPx: number,
+    ): void {
         const w = gridRows.value * cellSize;
         const h = gridCols.value * cellSize;
-        const availW = Math.max(64, viewportWidthPx - 2 * FIT_SCREEN_PADDING_PX);
-        const availH = Math.max(64, viewportHeightPx - 2 * FIT_SCREEN_PADDING_PX);
+        const availW = Math.max(
+            64,
+            viewportWidthPx - 2 * FIT_SCREEN_PADDING_PX,
+        );
+        const availH = Math.max(
+            64,
+            viewportHeightPx - 2 * FIT_SCREEN_PADDING_PX,
+        );
         const zw = availW / w;
         const zh = availH / h;
         const fitZ = Math.min(zw, zh) * FIT_TO_VIEW_ZOOM_MULTIPLIER;
-        const z = Math.min(MAP_EDITOR_MAX_ZOOM, Math.max(MAP_EDITOR_MIN_ZOOM, fitZ));
+        const z = Math.min(
+            MAP_EDITOR_MAX_ZOOM,
+            Math.max(MAP_EDITOR_MIN_ZOOM, fitZ),
+        );
         zoom.value = z;
         camX.value = (viewportWidthPx / z - w) / 2;
         camY.value = (viewportHeightPx / z - h) / 2;
@@ -359,7 +412,12 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
                 return false;
             }
 
-            if (m.type === 'capital' || m.type === 'flag' || m.type === 'infantry' || m.type === 'tank') {
+            if (
+                m.type === 'capital' ||
+                m.type === 'flag' ||
+                m.type === 'infantry' ||
+                m.type === 'tank'
+            ) {
                 return isFarEnoughFromHydraulicWaterForMapMarker(
                     cells.value,
                     gridRows.value,
@@ -424,7 +482,11 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         bumpMarkersRender();
     }
 
-    function stampDisc(gx: number, gy: number, paint: (x: number, y: number) => void): void {
+    function stampDisc(
+        gx: number,
+        gy: number,
+        paint: (x: number, y: number) => void,
+    ): void {
         const r = brushRadius.value;
 
         for (let dy = -r; dy <= r; dy++) {
@@ -436,7 +498,12 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
                 const x = gx + dx;
                 const y = gy + dy;
 
-                if (x >= 0 && x < gridRows.value && y >= 0 && y < gridCols.value) {
+                if (
+                    x >= 0 &&
+                    x < gridRows.value &&
+                    y >= 0 &&
+                    y < gridCols.value
+                ) {
                     paint(x, y);
                 }
             }
@@ -452,18 +519,20 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     function stampEraserOnly(gx: number, gy: number): void {
         stampDisc(gx, gy, (x, y) => {
             cells.value[x][y] = 'plains';
-            markers.value = markers.value.filter((m) => !(m.row === x && m.col === y));
+            markers.value = markers.value.filter(
+                (m) => !(m.row === x && m.col === y),
+            );
         });
     }
 
     function beginStroke(): void {
         if (
-            activeTool.value === 'fill'
-            || activeTool.value === 'pan'
-            || activeTool.value === 'capital'
-            || activeTool.value === 'flag'
-            || activeTool.value === 'infantry'
-            || activeTool.value === 'tank'
+            activeTool.value === 'fill' ||
+            activeTool.value === 'pan' ||
+            activeTool.value === 'capital' ||
+            activeTool.value === 'flag' ||
+            activeTool.value === 'infantry' ||
+            activeTool.value === 'tank'
         ) {
             return;
         }
@@ -473,7 +542,10 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     }
 
     function endStroke(): void {
-        if (strokeOpen.value && (activeTool.value === 'brush' || activeTool.value === 'eraser')) {
+        if (
+            strokeOpen.value &&
+            (activeTool.value === 'brush' || activeTool.value === 'eraser')
+        ) {
             pruneMarkersOnInvalidTerrain();
         }
 
@@ -559,15 +631,19 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
             return;
         }
 
-        const existingOnCell = markers.value.find((m) => m.row === gx && m.col === gy);
+        const existingOnCell = markers.value.find(
+            (m) => m.row === gx && m.col === gy,
+        );
 
         if (
-            existingOnCell?.type === 'flag'
-            || existingOnCell?.type === 'infantry'
-            || existingOnCell?.type === 'tank'
+            existingOnCell?.type === 'flag' ||
+            existingOnCell?.type === 'infantry' ||
+            existingOnCell?.type === 'tank'
         ) {
             snapshot();
-            markers.value = markers.value.filter((m) => !(m.row === gx && m.col === gy));
+            markers.value = markers.value.filter(
+                (m) => !(m.row === gx && m.col === gy),
+            );
             dirty.value = true;
             bumpMarkersRender();
 
@@ -577,9 +653,14 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         snapshot();
         const team = selectedTeam.value ?? 0;
         markers.value = markers.value.filter(
-            (m) => !(m.team === team && m.type === 'capital') && !(m.row === gx && m.col === gy),
+            (m) =>
+                !(m.team === team && m.type === 'capital') &&
+                !(m.row === gx && m.col === gy),
         );
-        markers.value = [...markers.value, { type: 'capital', team, row: gx, col: gy }];
+        markers.value = [
+            ...markers.value,
+            { type: 'capital', team, row: gx, col: gy },
+        ];
         dirty.value = true;
         bumpMarkersRender();
     }
@@ -604,16 +685,22 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
                 gy,
             )
         ) {
-            notifyPlacementBlocked('Too close to deep water or a river - move further from the coast.');
+            notifyPlacementBlocked(
+                'Too close to deep water or a river - move further from the coast.',
+            );
 
             return;
         }
 
-        const existingOnCell = markers.value.find((m) => m.row === gx && m.col === gy);
+        const existingOnCell = markers.value.find(
+            (m) => m.row === gx && m.col === gy,
+        );
 
         if (existingOnCell?.type === 'flag') {
             snapshot();
-            markers.value = markers.value.filter((m) => !(m.row === gx && m.col === gy));
+            markers.value = markers.value.filter(
+                (m) => !(m.row === gx && m.col === gy),
+            );
             dirty.value = true;
             bumpMarkersRender();
 
@@ -631,8 +718,14 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         const capitalPositions = markers.value
             .filter((m) => m.type === 'capital')
             .map((m) => ({ row: m.row, col: m.col }));
-        const nonCapitalCount = markers.value.filter((m) => m.type !== 'capital').length;
-        const nLand = countPlaceableLandCells(cells.value, gridRows.value, gridCols.value);
+        const nonCapitalCount = markers.value.filter(
+            (m) => m.type !== 'capital',
+        ).length;
+        const nLand = countPlaceableLandCells(
+            cells.value,
+            gridRows.value,
+            gridCols.value,
+        );
         /**
          * {@link computeMinSeparationForMapState} grows spacing when {@link flagBudget} is small
          * (few flags planned), which made the first couple of manual flags nearly impossible to add.
@@ -654,11 +747,21 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         });
 
         for (const m of markers.value) {
-            if (m.type !== 'capital' && m.type !== 'flag' && m.type !== 'infantry' && m.type !== 'tank') {
+            if (
+                m.type !== 'capital' &&
+                m.type !== 'flag' &&
+                m.type !== 'infantry' &&
+                m.type !== 'tank'
+            ) {
                 continue;
             }
 
-            if (manhattanDistance({ row: gx, col: gy }, { row: m.row, col: m.col }) < sep) {
+            if (
+                manhattanDistance(
+                    { row: gx, col: gy },
+                    { row: m.row, col: m.col },
+                ) < sep
+            ) {
                 notifyPlacementBlocked(
                     'Too close to another capital, flag, or troop spawn for this map’s spacing rules.',
                 );
@@ -676,7 +779,11 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         bumpMarkersRender();
     }
 
-    function placeTroopAt(gx: number, gy: number, troopType: 'infantry' | 'tank'): void {
+    function placeTroopAt(
+        gx: number,
+        gy: number,
+        troopType: 'infantry' | 'tank',
+    ): void {
         const t = cells.value[gx]?.[gy];
 
         if (typeof t !== 'string' || !isPlaceableTerrain(t)) {
@@ -696,17 +803,26 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
                 gy,
             )
         ) {
-            notifyPlacementBlocked('Too close to deep water or a river - move further from the coast.');
+            notifyPlacementBlocked(
+                'Too close to deep water or a river - move further from the coast.',
+            );
 
             return;
         }
 
         const team = selectedTeam.value ?? 0;
-        const existingOnCell = markers.value.find((m) => m.row === gx && m.col === gy);
+        const existingOnCell = markers.value.find(
+            (m) => m.row === gx && m.col === gy,
+        );
 
-        if (existingOnCell?.type === troopType && existingOnCell.team === team) {
+        if (
+            existingOnCell?.type === troopType &&
+            existingOnCell.team === team
+        ) {
             snapshot();
-            markers.value = markers.value.filter((m) => !(m.row === gx && m.col === gy));
+            markers.value = markers.value.filter(
+                (m) => !(m.row === gx && m.col === gy),
+            );
             dirty.value = true;
             bumpMarkersRender();
 
@@ -715,10 +831,15 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
 
         let didSnapshot = false;
 
-        if (existingOnCell?.type === 'infantry' || existingOnCell?.type === 'tank') {
+        if (
+            existingOnCell?.type === 'infantry' ||
+            existingOnCell?.type === 'tank'
+        ) {
             snapshot();
             didSnapshot = true;
-            markers.value = markers.value.filter((m) => !(m.row === gx && m.col === gy));
+            markers.value = markers.value.filter(
+                (m) => !(m.row === gx && m.col === gy),
+            );
             dirty.value = true;
             bumpMarkersRender();
         } else if (existingOnCell) {
@@ -733,7 +854,10 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
             snapshot();
         }
 
-        markers.value = [...markers.value, { type: troopType, team, row: gx, col: gy }];
+        markers.value = [
+            ...markers.value,
+            { type: troopType, team, row: gx, col: gy },
+        ];
         dirty.value = true;
         bumpMarkersRender();
     }
@@ -756,7 +880,10 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         const tc = n.teamCount ?? MAP_MIN_TEAMS;
         teamCount.value = tc;
         markers.value = cloneMarkerList(n.markers ?? []);
-        teamPaletteSlots.value = normalizeTeamPaletteSlots(tc, n.teamPaletteSlots);
+        teamPaletteSlots.value = normalizeTeamPaletteSlots(
+            tc,
+            n.teamPaletteSlots,
+        );
         selectedTeam.value = null;
     }
 
@@ -788,7 +915,11 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         requestMapViewFit();
     }
 
-    function loadFromPayload(payload: MapDataPayload, name: string, uuid: string): void {
+    function loadFromPayload(
+        payload: MapDataPayload,
+        name: string,
+        uuid: string,
+    ): void {
         if (
             !validateMapGridData({
                 cellRows: payload.cellRows,
@@ -858,7 +989,9 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
             const text = await res.text();
 
             if (!res.ok) {
-                throw new Error(formatMapSaveErrorFromResponse(res.status, text));
+                throw new Error(
+                    formatMapSaveErrorFromResponse(res.status, text),
+                );
             }
         } else {
             const res = await jsonFetch(store.url(), {
@@ -872,7 +1005,9 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
             const text = await res.text();
 
             if (!res.ok) {
-                throw new Error(formatMapSaveErrorFromResponse(res.status, text));
+                throw new Error(
+                    formatMapSaveErrorFromResponse(res.status, text),
+                );
             }
 
             const body = JSON.parse(text) as { map: { uuid: string } };
@@ -903,7 +1038,9 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         return fetchMapsSummaries();
     }
 
-    function applyGeneratedMap(payload: MapDataPayload | GeneratedMapData): boolean {
+    function applyGeneratedMap(
+        payload: MapDataPayload | GeneratedMapData,
+    ): boolean {
         if (
             !validateMapGridData({
                 cellRows: payload.cellRows,
@@ -918,9 +1055,9 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         cells.value = cloneCells(payload.cells);
 
         if (
-            payload.version >= 2
-            && typeof payload.teamCount === 'number'
-            && Array.isArray(payload.markers)
+            payload.version >= 2 &&
+            typeof payload.teamCount === 'number' &&
+            Array.isArray(payload.markers)
         ) {
             teamCount.value = payload.teamCount;
             markers.value = cloneMarkerList(payload.markers);
@@ -944,7 +1081,11 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
         return true;
     }
 
-    function generateAndApplyMap(seed?: number, type?: MapGenerationType, teamCountArg?: number): boolean {
+    function generateAndApplyMap(
+        seed?: number,
+        type?: MapGenerationType,
+        teamCountArg?: number,
+    ): boolean {
         return applyGeneratedMap(
             generateRandomMap({
                 seed,
@@ -1040,9 +1181,14 @@ export function useMapEditor(initialDefaults: MapDataPayload) {
     }
 
     function bumpBrush(delta: number): void {
-        const i = MAP_EDITOR_BRUSH_SIZES.indexOf(brushRadius.value as MapEditorBrushSize);
+        const i = MAP_EDITOR_BRUSH_SIZES.indexOf(
+            brushRadius.value as MapEditorBrushSize,
+        );
         const idx = i === -1 ? 0 : i;
-        const next = Math.max(0, Math.min(MAP_EDITOR_BRUSH_SIZES.length - 1, idx + delta));
+        const next = Math.max(
+            0,
+            Math.min(MAP_EDITOR_BRUSH_SIZES.length - 1, idx + delta),
+        );
         brushRadius.value = MAP_EDITOR_BRUSH_SIZES[next] ?? 1;
     }
 

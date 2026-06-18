@@ -9,7 +9,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { MapGenerationType } from '@/lib/generateRandomMap';
 import { generateRandomMap } from '@/lib/generateRandomMap';
-import { EDITOR_TERRAIN_COLORS, TERRAIN_IDS, isTerrainId, type TerrainId } from '@/lib/terrainCatalog';
+import { EDITOR_TERRAIN_COLORS, TERRAIN_IDS, isTerrainId  } from '@/lib/terrainCatalog';
+import type {TerrainId} from '@/lib/terrainCatalog';
 import { editorBlendedTerrainFillStyle } from '@/lib/terrainRender';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

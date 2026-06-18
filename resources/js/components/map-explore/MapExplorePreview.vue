@@ -29,7 +29,10 @@ function paint(): void {
 
     const maxW = 320;
     const maxH = 180;
-    const cs = Math.max(1, Math.min(Math.floor(maxW / rows), Math.floor(maxH / cols), 10));
+    const cs = Math.max(
+        1,
+        Math.min(Math.floor(maxW / rows), Math.floor(maxH / cols), 10),
+    );
     el.width = cs * rows;
     el.height = cs * cols;
     const ctx = el.getContext('2d');
@@ -41,7 +44,10 @@ function paint(): void {
     for (let gx = 0; gx < rows; gx++) {
         for (let gy = 0; gy < cols; gy++) {
             const t = cells[gx]?.[gy];
-            ctx.fillStyle = typeof t === 'string' && isTerrainId(t) ? EDITOR_TERRAIN_COLORS[t] : '#888888';
+            ctx.fillStyle =
+                typeof t === 'string' && isTerrainId(t)
+                    ? EDITOR_TERRAIN_COLORS[t]
+                    : '#888888';
             ctx.fillRect(gx * cs, gy * cs, cs, cs);
         }
     }
@@ -58,7 +64,11 @@ function paint(): void {
         const rad = Math.max(1.5, cs * 0.28);
         ctx.beginPath();
         ctx.fillStyle =
-            m.type === 'capital' ? '#b91c1c' : m.type === 'flag' ? '#ca8a04' : '#4b5563';
+            m.type === 'capital'
+                ? '#b91c1c'
+                : m.type === 'flag'
+                  ? '#ca8a04'
+                  : '#4b5563';
         ctx.arc(cx, cy, rad, 0, Math.PI * 2);
         ctx.fill();
     }
@@ -86,7 +96,9 @@ watch(
 </script>
 
 <template>
-    <div class="relative w-full overflow-hidden rounded-md border-2 border-foreground/20 bg-muted/30">
+    <div
+        class="relative w-full overflow-hidden rounded-md border-2 border-foreground/20 bg-muted/30"
+    >
         <canvas
             ref="canvasRef"
             class="mx-auto block h-auto max-h-48 w-auto max-w-full object-contain [image-rendering:pixelated]"

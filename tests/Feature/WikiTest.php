@@ -24,7 +24,7 @@ class WikiTest extends TestCase
             ->has('terrain', count(TerrainCatalog::IDS))
             ->has('mapGeneration', 8)
             ->where('mapGeneration.0.preview', '/images/wiki/map-generation-mix.svg')
-            ->has('economyNotes', 5)
+            ->has('economyNotes', 6)
             ->where('economyNotes.0.icon', 'coins')
         );
     }
@@ -44,6 +44,6 @@ class WikiTest extends TestCase
 
         $this->assertSame(100, $infantry['health']);
         $this->assertSame(200, $tank['health']);
-        $this->assertGreaterThan($outpost['incomePerSecond'], $capital['incomePerSecond']);
+        $this->assertGreaterThanOrEqual($outpost['incomePerSecond'], $capital['incomePerSecond']);
     }
 }

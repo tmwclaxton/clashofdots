@@ -48,7 +48,12 @@ function pathStar5(
 /**
  * Builds a closed regular hexagon path (vertex at top, flat sides left/right).
  */
-function pathHexagonPointy(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number): void {
+function pathHexagonPointy(
+    ctx: CanvasRenderingContext2D,
+    cx: number,
+    cy: number,
+    r: number,
+): void {
     ctx.beginPath();
 
     for (let i = 0; i < 6; i++) {
@@ -126,14 +131,20 @@ const MARKER_NON_PLACEABLE_TERRAINS: ReadonlySet<TerrainId> = new Set([
 ]);
 
 export function isPlaceableTerrain(terrainId: string): boolean {
-    return isTerrainId(terrainId) && !MARKER_NON_PLACEABLE_TERRAINS.has(terrainId);
+    return (
+        isTerrainId(terrainId) && !MARKER_NON_PLACEABLE_TERRAINS.has(terrainId)
+    );
 }
 
 /**
  * Open water / river tiles used for visual clearance (marker art is drawn larger than a cell).
  * Matches {@see App\Maps\MapMarkers::HYDRAULIC_WATER_TERRAIN}.
  */
-const HYDRAULIC_WATER_TERRAINS: ReadonlySet<TerrainId> = new Set(['water', 'deep_water', 'river']);
+const HYDRAULIC_WATER_TERRAINS: ReadonlySet<TerrainId> = new Set([
+    'water',
+    'deep_water',
+    'river',
+]);
 
 /** Minimum Chebyshev distance from hydraulic water so marker glyphs do not overlap water tiles. */
 export const MAP_MARKER_MIN_CHEBYSHEV_FROM_WATER = 2;
@@ -194,7 +205,11 @@ export function drawCapitalAtPixel(
     const innerR = outerR * STAR_INNER_RATIO;
     const sizeRef = outerR / 0.35;
 
-    strokeMarkerHalo(ctx, () => pathStar5(ctx, cx, cy, outerR, innerR), sizeRef);
+    strokeMarkerHalo(
+        ctx,
+        () => pathStar5(ctx, cx, cy, outerR, innerR),
+        sizeRef,
+    );
 
     pathStar5(ctx, cx, cy, outerR, innerR);
     ctx.fillStyle = colorHex;

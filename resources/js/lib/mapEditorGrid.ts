@@ -1,5 +1,12 @@
-import { isFarEnoughFromHydraulicWaterForMapMarker, isPlaceableTerrain } from '@/lib/mapMarkers';
-import { computeMinSeparationForMapState, manhattanDistance, troopManhattanClearanceToMarker } from '@/lib/mapMarkerSpacing';
+import {
+    isFarEnoughFromHydraulicWaterForMapMarker,
+    isPlaceableTerrain,
+} from '@/lib/mapMarkers';
+import {
+    computeMinSeparationForMapState,
+    manhattanDistance,
+    troopManhattanClearanceToMarker,
+} from '@/lib/mapMarkerSpacing';
 import { isTerrainId } from '@/lib/terrainCatalog';
 
 /** Live battlefield vertex grid (App\Games\GameConstants rows+1 / cols+1). */
@@ -33,7 +40,14 @@ export const MAP_MIN_TEAMS = 2;
 
 export const MAP_MAX_TEAMS = 6;
 
-const FACTION_LABELS = ['red', 'blue', 'orange', 'purple', 'green', 'cyan'] as const;
+const FACTION_LABELS = [
+    'red',
+    'blue',
+    'orange',
+    'purple',
+    'green',
+    'cyan',
+] as const;
 
 const ORTHO_DIRS: ReadonlyArray<readonly [number, number]> = [
     [1, 0],
@@ -67,12 +81,17 @@ function allMarkerSitesMutuallyAccessible(
     const start = sites[0]!;
     const terrainStart = cells[start.row]?.[start.col];
 
-    if (typeof terrainStart !== 'string' || !isPassableTerrainForMapAccessibility(terrainStart)) {
+    if (
+        typeof terrainStart !== 'string' ||
+        !isPassableTerrainForMapAccessibility(terrainStart)
+    ) {
         return false;
     }
 
     const visited = new Set<string>();
-    const queue: { row: number; col: number }[] = [{ row: start.row, col: start.col }];
+    const queue: { row: number; col: number }[] = [
+        { row: start.row, col: start.col },
+    ];
     visited.add(`${start.row},${start.col}`);
 
     while (queue.length > 0) {
@@ -88,7 +107,10 @@ function allMarkerSitesMutuallyAccessible(
 
             const t = cells[r]?.[col];
 
-            if (typeof t !== 'string' || !isPassableTerrainForMapAccessibility(t)) {
+            if (
+                typeof t !== 'string' ||
+                !isPassableTerrainForMapAccessibility(t)
+            ) {
                 continue;
             }
 
@@ -136,14 +158,17 @@ export type MapDataPayload = {
     teamPaletteSlots?: number[];
 };
 
-export function isAllowedMapGridSize(cellRows: number, cellCols: number): boolean {
+export function isAllowedMapGridSize(
+    cellRows: number,
+    cellCols: number,
+): boolean {
     return (
-        Number.isInteger(cellRows)
-        && Number.isInteger(cellCols)
-        && cellRows >= MAP_GRID_MIN_CELL_ROWS
-        && cellRows <= MAP_GRID_MAX_CELL_ROWS
-        && cellCols >= MAP_GRID_MIN_CELL_COLS
-        && cellCols <= MAP_GRID_MAX_CELL_COLS
+        Number.isInteger(cellRows) &&
+        Number.isInteger(cellCols) &&
+        cellRows >= MAP_GRID_MIN_CELL_ROWS &&
+        cellRows <= MAP_GRID_MAX_CELL_ROWS &&
+        cellCols >= MAP_GRID_MIN_CELL_COLS &&
+        cellCols <= MAP_GRID_MAX_CELL_COLS
     );
 }
 
@@ -189,10 +214,17 @@ export function defaultTeamPaletteSlots(teamCount: number): number[] {
  * Normalizes {@link MapDataPayload.teamPaletteSlots}: length === teamCount, unique ints in
  * `[0, MAP_MAX_TEAMS - 1]`. Falls back to identity when missing or invalid.
  */
-export function normalizeTeamPaletteSlots(teamCount: number, raw: unknown): number[] {
+export function normalizeTeamPaletteSlots(
+    teamCount: number,
+    raw: unknown,
+): number[] {
     const identity = (): number[] => defaultTeamPaletteSlots(teamCount);
 
-    if (!Number.isInteger(teamCount) || teamCount < MAP_MIN_TEAMS || teamCount > MAP_MAX_TEAMS) {
+    if (
+        !Number.isInteger(teamCount) ||
+        teamCount < MAP_MIN_TEAMS ||
+        teamCount > MAP_MAX_TEAMS
+    ) {
         return defaultTeamPaletteSlots(MAP_MIN_TEAMS);
     }
 
@@ -249,7 +281,10 @@ export function normalizeMapPayload(raw: MapDataPayload): MapDataPayload {
         cells: raw.cells,
         teamCount,
         markers: Array.isArray(raw.markers) ? raw.markers.map(cloneMarker) : [],
-        teamPaletteSlots: normalizeTeamPaletteSlots(teamCount, raw.teamPaletteSlots),
+        teamPaletteSlots: normalizeTeamPaletteSlots(
+            teamCount,
+            raw.teamPaletteSlots,
+        ),
     };
 }
 
@@ -258,7 +293,10 @@ export type EmptyMapPayload = MapDataPayload;
 /**
  * Empty plains map (matches MapEditorGrid::emptyData()). Capitals are placed by the user.
  */
-export function emptyMapPayload(cellRows: number, cellCols: number): EmptyMapPayload {
+export function emptyMapPayload(
+    cellRows: number,
+    cellCols: number,
+): EmptyMapPayload {
     if (!isAllowedMapGridSize(cellRows, cellCols)) {
         throw new RangeError(
             `Map size ${cellRows}×${cellCols} is not allowed (${MAP_GRID_MIN_CELL_ROWS}–${MAP_GRID_MAX_CELL_ROWS} rows, ${MAP_GRID_MIN_CELL_COLS}–${MAP_GRID_MAX_CELL_COLS} cols).`,
@@ -285,7 +323,10 @@ export function emptyMapPayload(cellRows: number, cellCols: number): EmptyMapPay
 /**
  * When `teamPaletteSlots` is present it must be valid. Omitted keys are accepted for legacy data.
  */
-export function validateTeamPaletteSlotsArray(teamCount: number, raw: unknown): string[] {
+export function validateTeamPaletteSlotsArray(
+    teamCount: number,
+    raw: unknown,
+): string[] {
     const errors: string[] = [];
 
     if (raw === undefined || raw === null) {
@@ -299,7 +340,9 @@ export function validateTeamPaletteSlotsArray(teamCount: number, raw: unknown): 
     }
 
     if (raw.length !== teamCount) {
-        errors.push(`teamPaletteSlots must have length ${teamCount} (same as teamCount).`);
+        errors.push(
+            `teamPaletteSlots must have length ${teamCount} (same as teamCount).`,
+        );
 
         return errors;
     }
@@ -321,7 +364,9 @@ export function validateTeamPaletteSlotsArray(teamCount: number, raw: unknown): 
     }
 
     if (new Set(out).size !== out.length) {
-        errors.push('teamPaletteSlots must use each palette colour at most once (no duplicates).');
+        errors.push(
+            'teamPaletteSlots must use each palette colour at most once (no duplicates).',
+        );
 
         return errors;
     }
@@ -337,19 +382,30 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
     const errors: string[] = [];
     const teamCount = data.teamCount ?? MAP_MIN_TEAMS;
 
-    if (!Number.isInteger(teamCount) || teamCount < MAP_MIN_TEAMS || teamCount > MAP_MAX_TEAMS) {
-        errors.push(`teamCount must be between ${MAP_MIN_TEAMS} and ${MAP_MAX_TEAMS}.`);
+    if (
+        !Number.isInteger(teamCount) ||
+        teamCount < MAP_MIN_TEAMS ||
+        teamCount > MAP_MAX_TEAMS
+    ) {
+        errors.push(
+            `teamCount must be between ${MAP_MIN_TEAMS} and ${MAP_MAX_TEAMS}.`,
+        );
 
         return errors;
     }
 
-    errors.push(...validateTeamPaletteSlotsArray(teamCount, data.teamPaletteSlots));
+    errors.push(
+        ...validateTeamPaletteSlotsArray(teamCount, data.teamPaletteSlots),
+    );
 
     if (errors.length > 0) {
         return errors;
     }
 
-    const teamPaletteSlots = normalizeTeamPaletteSlots(teamCount, data.teamPaletteSlots);
+    const teamPaletteSlots = normalizeTeamPaletteSlots(
+        teamCount,
+        data.teamPaletteSlots,
+    );
     const labelForTeam = (t: number): string =>
         FACTION_LABELS[teamPaletteSlots[t] ?? t] ?? `team ${t}`;
 
@@ -366,9 +422,20 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
     const cells = data.cells;
     const occupied = new Set<string>();
     const capitalsByTeam = new Map<number, true>();
-    const capitalPositions: Array<{ row: number; col: number; team: number }> = [];
-    const validFlagPositions: { index: number; row: number; col: number; team: number }[] = [];
-    const validTroopPositions: { index: number; row: number; col: number; team: number }[] = [];
+    const capitalPositions: Array<{ row: number; col: number; team: number }> =
+        [];
+    const validFlagPositions: {
+        index: number;
+        row: number;
+        col: number;
+        team: number;
+    }[] = [];
+    const validTroopPositions: {
+        index: number;
+        row: number;
+        col: number;
+        team: number;
+    }[] = [];
     const flagCounts = new Array(teamCount).fill(0);
 
     for (let index = 0; index < markers.length; index++) {
@@ -382,20 +449,31 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
 
         const { type, team, row, col } = marker;
 
-        if (type !== 'capital' && type !== 'flag' && type !== 'infantry' && type !== 'tank') {
-            errors.push(`markers[${index}].type must be "capital", "flag", "infantry", or "tank".`);
+        if (
+            type !== 'capital' &&
+            type !== 'flag' &&
+            type !== 'infantry' &&
+            type !== 'tank'
+        ) {
+            errors.push(
+                `markers[${index}].type must be "capital", "flag", "infantry", or "tank".`,
+            );
 
             continue;
         }
 
         if (!Number.isInteger(team) || team < 0 || team >= MAP_MAX_TEAMS) {
-            errors.push(`markers[${index}].team must be between 0 and ${MAP_MAX_TEAMS - 1}.`);
+            errors.push(
+                `markers[${index}].team must be between 0 and ${MAP_MAX_TEAMS - 1}.`,
+            );
 
             continue;
         }
 
         if (team >= teamCount) {
-            errors.push(`markers[${index}].team must be less than teamCount (${teamCount}).`);
+            errors.push(
+                `markers[${index}].team must be less than teamCount (${teamCount}).`,
+            );
 
             continue;
         }
@@ -407,7 +485,9 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
         }
 
         if (row < 0 || row >= cellRows || col < 0 || col >= cellCols) {
-            errors.push(`markers[${index}] is out of bounds for the terrain grid.`);
+            errors.push(
+                `markers[${index}] is out of bounds for the terrain grid.`,
+            );
 
             continue;
         }
@@ -437,8 +517,17 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
         }
 
         if (
-            (type === 'capital' || type === 'flag' || type === 'infantry' || type === 'tank') &&
-            !isFarEnoughFromHydraulicWaterForMapMarker(cells, cellRows, cellCols, row, col)
+            (type === 'capital' ||
+                type === 'flag' ||
+                type === 'infantry' ||
+                type === 'tank') &&
+            !isFarEnoughFromHydraulicWaterForMapMarker(
+                cells,
+                cellRows,
+                cellCols,
+                row,
+                col,
+            )
         ) {
             errors.push(`markers[${index}] is too close to water or a river.`);
 
@@ -489,8 +578,15 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
         for (let j = i + 1; j < validFlagPositions.length; j++) {
             const b = validFlagPositions[j]!;
 
-            if (manhattanDistance({ row: a.row, col: a.col }, { row: b.row, col: b.col }) < sep) {
-                errors.push(`markers[${a.index}] is too close to another flag.`);
+            if (
+                manhattanDistance(
+                    { row: a.row, col: a.col },
+                    { row: b.row, col: b.col },
+                ) < sep
+            ) {
+                errors.push(
+                    `markers[${a.index}] is too close to another flag.`,
+                );
             }
         }
     }
@@ -501,7 +597,12 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
         const tr = validTroopPositions[i]!;
 
         for (const cap of capitalPositions) {
-            const need = troopManhattanClearanceToMarker(sep, cap.team, tr.team, 'capital');
+            const need = troopManhattanClearanceToMarker(
+                sep,
+                cap.team,
+                tr.team,
+                'capital',
+            );
 
             if (manhattanDistance({ row: tr.row, col: tr.col }, cap) < need) {
                 errors.push(`markers[${tr.index}] is too close to a capital.`);
@@ -509,9 +610,19 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
         }
 
         for (const fl of validFlagPositions) {
-            const need = troopManhattanClearanceToMarker(sep, fl.team, tr.team, 'flag');
+            const need = troopManhattanClearanceToMarker(
+                sep,
+                fl.team,
+                tr.team,
+                'flag',
+            );
 
-            if (manhattanDistance({ row: tr.row, col: tr.col }, { row: fl.row, col: fl.col }) < need) {
+            if (
+                manhattanDistance(
+                    { row: tr.row, col: tr.col },
+                    { row: fl.row, col: fl.col },
+                ) < need
+            ) {
                 errors.push(`markers[${tr.index}] is too close to a flag.`);
             }
         }
@@ -519,8 +630,15 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
         for (let j = i + 1; j < validTroopPositions.length; j++) {
             const u = validTroopPositions[j]!;
 
-            if (manhattanDistance({ row: tr.row, col: tr.col }, { row: u.row, col: u.col }) < troopSep) {
-                errors.push(`markers[${tr.index}] is too close to another troop spawn.`);
+            if (
+                manhattanDistance(
+                    { row: tr.row, col: tr.col },
+                    { row: u.row, col: u.col },
+                ) < troopSep
+            ) {
+                errors.push(
+                    `markers[${tr.index}] is too close to another troop spawn.`,
+                );
             }
         }
     }
@@ -529,8 +647,12 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
     const maxFlags = Math.max(...flagCounts);
 
     if (minFlags !== maxFlags) {
-        const parts = flagCounts.map((n, t) => `${labelForTeam(t)}: ${n}`).join(', ');
-        errors.push(`Each team must have the same number of flags (current counts: ${parts}).`);
+        const parts = flagCounts
+            .map((n, t) => `${labelForTeam(t)}: ${n}`)
+            .join(', ');
+        errors.push(
+            `Each team must have the same number of flags (current counts: ${parts}).`,
+        );
     }
 
     const missing: string[] = [];
@@ -542,7 +664,9 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
     }
 
     if (missing.length > 0) {
-        errors.push(`Each team needs exactly one capital; missing capital for: ${missing.join(', ')}.`);
+        errors.push(
+            `Each team needs exactly one capital; missing capital for: ${missing.join(', ')}.`,
+        );
     }
 
     if (missing.length === 0 && capitalPositions.length === teamCount) {
@@ -552,7 +676,9 @@ export function validateMapMarkers(data: MapDataPayload): string[] {
             ...validTroopPositions.map((t) => ({ row: t.row, col: t.col })),
         ];
 
-        if (!allMarkerSitesMutuallyAccessible(cells, cellRows, cellCols, sites)) {
+        if (
+            !allMarkerSitesMutuallyAccessible(cells, cellRows, cellCols, sites)
+        ) {
             errors.push(
                 'Capitals and flags must all lie in one connected region: you cannot seal a team behind an unbroken wall of mountains.',
             );

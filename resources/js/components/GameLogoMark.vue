@@ -18,7 +18,7 @@ const props = withDefaults(
         height="36"
         :class="
             cn(
-                'pointer-events-none shrink-0 rounded-md border-2 border-foreground object-contain bg-wod-paper dark:bg-muted',
+                'pointer-events-none shrink-0 rounded-md border-2 border-foreground bg-wod-paper object-contain dark:bg-muted',
                 props.class ?? 'size-9',
             )
         "

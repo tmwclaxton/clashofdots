@@ -852,7 +852,11 @@ final class GameManager
      */
     public function activeGameUuids(): array
     {
-        return Redis::smembers(self::ACTIVE_SET) ?: [];
+        try {
+            return Redis::smembers(self::ACTIVE_SET) ?: [];
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**

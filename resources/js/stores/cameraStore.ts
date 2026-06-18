@@ -26,7 +26,14 @@ export const useCameraStore = defineStore('camera', {
             cssHeight: number,
             margin = 0.94,
         ): void {
-            if (!(worldWidth > 0 && worldHeight > 0 && cssWidth > 0 && cssHeight > 0)) {
+            if (
+                !(
+                    worldWidth > 0 &&
+                    worldHeight > 0 &&
+                    cssWidth > 0 &&
+                    cssHeight > 0
+                )
+            ) {
                 return;
             }
 
@@ -34,7 +41,10 @@ export const useCameraStore = defineStore('camera', {
                 (cssWidth * margin) / worldWidth,
                 (cssHeight * margin) / worldHeight,
             );
-            this.zoom = Math.min(GAME_VIEW_ZOOM_MAX, Math.max(GAME_VIEW_ZOOM_MIN, z));
+            this.zoom = Math.min(
+                GAME_VIEW_ZOOM_MAX,
+                Math.max(GAME_VIEW_ZOOM_MIN, z),
+            );
             this.camX = cssWidth / (2 * this.zoom) - worldWidth / 2;
             this.camY = cssHeight / (2 * this.zoom) - worldHeight / 2;
         },
