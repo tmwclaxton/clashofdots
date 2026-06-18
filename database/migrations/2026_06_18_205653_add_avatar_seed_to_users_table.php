@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasColumn('users', 'avatar_seed')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->string('avatar_seed', 64)->nullable()->after('avatar_style');
         });
