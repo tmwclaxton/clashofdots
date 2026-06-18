@@ -765,17 +765,6 @@ onUnmounted(() => {
                 <Sparkles v-else class="size-4 shrink-0" />
                 {{ mapGenerationPending ? 'Generating…' : 'Generate Map' }}
             </Button>
-            <Button
-                v-if="!editorLocked"
-                type="button"
-                size="sm"
-                variant="outline"
-                class="h-8 gap-1 px-2 text-xs"
-                title="Change vertex grid size (rows × columns)"
-                @click="openNewMapSizeDialog"
-            >
-                Grid {{ editor.gridRows }}×{{ editor.gridCols }}
-            </Button>
             <div v-if="!editorLocked" class="flex items-center gap-1.5">
                 <label
                     class="text-xs font-semibold text-muted-foreground"
