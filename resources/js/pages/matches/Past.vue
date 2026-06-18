@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { History } from 'lucide-vue-next';
 import Heading from '@/components/Heading.vue';
+import ShareButton from '@/components/ShareButton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { show } from '@/routes/games';
@@ -17,6 +18,8 @@ type Match = {
     isWinner: boolean;
     finishedAt: string | null;
     players: Array<{ slot: number; name: string; color: string }>;
+    shareLinks: Record<string, string>;
+    gameUrl: string;
 };
 
 defineProps<{
@@ -96,9 +99,12 @@ function formatDate(value: string | null): string {
                         </span>
                     </div>
                 </div>
-                <Link :href="show(match.uuid).url" class="w-full sm:w-auto">
-                    <Button variant="outline" class="w-full sm:w-auto">View summary</Button>
-                </Link>
+                <div class="flex w-full gap-2 sm:w-auto">
+                    <Link :href="show(match.uuid).url" class="flex-1 sm:flex-none">
+                        <Button variant="outline" class="w-full sm:w-auto">View summary</Button>
+                    </Link>
+                    <ShareButton :share-links="match.shareLinks" :copy-url="match.gameUrl" label="Share" size="default" />
+                </div>
             </article>
         </div>
     </div>

@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import MapExplorePreview from '@/components/map-explore/MapExplorePreview.vue';
+import ShareButton from '@/components/ShareButton.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { MapDataPayload } from '@/lib/mapEditorGrid';
@@ -26,6 +27,8 @@ type Lobby = {
 
 const props = defineProps<{
     game: Lobby;
+    shareLinks: Record<string, string>;
+    gameUrl: string;
 }>();
 
 // ── Lobby polling ─────────────────────────────────────────────────────────────
@@ -184,6 +187,7 @@ async function copyCode(): Promise<void> {
             <Link :href="lobbies().url" class="w-full sm:w-auto">
                 <Button variant="outline" class="w-full sm:w-auto">Back</Button>
             </Link>
+            <ShareButton :share-links="shareLinks" :copy-url="gameUrl" label="Share Lobby" size="default" />
             <Button
                 v-if="game.isParticipant && game.status === 'lobby'"
                 variant="destructive"

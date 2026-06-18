@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Enums\GameStatus;
+use App\Models\Game;
+use App\Models\GamePlayer;
 use App\Models\Map;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Jorenvh\Share\ShareFacade as Share;
 
 class ProfileController extends Controller
 {
@@ -68,18 +71,74 @@ class ProfileController extends Controller
 
         $stats = $this->statsFromUserCounts($profile);
 
+        $battleHistory = Game::query()
+            ->where('status', GameStatus::Finished)
+            ->whereHas('players', fn ($q) => $q->where('user_id', $profile->id))
+            ->with(['players.user', 'winner'])
+            ->latest('finished_at')
+            ->limit(20)
+            ->get()
+            ->map(function (Game $game) use ($profile): array {
+                $gameUrl = route('games.show', $game);
+
+                /** @var array<string, string> $gameShareLinks */
+                $gameShareLinks = Share::page($gameUrl, "Check out this War of Dots match — code {$game->code}!")
+                    ->facebook()
+                    ->twitter()
+                    ->linkedin()
+                    ->whatsapp()
+                    ->telegram()
+                    ->reddit()
+                    ->pinterest()
+                    ->getRawLinks();
+
+                $winnerName = $game->winner?->game_display_name ?: $game->winner?->name;
+                $isWinner = $game->winner_user_id === $profile->id;
+
+                return [
+                    'uuid' => $game->uuid,
+                    'code' => $game->code,
+                    'finishedAt' => $game->finished_at?->toIso8601String(),
+                    'winnerName' => $winnerName,
+                    'isWinner' => $isWinner,
+                    'players' => $game->players->map(fn (GamePlayer $p) => [
+                        'name' => $p->displayLabel(),
+                        'color' => $p->color ?? '#888888',
+                    ])->values(),
+                    'shareLinks' => $gameShareLinks,
+                    'gameUrl' => $gameUrl,
+                ];
+            });
+
+        $profileUrl = route('profiles.show', ['profile' => $profile->profile_uuid]);
+        $playerTag = $profile->game_display_name ?: $profile->name;
+
+        /** @var array<string, string> $shareLinks */
+        $shareLinks = Share::page($profileUrl, "Check out {$playerTag}'s War of Dots profile!")
+            ->facebook()
+            ->twitter()
+            ->linkedin()
+            ->whatsapp()
+            ->telegram()
+            ->reddit()
+            ->pinterest()
+            ->getRawLinks();
+
         return Inertia::render('community/ProfileShow', [
             'profile' => [
                 'name' => $profile->name,
-                'playerTag' => $profile->game_display_name ?: $profile->name,
+                'playerTag' => $playerTag,
                 'avatar' => $profile->avatar,
                 'avatarStyle' => $profile->avatar_style ?? 'pixel-art',
                 'profileUuid' => $profile->profile_uuid,
                 'memberSince' => $profile->created_at?->toIso8601String(),
+                'profileUrl' => $profileUrl,
             ],
             'stats' => $stats,
             'publishedMaps' => $publishedMaps,
+            'battleHistory' => $battleHistory,
             'isOwnProfile' => $request->user()?->id === $profile->id,
+            'shareLinks' => $shareLinks,
         ]);
     }
 

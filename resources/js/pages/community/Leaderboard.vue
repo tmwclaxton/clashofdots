@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { Trophy } from 'lucide-vue-next';
+import { nextTick, onMounted, ref } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,24 @@ type Row = {
 defineProps<{
     leaderboard: Row[];
 }>();
+
+const highlightedUuid = ref<string | null>(null);
+
+onMounted(async () => {
+    const hash = window.location.hash.slice(1);
+    if (!hash) {
+        return;
+    }
+
+    highlightedUuid.value = hash;
+
+    await nextTick();
+
+    const el = document.getElementById(hash);
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
 </script>
 
 <template>
@@ -60,8 +79,10 @@ defineProps<{
                 <tbody>
                     <tr
                         v-for="row in leaderboard"
+                        :id="row.profileUuid"
                         :key="row.profileUuid"
                         class="border-b border-foreground/15 transition-colors hover:bg-muted/30"
+                        :class="{ 'bg-wod-green-lt/40 outline outline-2 outline-foreground/30': highlightedUuid === row.profileUuid }"
                     >
                         <td class="px-4 py-3 font-mono font-bold">{{ row.rank }}</td>
                         <td class="px-4 py-3">
