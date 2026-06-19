@@ -917,6 +917,14 @@ final class Environment
         foreach ($this->players as $player) {
             foreach ($player->troops as $troop) {
                 if (array_key_exists($troop->id, $orderByTroopId)) {
+                    // Ignore orders during embarkation (converting to ship) or disembarkation (reverting to troop).
+                    if (! $troop->isShip && $troop->waterMode === 'embark' && $troop->waterTicks > 0) {
+                        continue;
+                    }
+                    if ($troop->isShip && $troop->landTicks > 0) {
+                        continue;
+                    }
+
                     [$path, $waterMode] = $orderByTroopId[$troop->id];
                     $troop->path = $path;
                     $troop->waterMode = $waterMode;
@@ -999,7 +1007,10 @@ final class Environment
                 $forest = $this->forestMarching->getGridValue($gx, $gy);
                 $onTerrain = $this->getTerrainName($terrain, $forest);
 
-                if ($troop->path !== []) {
+                $isConverting = (! $troop->isShip && $troop->waterMode === 'embark' && $troop->waterTicks > 0)
+                    || ($troop->isShip && $troop->landTicks > 0);
+
+                if (! $isConverting && $troop->path !== []) {
                     $target = $troop->path[0];
                     $isWater = in_array($onTerrain, ['water', 'deep_water', 'river']);
                     if ($troop->isShip && $isWater) {

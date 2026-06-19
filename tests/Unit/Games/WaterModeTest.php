@@ -123,6 +123,74 @@ class WaterModeTest extends TestCase
         $this->assertSame('embark', $troop->waterMode);
     }
 
+    public function test_assign_orders_ignores_orders_for_mid_embarking_troop(): void
+    {
+        $environment = Environment::create(203, 2);
+        $troop = $environment->players[0]->troops[0];
+        $troop->waterMode = 'embark';
+        $troop->waterTicks = 10; // actively mid-embarkation
+        $troop->isShip = false;
+
+        $originalPath = $troop->path;
+
+        $environment->assignTroopPathsFromOrders([
+            [$troop->id, [[999.0, 999.0]], 'embark'],
+        ]);
+
+        $this->assertSame($originalPath, $troop->path, 'Path must not be overwritten while a troop is mid-embarkation.');
+        $this->assertSame(10, $troop->waterTicks, 'waterTicks must not be reset by an ignored order.');
+    }
+
+    public function test_assign_orders_accepts_orders_for_fully_converted_ship(): void
+    {
+        $environment = Environment::create(204, 2);
+        $troop = $environment->players[0]->troops[0];
+        $troop->waterMode = 'embark';
+        $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
+        $troop->isShip = true;
+
+        $environment->assignTroopPathsFromOrders([
+            [$troop->id, [[500.0, 500.0]], 'embark'],
+        ]);
+
+        $this->assertSame([[500.0, 500.0]], $troop->path, 'A fully converted ship must accept new movement orders.');
+    }
+
+    public function test_assign_orders_ignores_orders_for_mid_disembarking_troop(): void
+    {
+        $environment = Environment::create(205, 2);
+        $troop = $environment->players[0]->troops[0];
+        $troop->waterMode = 'embark';
+        $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
+        $troop->isShip = true;
+        $troop->landTicks = 10; // actively mid-disembarkation
+
+        $originalPath = $troop->path;
+
+        $environment->assignTroopPathsFromOrders([
+            [$troop->id, [[999.0, 999.0]], 'embark'],
+        ]);
+
+        $this->assertSame($originalPath, $troop->path, 'Path must not be overwritten while a troop is mid-disembarkation.');
+        $this->assertSame(10, $troop->landTicks, 'landTicks must not be reset by an ignored order.');
+    }
+
+    public function test_assign_orders_accepts_orders_for_fully_disembarked_troop(): void
+    {
+        $environment = Environment::create(206, 2);
+        $troop = $environment->players[0]->troops[0];
+        $troop->waterMode = 'embark';
+        $troop->waterTicks = 0;
+        $troop->isShip = false;
+        $troop->landTicks = 0;
+
+        $environment->assignTroopPathsFromOrders([
+            [$troop->id, [[300.0, 300.0]], 'embark'],
+        ]);
+
+        $this->assertSame([[300.0, 300.0]], $troop->path, 'A fully disembarked troop must accept new movement orders.');
+    }
+
     // -------------------------------------------------------------------------
     // drawInfo exposes waterMode and waterTicks
     // -------------------------------------------------------------------------
@@ -434,5 +502,88 @@ class WaterModeTest extends TestCase
             || abs($troop->position[1] - $positionBefore[1]) > 0.1;
 
         $this->assertTrue($moved, 'Embark mode ship should be able to move into deep_water tiles.');
+    }
+
+    // -------------------------------------------------------------------------
+    // Freeze during conversion: no movement while embarking or disembarking
+    // -------------------------------------------------------------------------
+
+    public function test_troop_does_not_move_while_embarking(): void
+    {
+        $environment = Environment::create(900, 2);
+        $player = $environment->players[0];
+        $troop = $player->troops[0];
+        $environment->players[1]->troops = [];
+
+        $this->placeOnWater($environment, $troop);
+        $troop->waterMode = 'embark';
+        $troop->waterTicks = 1; // mid-embarkation
+        $troop->isShip = false;
+
+        $cs = GameConstants::CELL_SIZE;
+        $troop->path = [[(float) ($cs * 8), (float) ($cs * 1)]];
+        $positionBefore = $troop->position;
+
+        $environment->updateTroops([], 1);
+
+        $moved = abs($troop->position[0] - $positionBefore[0]) > 0.1
+            || abs($troop->position[1] - $positionBefore[1]) > 0.1;
+
+        $this->assertFalse($moved, 'A troop mid-embarkation must not move.');
+    }
+
+    public function test_troop_does_not_move_while_disembarking(): void
+    {
+        $environment = Environment::create(901, 2);
+        $player = $environment->players[0];
+        $troop = $player->troops[0];
+        $environment->players[1]->troops = [];
+
+        $cs = GameConstants::CELL_SIZE;
+        $gx = 5;
+        $gy = 5;
+        $environment->terrainMarching->grid[$gx][$gy] = 0.5;
+        $environment->forestMarching->grid[$gx][$gy] = 0.0;
+        $troop->position = [(float) ($gx * $cs), (float) ($gy * $cs)];
+
+        $troop->waterMode = 'embark';
+        $troop->isShip = true;
+        $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
+        $troop->landTicks = 10; // mid-disembarkation
+
+        $troop->path = [[(float) ($cs * 10), (float) ($cs * 5)]];
+        $positionBefore = $troop->position;
+
+        $environment->updateTroops([], 1);
+
+        $moved = abs($troop->position[0] - $positionBefore[0]) > 0.1
+            || abs($troop->position[1] - $positionBefore[1]) > 0.1;
+
+        $this->assertFalse($moved, 'A ship mid-disembarkation must not move.');
+    }
+
+    public function test_troop_moves_normally_once_fully_converted_to_ship(): void
+    {
+        $environment = Environment::create(902, 2);
+        $player = $environment->players[0];
+        $troop = $player->troops[0];
+        $environment->players[1]->troops = [];
+
+        $this->placeOnWater($environment, $troop);
+        $troop->waterMode = 'embark';
+        $troop->isShip = true;
+        $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
+        $troop->landTicks = 0;
+
+        $cs = GameConstants::CELL_SIZE;
+        $troop->path = [[(float) ($cs * 8), (float) ($cs * 1)]];
+        $positionBefore = $troop->position;
+
+        $environment->updateTroops([], 1);
+
+        $moved = abs($troop->position[0] - $positionBefore[0]) > 0.1
+            || abs($troop->position[1] - $positionBefore[1]) > 0.1;
+
+        $this->assertTrue($moved, 'A fully converted ship must move normally.');
     }
 }

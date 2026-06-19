@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import LineOrderToolbar from '@/components/game/LineOrderToolbar.vue';
 import WaterModeModal from '@/components/game/WaterModeModal.vue';
 import { useIsDark } from '@/composables/useIsDark';
 import {
@@ -70,9 +71,16 @@ const troopTargetPositions = new Map<number, [number, number]>();
 let lassoStart: [number, number] | null = null;
 let lassoCurrent: [number, number] | null = null;
 
+/** Line-order drawing state (advance / defend). */
+let lineDrawing = false;
+let lineStart: [number, number] | null = null;
+let lineCurrent: [number, number] | null = null;
+
 /** Water mode modal state. */
 const waterModalVisible = ref(false);
 let waterModalEntityId: number | null = null;
+/** For group line orders: all troop IDs whose paths cross water. */
+let waterModalGroupIds: number[] = [];
 
 /**
  * Returns true if any point in the path lies on a water tile,
@@ -107,18 +115,24 @@ function pathCrossesWater(points: [number, number][]): boolean {
 }
 
 function onWaterModeChosen(mode: 'wade' | 'embark') {
-    if (waterModalEntityId !== null) {
+    if (waterModalGroupIds.length > 0) {
+        for (const id of waterModalGroupIds) {
+            drafts.setWaterMode(id, mode);
+        }
+    } else if (waterModalEntityId !== null) {
         drafts.setWaterMode(waterModalEntityId, mode);
     }
 
     waterModalVisible.value = false;
     waterModalEntityId = null;
+    waterModalGroupIds = [];
 }
 
 function onWaterModalDismiss() {
     // Default to embark (already the default on DraftPath, nothing to set).
     waterModalVisible.value = false;
     waterModalEntityId = null;
+    waterModalGroupIds = [];
 }
 let lassoActive = false;
 
@@ -416,6 +430,85 @@ function separateTroopPositions(
     return result;
 }
 
+/**
+ * Assign evenly-spaced points along a world-space line segment to the given
+ * troops and commit them as 2-point draft paths in the store.
+ * Troops are sorted by their projection along the line so the assignment is
+ * spatially coherent (leftmost troop → leftmost target, etc.).
+ */
+function distributeAlongLine(
+    start: [number, number],
+    end: [number, number],
+    troopIds: number[],
+): void {
+    if (troopIds.length === 0) {
+        return;
+    }
+
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+
+    // Sort troops by their scalar projection onto the line direction.
+    const sorted = [...troopIds].sort((a, b) => {
+        const pa = troopTargetPositions.get(a) ?? [0, 0];
+        const pb = troopTargetPositions.get(b) ?? [0, 0];
+        const projA = (pa[0] - start[0]) * dx + (pa[1] - start[1]) * dy;
+        const projB = (pb[0] - start[0]) * dx + (pb[1] - start[1]) * dy;
+
+        return projA - projB;
+    });
+
+    sorted.forEach((id, i) => {
+        const t = sorted.length === 1 ? 0.5 : i / (sorted.length - 1);
+        const target: [number, number] = [start[0] + t * dx, start[1] + t * dy];
+        const troopPos = troopTargetPositions.get(id) ?? target;
+
+        // Overwrite any existing draft for this troop.
+        drafts.draftPaths = drafts.draftPaths.filter((p) => p.entityId !== id);
+        drafts.draftPaths.push({ entityId: id, points: [troopPos, target] });
+    });
+}
+
+/**
+ * Screen-space centroid of currently selected troops, used to position the
+ * line-order toolbar above the selection. Reads from reactive store state so
+ * Vue tracks the dependency and recomputes on troop movement.
+ */
+const lineToolbarPos = computed<{ x: number; y: number } | null>(() => {
+    if (drafts.selectedTroopIds.length === 0) {
+        return null;
+    }
+
+    const troops = store.latestState?.troops ?? [];
+    const idSet = new Set(drafts.selectedTroopIds);
+
+    let sumX = 0;
+    let sumY = 0;
+    let count = 0;
+
+    // Also depend on camera so the overlay repositions when panning/zooming.
+    const _z = camera.zoom;
+    const _cx = camera.camX;
+    const _cy = camera.camY;
+
+    for (const troop of troops) {
+        if (!idSet.has(troop.id)) {
+            continue;
+        }
+
+        const [sx, sy] = worldToScreen(troop.position[0], troop.position[1]);
+        sumX += sx;
+        sumY += sy;
+        count++;
+    }
+
+    if (count === 0) {
+        return null;
+    }
+
+    return { x: sumX / count, y: sumY / count };
+});
+
 function draw() {
     const canvas = canvasRef.value;
 
@@ -525,6 +618,71 @@ function draw() {
         ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
         ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
         ctx.setLineDash([]);
+        ctx.restore();
+    }
+
+    // Line-order preview (screen-space, drawn during drag).
+    if (lineDrawing && lineStart && lineCurrent) {
+        const isAdvance = drafts.lineOrderMode === 'advance';
+        const lineColor = isAdvance ? 'rgba(250,204,21,0.9)' : 'rgba(147,197,253,0.9)';
+        const n = drafts.selectedTroopIds.length;
+
+        // Convert world coords to screen for the preview.
+        const [sx1, sy1] = worldToScreen(lineStart[0], lineStart[1]);
+        const [sx2, sy2] = worldToScreen(lineCurrent[0], lineCurrent[1]);
+
+        ctx.save();
+
+        // Main line.
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = isAdvance ? 2.5 : 2;
+        ctx.setLineDash(isAdvance ? [] : [8, 4]);
+        ctx.beginPath();
+        ctx.moveTo(sx1, sy1);
+        ctx.lineTo(sx2, sy2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw evenly-spaced target dots along the line.
+        for (let i = 0; i < n; i++) {
+            const t = n === 1 ? 0.5 : i / (n - 1);
+            const px = sx1 + t * (sx2 - sx1);
+            const py = sy1 + t * (sy2 - sy1);
+
+            ctx.fillStyle = lineColor;
+            ctx.beginPath();
+
+            if (isAdvance) {
+                // Arrowhead pointing along the line direction.
+                const angle = Math.atan2(sy2 - sy1, sx2 - sx1);
+                ctx.moveTo(px + Math.cos(angle) * 7, py + Math.sin(angle) * 7);
+                ctx.lineTo(
+                    px + Math.cos(angle + 2.4) * 7,
+                    py + Math.sin(angle + 2.4) * 7,
+                );
+                ctx.lineTo(
+                    px + Math.cos(angle - 2.4) * 7,
+                    py + Math.sin(angle - 2.4) * 7,
+                );
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                // Circle dot for defend positions.
+                ctx.arc(px, py, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // End-cap circles at both endpoints of the line.
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(sx1, sy1, 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(sx2, sy2, 4, 0, Math.PI * 2);
+        ctx.stroke();
+
         ctx.restore();
     }
 }
@@ -1128,6 +1286,16 @@ function findEntity(
             continue;
         }
 
+        // Cannot issue orders during embarkation (converting to ship) or disembarkation (reverting to troop).
+        const troopIsEmbarking =
+            !troop.isShip &&
+            (troop.waterMode ?? 'embark') === 'embark' &&
+            (troop.waterTicks ?? 0) > 0;
+        const troopIsDisembarking = troop.isShip && (troop.landTicks ?? 0) > 0;
+        if (troopIsEmbarking || troopIsDisembarking) {
+            continue;
+        }
+
         const dx = troop.position[0] - world[0];
         const dy = troop.position[1] - world[1];
         const dist = Math.hypot(dx, dy);
@@ -1171,6 +1339,16 @@ function onMouseDown(e: MouseEvent) {
     }
 
     const world = screenToWorld(sx, sy);
+
+    // If a line-order mode is active, start drawing the line instead of a troop path.
+    if (drafts.lineOrderMode !== null && drafts.selectedTroopIds.length > 1) {
+        lineDrawing = true;
+        lineStart = world;
+        lineCurrent = world;
+
+        return;
+    }
+
     const entity = findEntity(world);
 
     if (entity) {
@@ -1180,6 +1358,17 @@ function onMouseDown(e: MouseEvent) {
             dragging = true;
 
             for (const id of drafts.selectedTroopIds) {
+                const troopState = state.troops.find((t) => t.id === id);
+                const groupTroopIsEmbarking =
+                    troopState &&
+                    !troopState.isShip &&
+                    (troopState.waterMode ?? 'embark') === 'embark' &&
+                    (troopState.waterTicks ?? 0) > 0;
+                const groupTroopIsDisembarking =
+                    troopState && troopState.isShip && (troopState.landTicks ?? 0) > 0;
+                if (groupTroopIsEmbarking || groupTroopIsDisembarking) {
+                    continue;
+                }
                 // Start from the troop's actual server position, not the mouse click,
                 // so the first waypoint doesn't cause a spurious initial movement.
                 const troopPos = troopTargetPositions.get(id) ?? world;
@@ -1228,6 +1417,13 @@ function onMouseMove(e: MouseEvent) {
         return;
     }
 
+    if (lineDrawing) {
+        lineCurrent = screenToWorld(sx, sy);
+        scheduleRedraw();
+
+        return;
+    }
+
     if (dragging) {
         drafts.extendPath(screenToWorld(sx, sy));
         scheduleRedraw();
@@ -1235,6 +1431,36 @@ function onMouseMove(e: MouseEvent) {
 }
 
 function onMouseUp() {
+    if (lineDrawing && lineStart && lineCurrent) {
+        lineDrawing = false;
+
+        const dx = lineCurrent[0] - lineStart[0];
+        const dy = lineCurrent[1] - lineStart[1];
+        const minLineLength = 4;
+
+        if (Math.hypot(dx, dy) > minLineLength && !props.readOnly) {
+            const assignedIds = [...drafts.selectedTroopIds];
+            distributeAlongLine(lineStart, lineCurrent, assignedIds);
+
+            // Show the water-mode modal once if any assigned path crosses water.
+            const waterIds = assignedIds.filter((id) => {
+                const path = drafts.draftPaths.find((p) => p.entityId === id);
+
+                return path ? pathCrossesWater(path.points) : false;
+            });
+
+            if (waterIds.length > 0) {
+                waterModalGroupIds = waterIds;
+                waterModalVisible.value = true;
+            }
+        }
+
+        lineStart = null;
+        lineCurrent = null;
+        drafts.clearLineOrderMode();
+        scheduleRedraw();
+    }
+
     if (lassoActive && lassoStart && lassoCurrent) {
         lassoActive = false;
 
@@ -1349,6 +1575,27 @@ function onKeyDown(e: KeyboardEvent) {
             store.gameUuid,
             props.snapshotFetchUrl?.trim() || undefined,
         );
+    }
+
+    // Line-order shortcuts (only when multiple troops are selected).
+    if (e.key.toLowerCase() === 'a' && drafts.selectedTroopIds.length > 1) {
+        e.preventDefault();
+        drafts.setLineOrderMode('advance');
+    }
+
+    if (e.key.toLowerCase() === 'd' && drafts.selectedTroopIds.length > 1) {
+        e.preventDefault();
+        drafts.setLineOrderMode('defend');
+    }
+
+    if (e.code === 'Escape') {
+        if (drafts.lineOrderMode !== null) {
+            drafts.clearLineOrderMode();
+            lineDrawing = false;
+            lineStart = null;
+            lineCurrent = null;
+            scheduleRedraw();
+        }
     }
 }
 
@@ -1554,7 +1801,8 @@ watch(isDark, () => {
     <div class="relative h-full w-full">
         <canvas
             ref="canvasRef"
-            class="h-full w-full cursor-crosshair"
+            class="h-full w-full"
+            :class="drafts.lineOrderMode !== null ? 'cursor-crosshair' : 'cursor-crosshair'"
             @contextmenu.prevent
             @mousedown="onMouseDown"
             @mousemove="onMouseMove"
@@ -1570,6 +1818,13 @@ watch(isDark, () => {
             :visible="waterModalVisible"
             @choose="onWaterModeChosen"
             @dismiss="onWaterModalDismiss"
+        />
+        <LineOrderToolbar
+            v-if="drafts.selectedTroopIds.length > 1 && lineToolbarPos"
+            :position="lineToolbarPos"
+            :active-mode="drafts.lineOrderMode"
+            @set-mode="drafts.setLineOrderMode"
+            @cancel="drafts.clearSelection()"
         />
     </div>
 </template>

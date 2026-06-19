@@ -556,13 +556,13 @@ onUnmounted(() => {
                 class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/90 text-center"
             >
                 <p class="text-sm font-semibold text-muted-foreground">
-                    Loading battlefield…
+                    Preparing for battle…
                 </p>
                 <p
                     v-if="!spectatorMode"
                     class="max-w-xs text-xs text-muted-foreground"
                 >
-                    Map data loads over HTTP even without websockets.
+                    Get your troops ready, commander.
                 </p>
                 <p
                     v-if="
