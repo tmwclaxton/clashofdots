@@ -14,6 +14,9 @@ final class Troop
     /** Consecutive ticks this troop has been on water terrain. */
     public int $waterTicks = 0;
 
+    /** Consecutive land ticks accumulated while disembarking (0 once fully reverted). */
+    public int $landTicks = 0;
+
     /** True when waterTicks has reached {@see GameConstants::SHIP_CONVERSION_TICKS}. */
     public bool $isShip = false;
 
@@ -72,6 +75,7 @@ final class Troop
             'ownerSlot' => $this->owner->slot,
             'type' => $this->type,
             'waterTicks' => $this->waterTicks,
+            'landTicks' => $this->landTicks,
             'isShip' => $this->isShip,
             'waterMode' => $this->waterMode,
         ];
@@ -94,6 +98,7 @@ final class Troop
         $troop->health = (int) ($data['health'] ?? $troop->maxHealth());
         $troop->morale = (int) ($data['morale'] ?? 100);
         $troop->waterTicks = (int) ($data['waterTicks'] ?? 0);
+        $troop->landTicks = (int) ($data['landTicks'] ?? 0);
         $troop->isShip = (bool) ($data['isShip'] ?? false);
         $waterMode = $data['waterMode'] ?? 'embark';
         $troop->waterMode = $waterMode === 'wade' ? 'wade' : 'embark';

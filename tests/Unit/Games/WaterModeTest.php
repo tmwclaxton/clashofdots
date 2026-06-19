@@ -133,6 +133,7 @@ class WaterModeTest extends TestCase
         $troop = $environment->players[0]->troops[0];
         $troop->waterMode = 'wade';
         $troop->waterTicks = 5;
+        $troop->landTicks = 3;
 
         $environment->recomputeVision();
         $info = $environment->drawInfo(0, 0);
@@ -141,6 +142,7 @@ class WaterModeTest extends TestCase
         $this->assertNotFalse($ownTroop, 'Own troop must appear in drawInfo.');
         $this->assertSame('wade', $ownTroop['waterMode']);
         $this->assertSame(5, $ownTroop['waterTicks']);
+        $this->assertSame(3, $ownTroop['landTicks']);
     }
 
     // -------------------------------------------------------------------------
@@ -184,6 +186,30 @@ class WaterModeTest extends TestCase
             $troop->maxHealth(),
             $troop->health,
             'Wade mode troop on water should lose HP from water damage.',
+        );
+    }
+
+    public function test_wade_mode_damage_is_not_cancelled_by_healing_in_own_territory(): void
+    {
+        $environment = Environment::create(502, 2);
+        $player = $environment->players[0];
+        $troop = $player->troops[0];
+        $troop->waterMode = 'wade';
+        $troop->health = $troop->maxHealth();
+        $this->placeOnWater($environment, $troop);
+
+        // Force the troop's cell into own territory by directly setting border-brush influence.
+        $cs = GameConstants::CELL_SIZE;
+        $gx = 1;
+        $gy = 1;
+        $player->border->grid[$gx][$gy] = 1.0;
+
+        $environment->updateTroops([], 1);
+
+        $this->assertLessThan(
+            $troop->maxHealth(),
+            $troop->health,
+            'Water damage must not be silently cancelled by territory healing.',
         );
     }
 
@@ -254,10 +280,10 @@ class WaterModeTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Leaving water resets waterTicks and isShip
+    // Leaving water: gradual disembarkation
     // -------------------------------------------------------------------------
 
-    public function test_leaving_water_resets_water_ticks_and_is_ship(): void
+    public function test_leaving_water_does_not_immediately_reset_is_ship(): void
     {
         $environment = Environment::create(700, 2);
         $troop = $environment->players[0]->troops[0];
@@ -265,19 +291,66 @@ class WaterModeTest extends TestCase
         $troop->isShip = true;
         $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
 
-        // Place the troop on dry land.
         $cs = GameConstants::CELL_SIZE;
         $gx = 5;
         $gy = 5;
-        $environment->terrainMarching->grid[$gx][$gy] = 0.5; // plains
+        $environment->terrainMarching->grid[$gx][$gy] = 0.5;
         $environment->forestMarching->grid[$gx][$gy] = 0.0;
         $troop->position = [(float) ($gx * $cs), (float) ($gy * $cs)];
         $troop->path = [];
 
         $environment->updateTroops([], 1);
 
-        $this->assertSame(0, $troop->waterTicks, 'waterTicks must reset to 0 when the troop leaves water.');
-        $this->assertFalse($troop->isShip, 'isShip must reset to false when the troop leaves water.');
+        $this->assertTrue($troop->isShip, 'isShip must remain true immediately after stepping onto land.');
+        $this->assertSame(1, $troop->landTicks, 'landTicks must increment to 1 on first land tick.');
+    }
+
+    public function test_disembarkation_completes_after_disembark_ticks(): void
+    {
+        $environment = Environment::create(701, 2);
+        $troop = $environment->players[0]->troops[0];
+        $troop->waterMode = 'embark';
+        $troop->isShip = true;
+        $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
+
+        $cs = GameConstants::CELL_SIZE;
+        $gx = 5;
+        $gy = 5;
+        $environment->terrainMarching->grid[$gx][$gy] = 0.5;
+        $environment->forestMarching->grid[$gx][$gy] = 0.0;
+        $troop->position = [(float) ($gx * $cs), (float) ($gy * $cs)];
+        $troop->path = [];
+
+        for ($i = 1; $i <= GameConstants::SHIP_DISEMBARK_TICKS; $i++) {
+            $environment->updateTroops([], $i);
+        }
+
+        $this->assertFalse($troop->isShip, 'isShip must be false after SHIP_DISEMBARK_TICKS land ticks.');
+        $this->assertSame(0, $troop->waterTicks, 'waterTicks must reset to 0 after full disembarkation.');
+        $this->assertSame(0, $troop->landTicks, 'landTicks must reset to 0 after full disembarkation.');
+    }
+
+    public function test_returning_to_water_resets_land_ticks(): void
+    {
+        $environment = Environment::create(702, 2);
+        $troop = $environment->players[0]->troops[0];
+        $troop->waterMode = 'embark';
+        $troop->isShip = true;
+        $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
+        $troop->landTicks = 45;
+
+        $cs = GameConstants::CELL_SIZE;
+        $gx = 1;
+        $gy = 1;
+        $environment->terrainMarching->grid[$gx][$gy] = -0.15;
+        $environment->forestMarching->grid[$gx][$gy] = 0.0;
+        $troop->position = [(float) ($gx * $cs), (float) ($gy * $cs)];
+        $troop->path = [];
+
+        $environment->updateTroops([], 1);
+
+        $this->assertSame(0, $troop->landTicks, 'landTicks must reset to 0 when ship re-enters water.');
+        $this->assertTrue($troop->isShip, 'isShip must remain true when back on water.');
     }
 
     // -------------------------------------------------------------------------

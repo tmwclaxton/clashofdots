@@ -44,6 +44,7 @@ type TroopState = {
     isShip?: boolean;
     waterMode?: 'wade' | 'embark';
     waterTicks?: number;
+    landTicks?: number;
     warmupMultiplier?: number;
     combatMultiplier?: number;
 };
@@ -266,10 +267,22 @@ export const useGameStore = defineStore('game', {
                 .listen(
                     '.ChatMessageSent',
                     (payload: Record<string, unknown>) => {
-                        this.chatMessages.push(
-                            payload as unknown as ChatMessage,
+                        const incoming = payload as unknown as ChatMessage;
+                        // Replace a matching optimistic (temp) entry from the
+                        // same slot with the same body, otherwise just append.
+                        const tempIdx = this.chatMessages.findIndex(
+                            (m) =>
+                                m.id > 1_000_000_000_000 &&
+                                m.senderSlot === incoming.senderSlot &&
+                                m.body === incoming.body,
                         );
-                        this.unreadChatCount++;
+
+                        if (tempIdx !== -1) {
+                            this.chatMessages.splice(tempIdx, 1, incoming);
+                        } else {
+                            this.chatMessages.push(incoming);
+                            this.unreadChatCount++;
+                        }
                     },
                 );
         },
@@ -306,6 +319,13 @@ export const useGameStore = defineStore('game', {
 
             if (payload.worldTick !== undefined && payload.worldTick !== null) {
                 this.worldTick = Number(payload.worldTick);
+            }
+
+            if (
+                !this.initialized &&
+                Array.isArray(payload.chatMessages)
+            ) {
+                this.chatMessages = payload.chatMessages as ChatMessage[];
             }
 
             this.initialized = true;
@@ -474,7 +494,7 @@ export const useGameStore = defineStore('game', {
             this.unreadChatCount = 0;
         },
 
-        async sendChatMessage(gameUuid: string, body: string) {
+        async sendChatMessage(gameUuid: string, body: string, senderName: string) {
             const toast = useToastStore();
 
             if (!body.trim()) {
@@ -482,6 +502,15 @@ export const useGameStore = defineStore('game', {
             }
 
             try {
+                const optimistic: ChatMessage = {
+                    id: Date.now(),
+                    body: body.trim(),
+                    senderName,
+                    senderSlot: this.slot,
+                    createdAt: new Date().toISOString(),
+                };
+                this.chatMessages.push(optimistic);
+
                 const res = await fetch(chatRoute({ game: gameUuid }).url, {
                     method: 'POST',
                     credentials: 'same-origin',
@@ -493,6 +522,9 @@ export const useGameStore = defineStore('game', {
                 });
 
                 if (!res.ok) {
+                    this.chatMessages = this.chatMessages.filter(
+                        (m) => m.id !== optimistic.id,
+                    );
                     toast.error('Could not send message.');
                 }
             } catch {

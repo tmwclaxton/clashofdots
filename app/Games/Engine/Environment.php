@@ -801,6 +801,9 @@ final class Environment
 
                 $inCombat = $enemiesInRange !== [];
 
+                // Determine water terrain once (after move resolution updates $onTerrain).
+                $isWaterTerrain = in_array($onTerrain, ['water', 'deep_water', 'river']);
+
                 // Morale: territory-based encirclement replaces the old supply-line distance check.
                 // Being inside own territory (or a teammate's) is sufficient to recover morale.
                 // Being caught in enemy territory - whether fighting or not - drains morale.
@@ -820,13 +823,15 @@ final class Environment
                 $troop->morale = max(GameConstants::TROOP_MORALE_MIN, min(GameConstants::TROOP_MORALE_MAX, $troop->morale));
 
                 // Apply healing after combat so we can suppress it while in combat.
-                if ($shouldHeal && ! $inCombat && $troop->health < $troop->maxHealth()) {
+                // Also suppress healing while on water: water damage must not be silently cancelled.
+                if ($shouldHeal && ! $inCombat && ! $isWaterTerrain && $troop->health < $troop->maxHealth()) {
                     $troop->health = min($troop->maxHealth(), $troop->health + 1);
                 }
 
                 // Ship / water conversion logic.
-                $isWaterTerrain = in_array($onTerrain, ['water', 'deep_water', 'river']);
                 if ($isWaterTerrain) {
+                    // Reset any partial disembark progress when back on water.
+                    $troop->landTicks = 0;
                     if ($troop->waterMode === 'wade') {
                         // Wade: troop takes damage each tick but never converts to a ship.
                         $troop->health -= GameConstants::WATER_DAMAGE_PER_TICK;
@@ -842,9 +847,17 @@ final class Environment
                         }
                     }
                 } else {
-                    if ($troop->waterTicks > 0) {
+                    if ($troop->isShip) {
+                        // Ship is on land: accumulate disembark ticks; revert only after the full duration.
+                        $troop->landTicks++;
+                        if ($troop->landTicks >= GameConstants::SHIP_DISEMBARK_TICKS) {
+                            $troop->waterTicks = 0;
+                            $troop->landTicks = 0;
+                            $troop->isShip = false;
+                        }
+                    } elseif ($troop->waterTicks > 0) {
                         $troop->waterTicks = 0;
-                        $troop->isShip = false;
+                        $troop->landTicks = 0;
                     }
                 }
 
@@ -1112,6 +1125,7 @@ final class Environment
                         'isShip' => $troop->isShip,
                         'waterMode' => $troop->waterMode,
                         'waterTicks' => $troop->waterTicks,
+                        'landTicks' => $troop->landTicks,
                         'warmupMultiplier' => round($warmup, 3),
                         'combatMultiplier' => round($warmup * $moraleFac, 3),
                     ];
