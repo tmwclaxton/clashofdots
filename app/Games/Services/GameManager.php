@@ -777,6 +777,8 @@ final class GameManager
     {
         $winner = $game->players()->where('slot', $winnerSlot)->first();
 
+        $this->tickService->writeFinalReplaySnapshot($game, $this);
+
         $game->update([
             'status' => GameStatus::Finished,
             'winner_user_id' => $winner?->user_id,
@@ -785,8 +787,8 @@ final class GameManager
         ]);
 
         Redis::srem(self::ACTIVE_SET, $game->uuid);
-        Redis::del($this->redisKey($game));
-        Redis::del($this->redisMapKey($game));
+        Redis::expire($this->redisKey($game), 300);
+        Redis::expire($this->redisMapKey($game), 300);
 
         $game->load('players');
 
@@ -825,6 +827,8 @@ final class GameManager
             return;
         }
 
+        $this->tickService->writeFinalReplaySnapshot($game, $this);
+
         $settings = $game->settings ?? [];
         $settings['aborted_reason'] = $abortedReason;
 
@@ -837,8 +841,8 @@ final class GameManager
         ]);
 
         Redis::srem(self::ACTIVE_SET, $game->uuid);
-        Redis::del($this->redisKey($game));
-        Redis::del($this->redisMapKey($game));
+        Redis::expire($this->redisKey($game), 300);
+        Redis::expire($this->redisMapKey($game), 300);
 
         $game->load('players');
 
@@ -1092,6 +1096,65 @@ final class GameManager
         $this->touchPlayerActivityInState($state, $slot);
         $this->storeLiveState($game, $state);
         $this->broadcastState($game, $environment, $state);
+    }
+
+    /**
+     * Processes a player's surrender: removes their troops, neutralises their cities,
+     * then either declares a winner (if only one active player remains), ends with no
+     * winner (if nobody is left), or continues the match for the remaining players.
+     */
+    public function surrender(Game $game, GamePlayer $gamePlayer): void
+    {
+        if ($game->status !== GameStatus::Playing) {
+            abort(422, 'Cannot surrender outside of a live match.');
+        }
+
+        if ($gamePlayer->game_id !== $game->id) {
+            abort(403);
+        }
+
+        $state = $this->getLiveState($game);
+        $environment = $this->environmentFromState($state);
+        $slot = $gamePlayer->slot;
+        $player = $environment->players[$slot] ?? null;
+
+        if ($player === null) {
+            abort(422, 'Player slot not found in this match.');
+        }
+
+        $player->troops = [];
+
+        foreach ($environment->cities as $city) {
+            if ($city->owner === $player) {
+                $city->owner = null;
+            }
+        }
+
+        $activePlayers = array_filter(
+            $environment->players,
+            function (Player $p) use ($player, $environment): bool {
+                if ($p === $player) {
+                    return false;
+                }
+                $ownsCities = array_any($environment->cities, fn (City $c) => $c->owner === $p);
+
+                return $p->troops !== [] || $ownsCities;
+            },
+        );
+
+        $state['environment'] = $environment->toArray();
+
+        if (count($activePlayers) === 1) {
+            $winner = reset($activePlayers);
+            $this->storeLiveState($game, $state);
+            $this->finish($game, $winner->slot);
+        } elseif (count($activePlayers) === 0) {
+            $this->finishWithoutWinner($game, 'all_surrendered', 'All commanders have surrendered.');
+        } else {
+            $this->touchPlayerActivityInState($state, $slot);
+            $this->storeLiveState($game, $state);
+            $this->broadcastState($game, $environment, $state);
+        }
     }
 
     public function broadcastState(Game $game, Environment $environment, array $state): void

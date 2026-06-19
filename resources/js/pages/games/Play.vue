@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { MessageSquare, Building2, ChevronDown } from 'lucide-vue-next';
+import { MessageSquare, Building2, ChevronDown, Flag } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import GameCanvas from '@/components/game/GameCanvas.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { index as lobbies } from '@/routes/lobbies';
+import { show as profileShow } from '@/routes/profiles';
 import { useDraftStore } from '@/stores/draftStore';
 import { useGameStore } from '@/stores/gameStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -25,6 +34,7 @@ type GamePayload = {
         name: string;
         color: string;
         teamIndex: number;
+        profileUuid: string | null;
     }>;
 };
 
@@ -247,6 +257,20 @@ watch(chatPanelOpen, (open) => {
     }
 });
 
+const surrenderDialogOpen = ref(false);
+const surrendering = ref(false);
+
+async function confirmSurrender() {
+    surrendering.value = true;
+    const ok = await store.surrender(props.game.uuid);
+    surrendering.value = false;
+    surrenderDialogOpen.value = false;
+
+    if (ok) {
+        store.markSurrendered();
+    }
+}
+
 const incomePerTick = computed(() => myEconomy.value?.incomePerTick ?? 0);
 
 const showSimulationStallHint = computed(
@@ -424,19 +448,30 @@ onUnmounted(() => {
             <div
                 class="flex min-w-0 flex-1 gap-1.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-                <span
+                <component
+                    :is="player.profileUuid ? Link : 'span'"
                     v-for="player in [...game.players].sort(
                         (a, b) => a.slot - b.slot,
                     )"
                     :key="player.slot"
                     class="wod-chip shrink-0"
+                    :href="
+                        player.profileUuid
+                            ? profileShow(player.profileUuid).url
+                            : undefined
+                    "
+                    :class="
+                        player.profileUuid
+                            ? 'hover:opacity-80 transition-opacity'
+                            : ''
+                    "
                 >
                     <span
                         class="inline-block size-2 rounded-full"
                         :style="{ backgroundColor: player.color }"
                     />
                     {{ player.name }}
-                </span>
+                </component>
             </div>
 
             <div class="flex shrink-0 items-center gap-2">
@@ -452,7 +487,7 @@ onUnmounted(() => {
                     v-if="devHudEligible"
                     type="button"
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     class="font-mono text-[0.65rem]"
                     @click="devHudOpen = !devHudOpen"
                 >
@@ -460,7 +495,7 @@ onUnmounted(() => {
                 </Button>
                 <ThemeToggle />
                 <Link :href="lobbies().url">
-                    <Button size="sm" variant="ghost">Exit</Button>
+                    <Button size="sm" variant="outline">Exit</Button>
                 </Link>
             </div>
         </header>
@@ -662,6 +697,18 @@ onUnmounted(() => {
                             <span class="ml-1.5 opacity-60">(Spacebar)</span>
                         </Button>
                     </div>
+
+                    <!-- Surrender -->
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        class="pointer-events-auto shrink-0 text-destructive/70 hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                        title="Surrender and forfeit the match"
+                        @click="surrenderDialogOpen = true"
+                    >
+                        <Flag class="size-3.5" />
+                        <span class="hidden sm:inline">Surrender</span>
+                    </Button>
                 </div>
             </div>
 
@@ -917,7 +964,7 @@ onUnmounted(() => {
                         <Button
                             type="button"
                             size="sm"
-                            variant="ghost"
+                            variant="outline"
                             class="h-7 px-2 text-xs"
                             @click="devHudOpen = false"
                         >
@@ -1033,4 +1080,33 @@ onUnmounted(() => {
             </template>
         </footer>
     </div>
+
+    <!-- Surrender confirmation dialog -->
+    <Dialog v-model:open="surrenderDialogOpen">
+        <DialogContent class="sm:max-w-sm">
+            <DialogHeader>
+                <DialogTitle>Surrender?</DialogTitle>
+                <DialogDescription>
+                    Your troops will be removed and all your cities will
+                    become neutral. This cannot be undone.
+                </DialogDescription>
+            </DialogHeader>
+            <DialogFooter class="gap-2 sm:gap-5">
+                <Button
+                    variant="outline"
+                    :disabled="surrendering"
+                    @click="surrenderDialogOpen = false"
+                >
+                    Cancel
+                </Button>
+                <Button
+                    variant="destructive"
+                    :disabled="surrendering"
+                    @click="confirmSurrender"
+                >
+                    {{ surrendering ? 'Surrendering…' : 'Confirm Surrender' }}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
 </template>

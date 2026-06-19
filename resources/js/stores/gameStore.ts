@@ -5,6 +5,7 @@ import {
     cityRecruitment as cityRecruitmentRoute,
     orders,
     playerProduction as playerProductionRoute,
+    surrender as surrenderRoute,
 } from '@/routes/games';
 import { useCameraStore } from '@/stores/cameraStore';
 import { useDraftStore } from '@/stores/draftStore';
@@ -377,6 +378,24 @@ export const useGameStore = defineStore('game', {
                 }
 
                 const data = (await res.json()) as Record<string, unknown>;
+
+                if (data.matchEnded === true) {
+                    this.matchEnded = true;
+                    this.winnerSlot =
+                        data.winnerSlot != null
+                            ? Number(data.winnerSlot)
+                            : null;
+                    this.winnerUserId =
+                        data.winnerUserId != null
+                            ? Number(data.winnerUserId)
+                            : null;
+                    this.winnerName =
+                        typeof data.winnerName === 'string'
+                            ? data.winnerName
+                            : null;
+                    return;
+                }
+
                 this.applySnapshotPayload(data);
 
                 this.devDiagnostics.lastSnapshotAt = Date.now();
@@ -606,6 +625,45 @@ export const useGameStore = defineStore('game', {
                 }
             } catch {
                 toast.error('Network error - production update failed.');
+            }
+        },
+
+        markSurrendered() {
+            this.matchEnded = true;
+            this.winnerSlot = null;
+            this.winnerUserId = null;
+            this.winnerName = 'You surrendered';
+        },
+
+        async surrender(gameUuid: string): Promise<boolean> {
+            const toast = useToastStore();
+
+            try {
+                const res = await fetch(surrenderRoute({ game: gameUuid }).url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: csrfHeaders(),
+                });
+
+                if (!res.ok) {
+                    const data = (await res.json().catch(() => ({}))) as Record<
+                        string,
+                        unknown
+                    >;
+                    const message =
+                        typeof data.message === 'string'
+                            ? data.message
+                            : 'Could not process surrender.';
+                    toast.error(message);
+
+                    return false;
+                }
+
+                return true;
+            } catch {
+                toast.error('Network error - surrender failed.');
+
+                return false;
             }
         },
     },
