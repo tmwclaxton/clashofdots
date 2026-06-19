@@ -645,16 +645,53 @@ class MapTest extends TestCase
             ->assertUnprocessable();
     }
 
+    /**
+     * Perform the deferred prop reload for the explore page, simulating the
+     * second request Inertia makes to resolve deferred props.
+     *
+     * Returns the decoded JSON props array.
+     *
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    private function exploreDeferred(array $query = []): array
+    {
+        $manifest = public_path('build/manifest.json');
+        $version = file_exists($manifest) ? hash_file('xxh128', $manifest) : '';
+
+        $response = $this->get(
+            route('maps.explore', $query),
+            [
+                'X-Inertia' => 'true',
+                'X-Inertia-Version' => $version,
+                'X-Inertia-Partial-Component' => 'MapExplore',
+                'X-Inertia-Partial-Data' => 'maps,pagination',
+            ],
+        );
+
+        $response->assertOk();
+
+        /** @var array{props: array<string, mixed>} $json */
+        $json = $response->json();
+
+        return $json['props'];
+    }
+
     public function test_guest_can_view_maps_explore(): void
     {
         $this->get(route('maps.explore'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('MapExplore')
-                ->has('maps')
-                ->has('pagination')
                 ->has('filters')
-                ->where('pagination.total', 0));
+                ->missing('maps')
+                ->missing('pagination'));
+
+        $props = $this->exploreDeferred();
+
+        $this->assertArrayHasKey('maps', $props);
+        $this->assertArrayHasKey('pagination', $props);
+        $this->assertEquals(0, $props['pagination']['total']);
     }
 
     public function test_explore_filters_maps_by_name(): void
@@ -663,13 +700,16 @@ class MapTest extends TestCase
         Map::factory()->for($user)->published()->create(['name' => 'Alpine Pass']);
         Map::factory()->for($user)->published()->create(['name' => 'Desert Ridge']);
 
+        $props = $this->exploreDeferred(['q' => 'alpine']);
+
+        $this->assertCount(1, $props['maps']);
+        $this->assertEquals('Alpine Pass', $props['maps'][0]['name']);
+        $this->assertEquals(1, $props['pagination']['total']);
+
         $this->get(route('maps.explore', ['q' => 'alpine']))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('MapExplore')
-                ->has('maps', 1)
-                ->where('maps.0.name', 'Alpine Pass')
-                ->where('pagination.total', 1)
                 ->where('filters.q', 'alpine'));
     }
 
@@ -680,12 +720,11 @@ class MapTest extends TestCase
         Map::factory()->for($alice)->published()->create(['name' => 'Map A']);
         Map::factory()->for($bob)->published()->create(['name' => 'Map B']);
 
-        $this->get(route('maps.explore', ['author' => 'alice']))
-            ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('maps', 1)
-                ->where('maps.0.name', 'Map A')
-                ->where('pagination.total', 1));
+        $props = $this->exploreDeferred(['author' => 'alice']);
+
+        $this->assertCount(1, $props['maps']);
+        $this->assertEquals('Map A', $props['maps'][0]['name']);
+        $this->assertEquals(1, $props['pagination']['total']);
     }
 
     public function test_explore_filters_maps_by_uuid(): void
@@ -694,14 +733,17 @@ class MapTest extends TestCase
         $target = Map::factory()->for($user)->published()->create(['name' => 'Target Map']);
         Map::factory()->for($user)->published()->create(['name' => 'Other Map']);
 
+        $props = $this->exploreDeferred(['uuid' => $target->uuid]);
+
+        $this->assertCount(1, $props['maps']);
+        $this->assertEquals($target->uuid, $props['maps'][0]['uuid']);
+        $this->assertEquals('Target Map', $props['maps'][0]['name']);
+        $this->assertEquals(1, $props['pagination']['total']);
+
         $this->get(route('maps.explore', ['uuid' => $target->uuid]))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('MapExplore')
-                ->has('maps', 1)
-                ->where('maps.0.uuid', $target->uuid)
-                ->where('maps.0.name', 'Target Map')
-                ->where('pagination.total', 1)
                 ->where('filters.uuid', $target->uuid));
     }
 
@@ -712,14 +754,13 @@ class MapTest extends TestCase
             Map::factory()->for($user)->published()->create(['name' => "Map page {$i}"]);
         }
 
-        $this->get(route('maps.explore', ['per_page' => 12, 'page' => 2]))
-            ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->has('maps', 3)
-                ->where('pagination.current_page', 2)
-                ->where('pagination.last_page', 2)
-                ->where('pagination.per_page', 12)
-                ->where('pagination.total', 15));
+        $props = $this->exploreDeferred(['per_page' => 12, 'page' => 2]);
+
+        $this->assertCount(3, $props['maps']);
+        $this->assertEquals(2, $props['pagination']['current_page']);
+        $this->assertEquals(2, $props['pagination']['last_page']);
+        $this->assertEquals(12, $props['pagination']['per_page']);
+        $this->assertEquals(15, $props['pagination']['total']);
     }
 
     public function test_owner_can_publish_valid_map(): void

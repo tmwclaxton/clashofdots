@@ -82,7 +82,7 @@ leaderboard.form = leaderboardForm
 
 /**
 * @see \App\Http\Controllers\ProfileController::show
-* @see app/Http/Controllers/ProfileController.php:47
+* @see app/Http/Controllers/ProfileController.php:49
 * @route '/profiles/{profile}'
 */
 export const show = (args: { profile: string | number | { profile_uuid: string | number } } | [profile: string | number | { profile_uuid: string | number } ] | string | number | { profile_uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\ProfileController::show
-* @see app/Http/Controllers/ProfileController.php:47
+* @see app/Http/Controllers/ProfileController.php:49
 * @route '/profiles/{profile}'
 */
 show.url = (args: { profile: string | number | { profile_uuid: string | number } } | [profile: string | number | { profile_uuid: string | number } ] | string | number | { profile_uuid: string | number }, options?: RouteQueryOptions) => {
@@ -130,7 +130,7 @@ show.url = (args: { profile: string | number | { profile_uuid: string | number }
 
 /**
 * @see \App\Http\Controllers\ProfileController::show
-* @see app/Http/Controllers/ProfileController.php:47
+* @see app/Http/Controllers/ProfileController.php:49
 * @route '/profiles/{profile}'
 */
 show.get = (args: { profile: string | number | { profile_uuid: string | number } } | [profile: string | number | { profile_uuid: string | number } ] | string | number | { profile_uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -140,7 +140,7 @@ show.get = (args: { profile: string | number | { profile_uuid: string | number }
 
 /**
 * @see \App\Http\Controllers\ProfileController::show
-* @see app/Http/Controllers/ProfileController.php:47
+* @see app/Http/Controllers/ProfileController.php:49
 * @route '/profiles/{profile}'
 */
 show.head = (args: { profile: string | number | { profile_uuid: string | number } } | [profile: string | number | { profile_uuid: string | number } ] | string | number | { profile_uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -150,7 +150,7 @@ show.head = (args: { profile: string | number | { profile_uuid: string | number 
 
 /**
 * @see \App\Http\Controllers\ProfileController::show
-* @see app/Http/Controllers/ProfileController.php:47
+* @see app/Http/Controllers/ProfileController.php:49
 * @route '/profiles/{profile}'
 */
 const showForm = (args: { profile: string | number | { profile_uuid: string | number } } | [profile: string | number | { profile_uuid: string | number } ] | string | number | { profile_uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -160,7 +160,7 @@ const showForm = (args: { profile: string | number | { profile_uuid: string | nu
 
 /**
 * @see \App\Http\Controllers\ProfileController::show
-* @see app/Http/Controllers/ProfileController.php:47
+* @see app/Http/Controllers/ProfileController.php:49
 * @route '/profiles/{profile}'
 */
 showForm.get = (args: { profile: string | number | { profile_uuid: string | number } } | [profile: string | number | { profile_uuid: string | number } ] | string | number | { profile_uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -170,7 +170,7 @@ showForm.get = (args: { profile: string | number | { profile_uuid: string | numb
 
 /**
 * @see \App\Http\Controllers\ProfileController::show
-* @see app/Http/Controllers/ProfileController.php:47
+* @see app/Http/Controllers/ProfileController.php:49
 * @route '/profiles/{profile}'
 */
 showForm.head = (args: { profile: string | number | { profile_uuid: string | number } } | [profile: string | number | { profile_uuid: string | number } ] | string | number | { profile_uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

@@ -34,6 +34,11 @@ type Lobby = {
     sourceMap: { uuid: string; name: string; by: string } | null;
     mapPreviewData: MapDataPayload | null;
     abortedReason?: string | null;
+    // finished-game fields (present when status === 'finished')
+    winnerName?: string | null;
+    isWinner?: boolean;
+    startedAt?: string | null;
+    finishedAt?: string | null;
 };
 
 const props = defineProps<{
@@ -111,22 +116,38 @@ async function copyCode(): Promise<void> {
     <Head :title="`Lobby ${game.code}`" />
 
     <div class="mx-auto flex max-w-2xl flex-col gap-5">
+        <!-- Finished game result card -->
         <div
-            v-if="
-                game.status === 'finished' &&
-                game.abortedReason === 'lobby_timeout'
-            "
-            class="wod-panel border-2 border-dashed border-foreground/40 bg-card/80 p-4 text-center text-sm"
+            v-if="game.status === 'finished'"
+            class="wod-panel p-6 text-center"
         >
-            <p class="font-semibold text-foreground">
-                This lobby closed automatically
-            </p>
-            <p class="mt-1 text-muted-foreground">
-                Open lobbies expire after one hour if the battle never starts.
-            </p>
+            <template v-if="game.abortedReason === 'lobby_timeout'">
+                <p class="font-display text-xl font-bold">Lobby expired</p>
+                <p class="mt-1 text-sm text-muted-foreground">
+                    This lobby closed automatically — open lobbies expire after
+                    one hour if the battle never starts.
+                </p>
+            </template>
+            <template v-else-if="game.winnerName">
+                <p
+                    class="font-display text-3xl font-bold"
+                    :class="game.isWinner ? 'text-wod-green-dk' : ''"
+                >
+                    {{ game.isWinner ? 'Victory!' : 'Defeat' }}
+                </p>
+                <p class="mt-2 text-sm text-muted-foreground">
+                    {{ game.isWinner ? 'You won this battle.' : `${game.winnerName} won this battle.` }}
+                </p>
+            </template>
+            <template v-else>
+                <p class="font-display text-xl font-bold">Match complete</p>
+                <p class="mt-1 text-sm text-muted-foreground">
+                    This battle has ended.
+                </p>
+            </template>
         </div>
 
-        <div class="wod-panel p-5 text-center sm:p-8">
+        <div v-if="game.status !== 'finished'" class="wod-panel p-5 text-center sm:p-8">
             <p class="text-xs font-semibold text-muted-foreground uppercase">
                 Lobby code
             </p>
@@ -175,7 +196,7 @@ async function copyCode(): Promise<void> {
             </div>
         </div>
 
-        <div class="wod-panel space-y-2 p-4">
+        <div v-if="game.status !== 'finished'" class="wod-panel space-y-2 p-4">
             <h2 class="font-bold">Commanders</h2>
             <div
                 v-for="slotNum in game.maxPlayers"
@@ -211,9 +232,12 @@ async function copyCode(): Promise<void> {
 
         <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Link :href="lobbies().url" class="w-full sm:w-auto">
-                <Button variant="outline" class="w-full sm:w-auto">Back</Button>
+                <Button variant="outline" class="w-full sm:w-auto">
+                    {{ game.status === 'finished' ? 'Return to lobbies' : 'Back' }}
+                </Button>
             </Link>
             <ShareButton
+                v-if="game.status !== 'finished'"
                 :share-links="shareLinks"
                 :copy-url="gameUrl"
                 label="Share Lobby"
@@ -228,7 +252,7 @@ async function copyCode(): Promise<void> {
                 Leave lobby
             </Button>
             <Button
-                v-if="!game.isParticipant"
+                v-if="!game.isParticipant && game.status === 'lobby'"
                 class="w-full sm:w-auto"
                 @click="joinGame"
             >

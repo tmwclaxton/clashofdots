@@ -16,31 +16,33 @@ class ProfileController extends Controller
 {
     public function leaderboard(Request $request): Response
     {
-        $perPage = 25;
-
-        $paginator = User::query()
-            ->withCount([
-                'gamePlayers as finished_matches_count' => fn ($q) => $q->whereHas(
-                    'game',
-                    fn ($g) => $g->where('status', GameStatus::Finished),
-                ),
-                'gamesWon as wins_count' => fn ($q) => $q->where('status', GameStatus::Finished),
-                'gamesHosted as finished_hosts_count' => fn ($q) => $q->where('status', GameStatus::Finished),
-                'maps as published_maps_count' => fn ($q) => $q->where('published', true),
-            ])
-            ->orderByDesc('wins_count')
-            ->orderByDesc('finished_matches_count')
-            ->paginate($perPage);
-
-        $offset = ($paginator->currentPage() - 1) * $perPage;
-
-        $paginator->through(fn (User $user, int $index) => array_merge(
-            $this->serializeLeaderboardRow($user),
-            ['rank' => $offset + $index + 1],
-        ));
-
         return Inertia::render('community/Leaderboard', [
-            'leaderboard' => $paginator,
+            'leaderboard' => Inertia::defer(function () {
+                $perPage = 25;
+
+                $paginator = User::query()
+                    ->withCount([
+                        'gamePlayers as finished_matches_count' => fn ($q) => $q->whereHas(
+                            'game',
+                            fn ($g) => $g->where('status', GameStatus::Finished),
+                        ),
+                        'gamesWon as wins_count' => fn ($q) => $q->where('status', GameStatus::Finished),
+                        'gamesHosted as finished_hosts_count' => fn ($q) => $q->where('status', GameStatus::Finished),
+                        'maps as published_maps_count' => fn ($q) => $q->where('published', true),
+                    ])
+                    ->orderByDesc('wins_count')
+                    ->orderByDesc('finished_matches_count')
+                    ->paginate($perPage);
+
+                $offset = ($paginator->currentPage() - 1) * $perPage;
+
+                $paginator->through(fn (User $user, int $index) => array_merge(
+                    $this->serializeLeaderboardRow($user),
+                    ['rank' => $offset + $index + 1],
+                ));
+
+                return $paginator;
+            }),
         ]);
     }
 
@@ -56,58 +58,7 @@ class ProfileController extends Controller
             'maps as published_maps_count' => fn ($q) => $q->where('published', true),
         ]);
 
-        $publishedMaps = Map::query()
-            ->where('user_id', $profile->id)
-            ->where('published', true)
-            ->latest('published_at')
-            ->limit(12)
-            ->get()
-            ->map(fn (Map $map) => [
-                'uuid' => $map->uuid,
-                'name' => $map->name,
-                'publishedAt' => $map->published_at?->toIso8601String(),
-            ]);
-
         $stats = $this->statsFromUserCounts($profile);
-
-        $battleHistory = Game::query()
-            ->where('status', GameStatus::Finished)
-            ->whereHas('players', fn ($q) => $q->where('user_id', $profile->id))
-            ->with(['players.user', 'winner'])
-            ->latest('finished_at')
-            ->limit(20)
-            ->get()
-            ->map(function (Game $game) use ($profile): array {
-                $gameUrl = route('games.show', $game);
-
-                /** @var array<string, string> $gameShareLinks */
-                $gameShareLinks = Share::page($gameUrl, "Check out this War of Dots match - code {$game->code}!")
-                    ->facebook()
-                    ->twitter()
-                    ->linkedin()
-                    ->whatsapp()
-                    ->telegram()
-                    ->reddit()
-                    ->pinterest()
-                    ->getRawLinks();
-
-                $winnerName = $game->winner?->game_display_name ?: $game->winner?->name;
-                $isWinner = $game->winner_user_id === $profile->id;
-
-                return [
-                    'uuid' => $game->uuid,
-                    'code' => $game->code,
-                    'finishedAt' => $game->finished_at?->toIso8601String(),
-                    'winnerName' => $winnerName,
-                    'isWinner' => $isWinner,
-                    'players' => $game->players->map(fn (GamePlayer $p) => [
-                        'name' => $p->displayLabel(),
-                        'color' => $p->color ?? '#888888',
-                    ])->values(),
-                    'shareLinks' => $gameShareLinks,
-                    'gameUrl' => $gameUrl,
-                ];
-            });
 
         $profileUrl = route('profiles.show', ['profile' => $profile->profile_uuid]);
         $playerTag = $profile->game_display_name ?: $profile->name;
@@ -135,10 +86,56 @@ class ProfileController extends Controller
                 'profileUrl' => $profileUrl,
             ],
             'stats' => $stats,
-            'publishedMaps' => $publishedMaps,
-            'battleHistory' => $battleHistory,
             'isOwnProfile' => $request->user()?->id === $profile->id,
             'shareLinks' => $shareLinks,
+            'publishedMaps' => Inertia::defer(fn () => Map::query()
+                ->where('user_id', $profile->id)
+                ->where('published', true)
+                ->latest('published_at')
+                ->paginate(12)
+                ->through(fn (Map $map) => [
+                    'uuid' => $map->uuid,
+                    'name' => $map->name,
+                    'publishedAt' => $map->published_at?->toIso8601String(),
+                ])),
+            'battleHistory' => Inertia::defer(function () use ($profile) {
+                return Game::query()
+                    ->where('status', GameStatus::Finished)
+                    ->whereHas('players', fn ($q) => $q->where('user_id', $profile->id))
+                    ->with(['players.user', 'winner'])
+                    ->latest('finished_at')
+                    ->paginate(15)
+                    ->through(function (Game $game) use ($profile): array {
+                        $gameUrl = route('games.show', $game);
+
+                        /** @var array<string, string> $gameShareLinks */
+                        $gameShareLinks = Share::page($gameUrl, "Check out this War of Dots match - code {$game->code}!")
+                            ->facebook()
+                            ->twitter()
+                            ->linkedin()
+                            ->whatsapp()
+                            ->telegram()
+                            ->reddit()
+                            ->pinterest()
+                            ->getRawLinks();
+
+                        $winnerName = $game->winner?->game_display_name ?: $game->winner?->name;
+
+                        return [
+                            'uuid' => $game->uuid,
+                            'code' => $game->code,
+                            'finishedAt' => $game->finished_at?->toIso8601String(),
+                            'winnerName' => $winnerName,
+                            'isWinner' => $game->winner_user_id === $profile->id,
+                            'players' => $game->players->map(fn (GamePlayer $p) => [
+                                'name' => $p->displayLabel(),
+                                'color' => $p->color ?? '#888888',
+                            ])->values(),
+                            'shareLinks' => $gameShareLinks,
+                            'gameUrl' => $gameUrl,
+                        ];
+                    });
+            }),
         ]);
     }
 

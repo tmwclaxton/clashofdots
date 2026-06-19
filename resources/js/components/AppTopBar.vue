@@ -6,6 +6,7 @@ import {
     Github,
     Globe2,
     History,
+    LogIn,
     Map,
     Trophy,
     Users,
@@ -167,7 +168,10 @@ const navItems = computed<NavItem[]>(() => {
                 </template>
                 <template v-else>
                     <Button variant="default" size="sm" as-child>
-                        <Link :href="loginHref">Sign in</Link>
+                        <Link :href="loginHref">
+                            <LogIn class="size-4" />
+                            Sign in
+                        </Link>
                     </Button>
                 </template>
             </div>

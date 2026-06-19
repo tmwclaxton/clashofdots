@@ -53,8 +53,8 @@ export type ExplorePagination = {
 };
 
 const props = defineProps<{
-    maps: ExploreMapCard[];
-    pagination: ExplorePagination;
+    maps: ExploreMapCard[] | undefined;
+    pagination: ExplorePagination | undefined;
     filters: ExploreFilters;
 }>();
 
@@ -84,12 +84,14 @@ watch(
     { deep: true },
 );
 
-const cards = ref([...props.maps]);
+const cards = ref<ExploreMapCard[]>(props.maps ? [...props.maps] : []);
 
 watch(
     () => props.maps,
     (m) => {
-        cards.value = m.map((row) => ({ ...row }));
+        if (m) {
+            cards.value = m.map((row) => ({ ...row }));
+        }
     },
     { deep: true },
 );
@@ -444,7 +446,10 @@ const sortOptions = [
             </div>
         </form>
 
-        <p v-if="pagination.total > 0" class="text-sm text-muted-foreground">
+        <p
+            v-if="pagination && pagination.total > 0"
+            class="text-sm text-muted-foreground"
+        >
             Showing
             <span class="font-medium text-foreground">{{
                 pagination.from ?? 0
@@ -461,7 +466,33 @@ const sortOptions = [
         </p>
 
         <div
-            v-if="cards.length === 0"
+            v-if="maps === undefined"
+            class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
+        >
+            <div
+                v-for="i in 6"
+                :key="i"
+                class="wod-panel flex animate-pulse flex-col gap-3 p-4"
+            >
+                <div class="aspect-video w-full rounded-md bg-muted" />
+                <div class="flex flex-col gap-2">
+                    <div class="h-4 w-2/3 rounded bg-muted" />
+                    <div class="h-3 w-1/3 rounded bg-muted" />
+                </div>
+                <div class="flex gap-2">
+                    <div class="h-5 w-16 rounded bg-muted" />
+                    <div class="h-5 w-32 rounded bg-muted" />
+                </div>
+                <div class="mt-auto flex gap-2 border-t border-foreground/10 pt-3">
+                    <div class="h-8 w-24 rounded bg-muted" />
+                    <div class="h-8 w-28 rounded bg-muted" />
+                    <div class="h-8 w-24 rounded bg-muted" />
+                </div>
+            </div>
+        </div>
+
+        <div
+            v-else-if="cards.length === 0"
             class="wod-panel-dashed p-10 text-center text-muted-foreground"
         >
             <template v-if="hasActiveFilters">
@@ -474,7 +505,7 @@ const sortOptions = [
                     Clear filters
                 </button>
             </template>
-            <template v-else-if="pagination.total === 0">
+            <template v-else-if="pagination && pagination.total === 0">
                 No published maps yet. Publish yours from the map builder when
                 it is ready.
             </template>
@@ -596,11 +627,11 @@ const sortOptions = [
                         <Button
                             type="button"
                             size="icon"
-                            variant="ghost"
+                            variant="outline"
                             class="size-8"
                             :class="
                                 m.viewerVote === 'like'
-                                    ? 'text-green-700 dark:text-green-400'
+                                    ? 'border-green-500 text-green-700 dark:text-green-400'
                                     : ''
                             "
                             :title="auth.user ? 'Like' : 'Sign in to like'"
@@ -611,11 +642,11 @@ const sortOptions = [
                         <Button
                             type="button"
                             size="icon"
-                            variant="ghost"
+                            variant="outline"
                             class="size-8"
                             :class="
                                 m.viewerVote === 'dislike'
-                                    ? 'text-red-700 dark:text-red-400'
+                                    ? 'border-red-500 text-red-700 dark:text-red-400'
                                     : ''
                             "
                             :title="
@@ -631,7 +662,7 @@ const sortOptions = [
         </div>
 
         <nav
-            v-if="pagination.last_page > 1"
+            v-if="pagination && pagination.last_page > 1"
             class="flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
             aria-label="Pagination"
         >

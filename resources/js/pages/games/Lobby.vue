@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { Loader2, Lock, Map, Tag, Users, Zap } from 'lucide-vue-next';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +38,7 @@ type QsStatus = {
 };
 
 const props = defineProps<{
-    lobbies: Lobby[];
+    lobbies: Lobby[] | undefined;
     playerTag: string | null;
 }>();
 
@@ -76,10 +76,10 @@ const joinForm = useForm({
 });
 
 const myLobby = computed(
-    () => props.lobbies.find((l) => l.isParticipant) ?? null,
+    () => props.lobbies?.find((l) => l.isParticipant) ?? null,
 );
 const otherLobbies = computed(() =>
-    props.lobbies.filter((l) => !l.isParticipant),
+    props.lobbies?.filter((l) => !l.isParticipant) ?? [],
 );
 
 function leaveLobby(uuid: string) {
@@ -222,8 +222,17 @@ async function leaveQuickStart() {
     startQsIdlePoll();
 }
 
+watch(
+    () => props.lobbies,
+    (lobbies) => {
+        if (lobbies !== undefined) {
+            startLobbiesPoll();
+        }
+    },
+    { immediate: true },
+);
+
 onMounted(() => {
-    startLobbiesPoll();
     startQsIdlePoll();
 });
 
@@ -281,7 +290,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Your current lobby -->
-        <div v-if="myLobby" class="space-y-3">
+        <div v-if="lobbies !== undefined && myLobby" class="space-y-3">
             <div class="flex items-center gap-2">
                 <div class="wod-swatch bg-wod-yellow" aria-hidden="true" />
                 <h2 class="font-bold">Your lobby</h2>
@@ -331,7 +340,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Quick Start: queued / matched state (shown when not idle) -->
-        <div v-if="!myLobby && qsState.status !== 'none'" class="wod-panel p-5">
+        <div v-if="lobbies !== undefined && !myLobby && qsState.status !== 'none'" class="wod-panel p-5">
             <div class="mb-3 flex items-center gap-2">
                 <div class="wod-swatch bg-wod-yellow" aria-hidden="true" />
                 <h2 class="font-bold">Quick Start</h2>
@@ -363,7 +372,7 @@ onBeforeUnmount(() => {
 
         <!-- Action panels: Create lobby (auth) · Join by code · Quick Start -->
         <div
-            v-if="!myLobby && qsState.status === 'none'"
+            v-if="lobbies !== undefined && !myLobby && qsState.status === 'none'"
             class="grid gap-4 lg:grid-cols-3"
         >
             <div class="wod-panel relative flex flex-col gap-4 p-5">
@@ -493,7 +502,23 @@ onBeforeUnmount(() => {
                 </div>
             </div>
             <div
-                v-if="otherLobbies.length === 0"
+                v-if="lobbies === undefined"
+                class="space-y-2"
+            >
+                <div
+                    v-for="i in 3"
+                    :key="i"
+                    class="wod-panel flex animate-pulse flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div class="space-y-2">
+                        <div class="h-4 w-32 rounded bg-muted" />
+                        <div class="h-3 w-24 rounded bg-muted" />
+                    </div>
+                    <div class="h-8 w-20 rounded bg-muted" />
+                </div>
+            </div>
+            <div
+                v-else-if="otherLobbies.length === 0"
                 class="wod-panel-dashed p-8 text-center text-muted-foreground"
             >
                 No open lobbies. Create one to get started.

@@ -554,7 +554,7 @@ watch(isDark, () => scheduleDraw());
             @pointercancel="onPointerUp"
             @wheel="onWheel"
         />
-        <MapEditorBrushSizeOverlay :editor="editor" />
+        <MapEditorBrushSizeOverlay v-if="!readOnly" :editor="editor" />
         <div
             v-if="tileScale"
             class="pointer-events-none absolute bottom-3 left-3 rounded-md border-2 border-foreground bg-card/95 px-2.5 py-2 shadow-sm backdrop-blur-sm"

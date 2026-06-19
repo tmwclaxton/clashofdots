@@ -8,6 +8,7 @@ use App\Games\Engine\Environment;
 use App\Games\GameConstants;
 use App\Models\Game;
 use App\Models\GameReplaySnapshot;
+use Illuminate\Support\Facades\Log;
 
 final class GameTickService
 {
@@ -75,6 +76,25 @@ final class GameTickService
     }
 
     /**
+     * Writes a final replay snapshot just before a game ends.
+     * Called by GameManager::finish() and finishWithoutWinner() so even very short
+     * games (including surrenders) always have at least one replay entry.
+     */
+    public function writeFinalReplaySnapshot(Game $game, GameManager $manager): void
+    {
+        try {
+            $state = $manager->getLiveState($game);
+            $worldTick = (int) ($state['worldTick'] ?? 0);
+            $this->writeReplaySnapshot($game, $worldTick, $state, $manager);
+        } catch (\Throwable $e) {
+            Log::warning('Final replay snapshot write failed', [
+                'game_id' => $game->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * Writes an omniscient (all-visibility) snapshot so the replay viewer sees all units.
      *
      * @param  array<string, mixed>  $state
@@ -129,8 +149,13 @@ final class GameTickService
                 'world_tick' => $worldTick,
                 'state_json' => GameReplaySnapshot::encodeState($snapshot),
             ]);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
             // Replay writes are best-effort; never let them break the game loop.
+            Log::warning('Replay snapshot write failed', [
+                'game_id' => $game->id,
+                'world_tick' => $worldTick,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

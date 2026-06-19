@@ -27,15 +27,10 @@ type LobbyCard = {
     players: Array<{ slot: number; name: string; color: string }>;
 };
 
-withDefaults(
-    defineProps<{
-        matches: Match[];
-        spectatableMatches?: LobbyCard[];
-    }>(),
-    {
-        spectatableMatches: () => [],
-    },
-);
+defineProps<{
+    matches: Match[] | undefined;
+    spectatableMatches: LobbyCard[] | undefined;
+}>();
 </script>
 
 <template>
@@ -47,8 +42,28 @@ withDefaults(
             description="Return to battles you are in, or watch other live games (commander 1 view, refreshed periodically)."
         />
 
+        <template v-if="matches === undefined">
+            <div class="space-y-3">
+                <div class="h-5 w-24 animate-pulse rounded bg-muted" />
+                <div
+                    v-for="i in 2"
+                    :key="i"
+                    class="wod-panel flex animate-pulse flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div class="space-y-2">
+                        <div class="flex gap-2">
+                            <div class="h-5 w-20 rounded bg-muted" />
+                            <div class="h-5 w-16 rounded bg-muted" />
+                        </div>
+                        <div class="h-4 w-32 rounded bg-muted" />
+                    </div>
+                    <div class="h-9 w-32 rounded bg-muted" />
+                </div>
+            </div>
+        </template>
+
         <div
-            v-if="matches.length === 0"
+            v-else-if="matches.length === 0"
             class="wod-panel-dashed p-10 text-center text-muted-foreground"
         >
             <Clock3 class="mx-auto mb-2 size-7 opacity-60" />
@@ -104,7 +119,24 @@ withDefaults(
             </article>
         </div>
 
-        <div v-if="spectatableMatches.length > 0" class="space-y-3">
+        <template v-if="spectatableMatches === undefined">
+            <div class="space-y-3">
+                <div class="h-5 w-20 animate-pulse rounded bg-muted" />
+                <div
+                    v-for="i in 2"
+                    :key="i"
+                    class="wod-panel flex animate-pulse flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div class="space-y-2">
+                        <div class="h-5 w-24 rounded bg-muted" />
+                        <div class="h-4 w-32 rounded bg-muted" />
+                    </div>
+                    <div class="h-9 w-20 rounded bg-muted" />
+                </div>
+            </div>
+        </template>
+
+        <div v-else-if="spectatableMatches.length > 0" class="space-y-3">
             <h2 class="flex items-center gap-2 font-bold">
                 <Radio class="size-5 opacity-70" />
                 Live now

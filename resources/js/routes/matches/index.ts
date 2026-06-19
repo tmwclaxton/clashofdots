@@ -82,7 +82,7 @@ ongoing.form = ongoingForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::past
-* @see app/Http/Controllers/Games/GameController.php:102
+* @see app/Http/Controllers/Games/GameController.php:125
 * @route '/matches/past'
 */
 export const past = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ past.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::past
-* @see app/Http/Controllers/Games/GameController.php:102
+* @see app/Http/Controllers/Games/GameController.php:125
 * @route '/matches/past'
 */
 past.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ past.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::past
-* @see app/Http/Controllers/Games/GameController.php:102
+* @see app/Http/Controllers/Games/GameController.php:125
 * @route '/matches/past'
 */
 past.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ past.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Games\GameController::past
-* @see app/Http/Controllers/Games/GameController.php:102
+* @see app/Http/Controllers/Games/GameController.php:125
 * @route '/matches/past'
 */
 past.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ past.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Games\GameController::past
-* @see app/Http/Controllers/Games/GameController.php:102
+* @see app/Http/Controllers/Games/GameController.php:125
 * @route '/matches/past'
 */
 const pastForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const pastForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Games\GameController::past
-* @see app/Http/Controllers/Games/GameController.php:102
+* @see app/Http/Controllers/Games/GameController.php:125
 * @route '/matches/past'
 */
 pastForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ pastForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Games\GameController::past
-* @see app/Http/Controllers/Games/GameController.php:102
+* @see app/Http/Controllers/Games/GameController.php:125
 * @route '/matches/past'
 */
 pastForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

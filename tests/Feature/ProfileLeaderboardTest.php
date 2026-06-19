@@ -15,16 +15,47 @@ class ProfileLeaderboardTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Fetch deferred props for an Inertia page as a JSON array.
+     *
+     * @param  string  $props  Comma-separated prop names
+     * @return array<string, mixed>
+     */
+    private function fetchDeferred(string $route, string $component, string $props): array
+    {
+        $manifest = public_path('build/manifest.json');
+        $version = file_exists($manifest) ? hash_file('xxh128', $manifest) : '';
+
+        $response = $this->get($route, [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => $version,
+            'X-Inertia-Partial-Component' => $component,
+            'X-Inertia-Partial-Data' => $props,
+        ]);
+
+        $response->assertOk();
+
+        /** @var array{props: array<string, mixed>} $json */
+        $json = $response->json();
+
+        return $json['props'];
+    }
+
     public function test_leaderboard_page_is_public(): void
     {
         $this->get(route('leaderboard.index'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('community/Leaderboard')
-                ->has('leaderboard.data')
-                ->has('leaderboard.current_page')
-                ->has('leaderboard.last_page')
-                ->has('leaderboard.total'));
+                ->missing('leaderboard'));
+
+        $props = $this->fetchDeferred(route('leaderboard.index'), 'community/Leaderboard', 'leaderboard');
+
+        $this->assertArrayHasKey('leaderboard', $props);
+        $this->assertArrayHasKey('data', $props['leaderboard']);
+        $this->assertArrayHasKey('current_page', $props['leaderboard']);
+        $this->assertArrayHasKey('last_page', $props['leaderboard']);
+        $this->assertArrayHasKey('total', $props['leaderboard']);
     }
 
     public function test_unknown_profile_returns_404(): void
@@ -73,12 +104,10 @@ class ProfileLeaderboardTest extends TestCase
                 ->where('stats.matchesPlayed', 1)
                 ->where('stats.losses', 1));
 
-        $this->get(route('leaderboard.index'))
-            ->assertOk()
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->component('community/Leaderboard')
-                ->has('leaderboard.data', 2)
-                ->where('leaderboard.total', 2)
-                ->where('leaderboard.current_page', 1));
+        $props = $this->fetchDeferred(route('leaderboard.index'), 'community/Leaderboard', 'leaderboard');
+
+        $this->assertCount(2, $props['leaderboard']['data']);
+        $this->assertEquals(2, $props['leaderboard']['total']);
+        $this->assertEquals(1, $props['leaderboard']['current_page']);
     }
 }

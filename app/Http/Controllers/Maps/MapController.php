@@ -82,25 +82,27 @@ class MapController extends Controller
                 ->all();
         }
 
-        $cards = $paginator->getCollection()->map(function (Map $map) use ($voteByMapId) {
-            $vote = $voteByMapId[$map->id] ?? null;
-
-            return $this->exploreCard($map, $vote instanceof MapVote ? $vote : null);
-        })->values()->all();
-
         return Inertia::render('MapExplore', [
-            'maps' => $cards,
-            'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'from' => $paginator->firstItem(),
-                'to' => $paginator->lastItem(),
-                'prev_url' => $paginator->previousPageUrl(),
-                'next_url' => $paginator->nextPageUrl(),
-                'pages' => $this->explorePaginationPages($paginator),
-            ],
+            'maps' => Inertia::defer(function () use ($paginator, $voteByMapId) {
+                return $paginator->getCollection()->map(function (Map $map) use ($voteByMapId) {
+                    $vote = $voteByMapId[$map->id] ?? null;
+
+                    return $this->exploreCard($map, $vote instanceof MapVote ? $vote : null);
+                })->values()->all();
+            }),
+            'pagination' => Inertia::defer(function () use ($paginator) {
+                return [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'prev_url' => $paginator->previousPageUrl(),
+                    'next_url' => $paginator->nextPageUrl(),
+                    'pages' => $this->explorePaginationPages($paginator),
+                ];
+            }),
             'filters' => [
                 'q' => $filters['q'],
                 'author' => $filters['author'],

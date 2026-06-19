@@ -156,7 +156,7 @@ wiki.form = wikiForm
 
 /**
 * @see \App\Http\Controllers\Maps\MapController::mapBuilder
-* @see app/Http/Controllers/Maps/MapController.php:120
+* @see app/Http/Controllers/Maps/MapController.php:122
 * @route '/map-builder/{map?}'
 */
 export const mapBuilder = (args?: { map?: string | number | { uuid: string | number } } | [map: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -171,7 +171,7 @@ mapBuilder.definition = {
 
 /**
 * @see \App\Http\Controllers\Maps\MapController::mapBuilder
-* @see app/Http/Controllers/Maps/MapController.php:120
+* @see app/Http/Controllers/Maps/MapController.php:122
 * @route '/map-builder/{map?}'
 */
 mapBuilder.url = (args?: { map?: string | number | { uuid: string | number } } | [map: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -208,7 +208,7 @@ mapBuilder.url = (args?: { map?: string | number | { uuid: string | number } } |
 
 /**
 * @see \App\Http\Controllers\Maps\MapController::mapBuilder
-* @see app/Http/Controllers/Maps/MapController.php:120
+* @see app/Http/Controllers/Maps/MapController.php:122
 * @route '/map-builder/{map?}'
 */
 mapBuilder.get = (args?: { map?: string | number | { uuid: string | number } } | [map: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -218,7 +218,7 @@ mapBuilder.get = (args?: { map?: string | number | { uuid: string | number } } |
 
 /**
 * @see \App\Http\Controllers\Maps\MapController::mapBuilder
-* @see app/Http/Controllers/Maps/MapController.php:120
+* @see app/Http/Controllers/Maps/MapController.php:122
 * @route '/map-builder/{map?}'
 */
 mapBuilder.head = (args?: { map?: string | number | { uuid: string | number } } | [map: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -228,7 +228,7 @@ mapBuilder.head = (args?: { map?: string | number | { uuid: string | number } } 
 
 /**
 * @see \App\Http\Controllers\Maps\MapController::mapBuilder
-* @see app/Http/Controllers/Maps/MapController.php:120
+* @see app/Http/Controllers/Maps/MapController.php:122
 * @route '/map-builder/{map?}'
 */
 const mapBuilderForm = (args?: { map?: string | number | { uuid: string | number } } | [map: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -238,7 +238,7 @@ const mapBuilderForm = (args?: { map?: string | number | { uuid: string | number
 
 /**
 * @see \App\Http\Controllers\Maps\MapController::mapBuilder
-* @see app/Http/Controllers/Maps/MapController.php:120
+* @see app/Http/Controllers/Maps/MapController.php:122
 * @route '/map-builder/{map?}'
 */
 mapBuilderForm.get = (args?: { map?: string | number | { uuid: string | number } } | [map: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -248,7 +248,7 @@ mapBuilderForm.get = (args?: { map?: string | number | { uuid: string | number }
 
 /**
 * @see \App\Http\Controllers\Maps\MapController::mapBuilder
-* @see app/Http/Controllers/Maps/MapController.php:120
+* @see app/Http/Controllers/Maps/MapController.php:122
 * @route '/map-builder/{map?}'
 */
 mapBuilderForm.head = (args?: { map?: string | number | { uuid: string | number } } | [map: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

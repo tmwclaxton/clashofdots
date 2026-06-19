@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\Games\GameController::joinCode
-* @see app/Http/Controllers/Games/GameController.php:201
+* @see app/Http/Controllers/Games/GameController.php:227
 * @route '/games/join'
 */
 export const joinCode = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -16,7 +16,7 @@ joinCode.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::joinCode
-* @see app/Http/Controllers/Games/GameController.php:201
+* @see app/Http/Controllers/Games/GameController.php:227
 * @route '/games/join'
 */
 joinCode.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ joinCode.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::joinCode
-* @see app/Http/Controllers/Games/GameController.php:201
+* @see app/Http/Controllers/Games/GameController.php:227
 * @route '/games/join'
 */
 joinCode.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -35,7 +35,7 @@ joinCode.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Games\GameController::joinCode
-* @see app/Http/Controllers/Games/GameController.php:201
+* @see app/Http/Controllers/Games/GameController.php:227
 * @route '/games/join'
 */
 const joinCodeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -45,7 +45,7 @@ const joinCodeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::joinCode
-* @see app/Http/Controllers/Games/GameController.php:201
+* @see app/Http/Controllers/Games/GameController.php:227
 * @route '/games/join'
 */
 joinCodeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -57,7 +57,7 @@ joinCode.form = joinCodeForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::show
-* @see app/Http/Controllers/Games/GameController.php:155
+* @see app/Http/Controllers/Games/GameController.php:178
 * @route '/games/{game}'
 */
 export const show = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -72,7 +72,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::show
-* @see app/Http/Controllers/Games/GameController.php:155
+* @see app/Http/Controllers/Games/GameController.php:178
 * @route '/games/{game}'
 */
 show.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -105,7 +105,7 @@ show.url = (args: { game: string | number | { uuid: string | number } } | [game:
 
 /**
 * @see \App\Http\Controllers\Games\GameController::show
-* @see app/Http/Controllers/Games/GameController.php:155
+* @see app/Http/Controllers/Games/GameController.php:178
 * @route '/games/{game}'
 */
 show.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -115,7 +115,7 @@ show.get = (args: { game: string | number | { uuid: string | number } } | [game:
 
 /**
 * @see \App\Http\Controllers\Games\GameController::show
-* @see app/Http/Controllers/Games/GameController.php:155
+* @see app/Http/Controllers/Games/GameController.php:178
 * @route '/games/{game}'
 */
 show.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -125,7 +125,7 @@ show.head = (args: { game: string | number | { uuid: string | number } } | [game
 
 /**
 * @see \App\Http\Controllers\Games\GameController::show
-* @see app/Http/Controllers/Games/GameController.php:155
+* @see app/Http/Controllers/Games/GameController.php:178
 * @route '/games/{game}'
 */
 const showForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -135,7 +135,7 @@ const showForm = (args: { game: string | number | { uuid: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::show
-* @see app/Http/Controllers/Games/GameController.php:155
+* @see app/Http/Controllers/Games/GameController.php:178
 * @route '/games/{game}'
 */
 showForm.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -145,7 +145,7 @@ showForm.get = (args: { game: string | number | { uuid: string | number } } | [g
 
 /**
 * @see \App\Http\Controllers\Games\GameController::show
-* @see app/Http/Controllers/Games/GameController.php:155
+* @see app/Http/Controllers/Games/GameController.php:178
 * @route '/games/{game}'
 */
 showForm.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -162,7 +162,7 @@ show.form = showForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::join
-* @see app/Http/Controllers/Games/GameController.php:183
+* @see app/Http/Controllers/Games/GameController.php:209
 * @route '/games/{game}/join'
 */
 export const join = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -177,7 +177,7 @@ join.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::join
-* @see app/Http/Controllers/Games/GameController.php:183
+* @see app/Http/Controllers/Games/GameController.php:209
 * @route '/games/{game}/join'
 */
 join.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -210,7 +210,7 @@ join.url = (args: { game: string | number | { uuid: string | number } } | [game:
 
 /**
 * @see \App\Http\Controllers\Games\GameController::join
-* @see app/Http/Controllers/Games/GameController.php:183
+* @see app/Http/Controllers/Games/GameController.php:209
 * @route '/games/{game}/join'
 */
 join.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -220,7 +220,7 @@ join.post = (args: { game: string | number | { uuid: string | number } } | [game
 
 /**
 * @see \App\Http\Controllers\Games\GameController::join
-* @see app/Http/Controllers/Games/GameController.php:183
+* @see app/Http/Controllers/Games/GameController.php:209
 * @route '/games/{game}/join'
 */
 const joinForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -230,7 +230,7 @@ const joinForm = (args: { game: string | number | { uuid: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::join
-* @see app/Http/Controllers/Games/GameController.php:183
+* @see app/Http/Controllers/Games/GameController.php:209
 * @route '/games/{game}/join'
 */
 joinForm.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -242,7 +242,7 @@ join.form = joinForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::leave
-* @see app/Http/Controllers/Games/GameController.php:220
+* @see app/Http/Controllers/Games/GameController.php:246
 * @route '/games/{game}/leave'
 */
 export const leave = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -257,7 +257,7 @@ leave.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::leave
-* @see app/Http/Controllers/Games/GameController.php:220
+* @see app/Http/Controllers/Games/GameController.php:246
 * @route '/games/{game}/leave'
 */
 leave.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -290,7 +290,7 @@ leave.url = (args: { game: string | number | { uuid: string | number } } | [game
 
 /**
 * @see \App\Http\Controllers\Games\GameController::leave
-* @see app/Http/Controllers/Games/GameController.php:220
+* @see app/Http/Controllers/Games/GameController.php:246
 * @route '/games/{game}/leave'
 */
 leave.delete = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'delete'> => ({
@@ -300,7 +300,7 @@ leave.delete = (args: { game: string | number | { uuid: string | number } } | [g
 
 /**
 * @see \App\Http\Controllers\Games\GameController::leave
-* @see app/Http/Controllers/Games/GameController.php:220
+* @see app/Http/Controllers/Games/GameController.php:246
 * @route '/games/{game}/leave'
 */
 const leaveForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -315,7 +315,7 @@ const leaveForm = (args: { game: string | number | { uuid: string | number } } |
 
 /**
 * @see \App\Http\Controllers\Games\GameController::leave
-* @see app/Http/Controllers/Games/GameController.php:220
+* @see app/Http/Controllers/Games/GameController.php:246
 * @route '/games/{game}/leave'
 */
 leaveForm.delete = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -332,7 +332,7 @@ leave.form = leaveForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectate
-* @see app/Http/Controllers/Games/GameController.php:289
+* @see app/Http/Controllers/Games/GameController.php:315
 * @route '/games/{game}/spectate'
 */
 export const spectate = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -347,7 +347,7 @@ spectate.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectate
-* @see app/Http/Controllers/Games/GameController.php:289
+* @see app/Http/Controllers/Games/GameController.php:315
 * @route '/games/{game}/spectate'
 */
 spectate.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -380,7 +380,7 @@ spectate.url = (args: { game: string | number | { uuid: string | number } } | [g
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectate
-* @see app/Http/Controllers/Games/GameController.php:289
+* @see app/Http/Controllers/Games/GameController.php:315
 * @route '/games/{game}/spectate'
 */
 spectate.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -390,7 +390,7 @@ spectate.get = (args: { game: string | number | { uuid: string | number } } | [g
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectate
-* @see app/Http/Controllers/Games/GameController.php:289
+* @see app/Http/Controllers/Games/GameController.php:315
 * @route '/games/{game}/spectate'
 */
 spectate.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -400,7 +400,7 @@ spectate.head = (args: { game: string | number | { uuid: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectate
-* @see app/Http/Controllers/Games/GameController.php:289
+* @see app/Http/Controllers/Games/GameController.php:315
 * @route '/games/{game}/spectate'
 */
 const spectateForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -410,7 +410,7 @@ const spectateForm = (args: { game: string | number | { uuid: string | number } 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectate
-* @see app/Http/Controllers/Games/GameController.php:289
+* @see app/Http/Controllers/Games/GameController.php:315
 * @route '/games/{game}/spectate'
 */
 spectateForm.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -420,7 +420,7 @@ spectateForm.get = (args: { game: string | number | { uuid: string | number } } 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectate
-* @see app/Http/Controllers/Games/GameController.php:289
+* @see app/Http/Controllers/Games/GameController.php:315
 * @route '/games/{game}/spectate'
 */
 spectateForm.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -437,7 +437,7 @@ spectate.form = spectateForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectateSnapshot
-* @see app/Http/Controllers/Games/GameController.php:303
+* @see app/Http/Controllers/Games/GameController.php:329
 * @route '/games/{game}/spectate-snapshot'
 */
 export const spectateSnapshot = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -452,7 +452,7 @@ spectateSnapshot.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectateSnapshot
-* @see app/Http/Controllers/Games/GameController.php:303
+* @see app/Http/Controllers/Games/GameController.php:329
 * @route '/games/{game}/spectate-snapshot'
 */
 spectateSnapshot.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -485,7 +485,7 @@ spectateSnapshot.url = (args: { game: string | number | { uuid: string | number 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectateSnapshot
-* @see app/Http/Controllers/Games/GameController.php:303
+* @see app/Http/Controllers/Games/GameController.php:329
 * @route '/games/{game}/spectate-snapshot'
 */
 spectateSnapshot.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -495,7 +495,7 @@ spectateSnapshot.get = (args: { game: string | number | { uuid: string | number 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectateSnapshot
-* @see app/Http/Controllers/Games/GameController.php:303
+* @see app/Http/Controllers/Games/GameController.php:329
 * @route '/games/{game}/spectate-snapshot'
 */
 spectateSnapshot.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -505,7 +505,7 @@ spectateSnapshot.head = (args: { game: string | number | { uuid: string | number
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectateSnapshot
-* @see app/Http/Controllers/Games/GameController.php:303
+* @see app/Http/Controllers/Games/GameController.php:329
 * @route '/games/{game}/spectate-snapshot'
 */
 const spectateSnapshotForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -515,7 +515,7 @@ const spectateSnapshotForm = (args: { game: string | number | { uuid: string | n
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectateSnapshot
-* @see app/Http/Controllers/Games/GameController.php:303
+* @see app/Http/Controllers/Games/GameController.php:329
 * @route '/games/{game}/spectate-snapshot'
 */
 spectateSnapshotForm.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -525,7 +525,7 @@ spectateSnapshotForm.get = (args: { game: string | number | { uuid: string | num
 
 /**
 * @see \App\Http\Controllers\Games\GameController::spectateSnapshot
-* @see app/Http/Controllers/Games/GameController.php:303
+* @see app/Http/Controllers/Games/GameController.php:329
 * @route '/games/{game}/spectate-snapshot'
 */
 spectateSnapshotForm.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -542,7 +542,7 @@ spectateSnapshot.form = spectateSnapshotForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::play
-* @see app/Http/Controllers/Games/GameController.php:269
+* @see app/Http/Controllers/Games/GameController.php:295
 * @route '/games/{game}/play'
 */
 export const play = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -557,7 +557,7 @@ play.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::play
-* @see app/Http/Controllers/Games/GameController.php:269
+* @see app/Http/Controllers/Games/GameController.php:295
 * @route '/games/{game}/play'
 */
 play.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -590,7 +590,7 @@ play.url = (args: { game: string | number | { uuid: string | number } } | [game:
 
 /**
 * @see \App\Http\Controllers\Games\GameController::play
-* @see app/Http/Controllers/Games/GameController.php:269
+* @see app/Http/Controllers/Games/GameController.php:295
 * @route '/games/{game}/play'
 */
 play.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -600,7 +600,7 @@ play.get = (args: { game: string | number | { uuid: string | number } } | [game:
 
 /**
 * @see \App\Http\Controllers\Games\GameController::play
-* @see app/Http/Controllers/Games/GameController.php:269
+* @see app/Http/Controllers/Games/GameController.php:295
 * @route '/games/{game}/play'
 */
 play.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -610,7 +610,7 @@ play.head = (args: { game: string | number | { uuid: string | number } } | [game
 
 /**
 * @see \App\Http\Controllers\Games\GameController::play
-* @see app/Http/Controllers/Games/GameController.php:269
+* @see app/Http/Controllers/Games/GameController.php:295
 * @route '/games/{game}/play'
 */
 const playForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -620,7 +620,7 @@ const playForm = (args: { game: string | number | { uuid: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::play
-* @see app/Http/Controllers/Games/GameController.php:269
+* @see app/Http/Controllers/Games/GameController.php:295
 * @route '/games/{game}/play'
 */
 playForm.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -630,7 +630,7 @@ playForm.get = (args: { game: string | number | { uuid: string | number } } | [g
 
 /**
 * @see \App\Http\Controllers\Games\GameController::play
-* @see app/Http/Controllers/Games/GameController.php:269
+* @see app/Http/Controllers/Games/GameController.php:295
 * @route '/games/{game}/play'
 */
 playForm.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -647,7 +647,7 @@ play.form = playForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::snapshot
-* @see app/Http/Controllers/Games/GameController.php:314
+* @see app/Http/Controllers/Games/GameController.php:340
 * @route '/games/{game}/snapshot'
 */
 export const snapshot = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -662,7 +662,7 @@ snapshot.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::snapshot
-* @see app/Http/Controllers/Games/GameController.php:314
+* @see app/Http/Controllers/Games/GameController.php:340
 * @route '/games/{game}/snapshot'
 */
 snapshot.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -695,7 +695,7 @@ snapshot.url = (args: { game: string | number | { uuid: string | number } } | [g
 
 /**
 * @see \App\Http\Controllers\Games\GameController::snapshot
-* @see app/Http/Controllers/Games/GameController.php:314
+* @see app/Http/Controllers/Games/GameController.php:340
 * @route '/games/{game}/snapshot'
 */
 snapshot.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -705,7 +705,7 @@ snapshot.get = (args: { game: string | number | { uuid: string | number } } | [g
 
 /**
 * @see \App\Http\Controllers\Games\GameController::snapshot
-* @see app/Http/Controllers/Games/GameController.php:314
+* @see app/Http/Controllers/Games/GameController.php:340
 * @route '/games/{game}/snapshot'
 */
 snapshot.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -715,7 +715,7 @@ snapshot.head = (args: { game: string | number | { uuid: string | number } } | [
 
 /**
 * @see \App\Http\Controllers\Games\GameController::snapshot
-* @see app/Http/Controllers/Games/GameController.php:314
+* @see app/Http/Controllers/Games/GameController.php:340
 * @route '/games/{game}/snapshot'
 */
 const snapshotForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -725,7 +725,7 @@ const snapshotForm = (args: { game: string | number | { uuid: string | number } 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::snapshot
-* @see app/Http/Controllers/Games/GameController.php:314
+* @see app/Http/Controllers/Games/GameController.php:340
 * @route '/games/{game}/snapshot'
 */
 snapshotForm.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -735,7 +735,7 @@ snapshotForm.get = (args: { game: string | number | { uuid: string | number } } 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::snapshot
-* @see app/Http/Controllers/Games/GameController.php:314
+* @see app/Http/Controllers/Games/GameController.php:340
 * @route '/games/{game}/snapshot'
 */
 snapshotForm.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -752,7 +752,7 @@ snapshot.form = snapshotForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::orders
-* @see app/Http/Controllers/Games/GameController.php:340
+* @see app/Http/Controllers/Games/GameController.php:370
 * @route '/games/{game}/orders'
 */
 export const orders = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -767,7 +767,7 @@ orders.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::orders
-* @see app/Http/Controllers/Games/GameController.php:340
+* @see app/Http/Controllers/Games/GameController.php:370
 * @route '/games/{game}/orders'
 */
 orders.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -800,7 +800,7 @@ orders.url = (args: { game: string | number | { uuid: string | number } } | [gam
 
 /**
 * @see \App\Http\Controllers\Games\GameController::orders
-* @see app/Http/Controllers/Games/GameController.php:340
+* @see app/Http/Controllers/Games/GameController.php:370
 * @route '/games/{game}/orders'
 */
 orders.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -810,7 +810,7 @@ orders.post = (args: { game: string | number | { uuid: string | number } } | [ga
 
 /**
 * @see \App\Http\Controllers\Games\GameController::orders
-* @see app/Http/Controllers/Games/GameController.php:340
+* @see app/Http/Controllers/Games/GameController.php:370
 * @route '/games/{game}/orders'
 */
 const ordersForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -820,7 +820,7 @@ const ordersForm = (args: { game: string | number | { uuid: string | number } } 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::orders
-* @see app/Http/Controllers/Games/GameController.php:340
+* @see app/Http/Controllers/Games/GameController.php:370
 * @route '/games/{game}/orders'
 */
 ordersForm.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -832,7 +832,7 @@ orders.form = ordersForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::cityRecruitment
-* @see app/Http/Controllers/Games/GameController.php:355
+* @see app/Http/Controllers/Games/GameController.php:385
 * @route '/games/{game}/city-recruitment'
 */
 export const cityRecruitment = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -847,7 +847,7 @@ cityRecruitment.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::cityRecruitment
-* @see app/Http/Controllers/Games/GameController.php:355
+* @see app/Http/Controllers/Games/GameController.php:385
 * @route '/games/{game}/city-recruitment'
 */
 cityRecruitment.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -880,7 +880,7 @@ cityRecruitment.url = (args: { game: string | number | { uuid: string | number }
 
 /**
 * @see \App\Http\Controllers\Games\GameController::cityRecruitment
-* @see app/Http/Controllers/Games/GameController.php:355
+* @see app/Http/Controllers/Games/GameController.php:385
 * @route '/games/{game}/city-recruitment'
 */
 cityRecruitment.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -890,7 +890,7 @@ cityRecruitment.post = (args: { game: string | number | { uuid: string | number 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::cityRecruitment
-* @see app/Http/Controllers/Games/GameController.php:355
+* @see app/Http/Controllers/Games/GameController.php:385
 * @route '/games/{game}/city-recruitment'
 */
 const cityRecruitmentForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -900,7 +900,7 @@ const cityRecruitmentForm = (args: { game: string | number | { uuid: string | nu
 
 /**
 * @see \App\Http\Controllers\Games\GameController::cityRecruitment
-* @see app/Http/Controllers/Games/GameController.php:355
+* @see app/Http/Controllers/Games/GameController.php:385
 * @route '/games/{game}/city-recruitment'
 */
 cityRecruitmentForm.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -912,7 +912,7 @@ cityRecruitment.form = cityRecruitmentForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProduction
-* @see app/Http/Controllers/Games/GameController.php:416
+* @see app/Http/Controllers/Games/GameController.php:446
 * @route '/games/{game}/player-production'
 */
 export const playerProduction = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -927,7 +927,7 @@ playerProduction.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProduction
-* @see app/Http/Controllers/Games/GameController.php:416
+* @see app/Http/Controllers/Games/GameController.php:446
 * @route '/games/{game}/player-production'
 */
 playerProduction.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -960,7 +960,7 @@ playerProduction.url = (args: { game: string | number | { uuid: string | number 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProduction
-* @see app/Http/Controllers/Games/GameController.php:416
+* @see app/Http/Controllers/Games/GameController.php:446
 * @route '/games/{game}/player-production'
 */
 playerProduction.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -970,7 +970,7 @@ playerProduction.post = (args: { game: string | number | { uuid: string | number
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProduction
-* @see app/Http/Controllers/Games/GameController.php:416
+* @see app/Http/Controllers/Games/GameController.php:446
 * @route '/games/{game}/player-production'
 */
 const playerProductionForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -980,7 +980,7 @@ const playerProductionForm = (args: { game: string | number | { uuid: string | n
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProduction
-* @see app/Http/Controllers/Games/GameController.php:416
+* @see app/Http/Controllers/Games/GameController.php:446
 * @route '/games/{game}/player-production'
 */
 playerProductionForm.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -991,8 +991,88 @@ playerProductionForm.post = (args: { game: string | number | { uuid: string | nu
 playerProduction.form = playerProductionForm
 
 /**
+* @see \App\Http\Controllers\Games\GameController::surrender
+* @see app/Http/Controllers/Games/GameController.php:512
+* @route '/games/{game}/surrender'
+*/
+export const surrender = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: surrender.url(args, options),
+    method: 'post',
+})
+
+surrender.definition = {
+    methods: ["post"],
+    url: '/games/{game}/surrender',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Games\GameController::surrender
+* @see app/Http/Controllers/Games/GameController.php:512
+* @route '/games/{game}/surrender'
+*/
+surrender.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
+    if (typeof args === 'string' || typeof args === 'number') {
+        args = { game: args }
+    }
+
+    if (typeof args === 'object' && !Array.isArray(args) && 'uuid' in args) {
+        args = { game: args.uuid }
+    }
+
+    if (Array.isArray(args)) {
+        args = {
+            game: args[0],
+        }
+    }
+
+    args = applyUrlDefaults(args)
+
+    const parsedArgs = {
+        game: typeof args.game === 'object'
+        ? args.game.uuid
+        : args.game,
+    }
+
+    return surrender.definition.url
+            .replace('{game}', parsedArgs.game.toString())
+            .replace(/\/+$/, '') + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Games\GameController::surrender
+* @see app/Http/Controllers/Games/GameController.php:512
+* @route '/games/{game}/surrender'
+*/
+surrender.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: surrender.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Games\GameController::surrender
+* @see app/Http/Controllers/Games/GameController.php:512
+* @route '/games/{game}/surrender'
+*/
+const surrenderForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: surrender.url(args, options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Games\GameController::surrender
+* @see app/Http/Controllers/Games/GameController.php:512
+* @route '/games/{game}/surrender'
+*/
+surrenderForm.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: surrender.url(args, options),
+    method: 'post',
+})
+
+surrender.form = surrenderForm
+
+/**
 * @see \App\Http\Controllers\Games\GameController::chat
-* @see app/Http/Controllers/Games/GameController.php:391
+* @see app/Http/Controllers/Games/GameController.php:421
 * @route '/games/{game}/chat'
 */
 export const chat = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1007,7 +1087,7 @@ chat.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::chat
-* @see app/Http/Controllers/Games/GameController.php:391
+* @see app/Http/Controllers/Games/GameController.php:421
 * @route '/games/{game}/chat'
 */
 chat.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -1040,7 +1120,7 @@ chat.url = (args: { game: string | number | { uuid: string | number } } | [game:
 
 /**
 * @see \App\Http\Controllers\Games\GameController::chat
-* @see app/Http/Controllers/Games/GameController.php:391
+* @see app/Http/Controllers/Games/GameController.php:421
 * @route '/games/{game}/chat'
 */
 chat.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1050,7 +1130,7 @@ chat.post = (args: { game: string | number | { uuid: string | number } } | [game
 
 /**
 * @see \App\Http\Controllers\Games\GameController::chat
-* @see app/Http/Controllers/Games/GameController.php:391
+* @see app/Http/Controllers/Games/GameController.php:421
 * @route '/games/{game}/chat'
 */
 const chatForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1060,7 +1140,7 @@ const chatForm = (args: { game: string | number | { uuid: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::chat
-* @see app/Http/Controllers/Games/GameController.php:391
+* @see app/Http/Controllers/Games/GameController.php:421
 * @route '/games/{game}/chat'
 */
 chatForm.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1072,7 +1152,7 @@ chat.form = chatForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::replay
-* @see app/Http/Controllers/Games/GameController.php:373
+* @see app/Http/Controllers/Games/GameController.php:403
 * @route '/games/{game}/replay'
 */
 export const replay = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1087,7 +1167,7 @@ replay.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::replay
-* @see app/Http/Controllers/Games/GameController.php:373
+* @see app/Http/Controllers/Games/GameController.php:403
 * @route '/games/{game}/replay'
 */
 replay.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -1120,7 +1200,7 @@ replay.url = (args: { game: string | number | { uuid: string | number } } | [gam
 
 /**
 * @see \App\Http\Controllers\Games\GameController::replay
-* @see app/Http/Controllers/Games/GameController.php:373
+* @see app/Http/Controllers/Games/GameController.php:403
 * @route '/games/{game}/replay'
 */
 replay.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -1130,7 +1210,7 @@ replay.get = (args: { game: string | number | { uuid: string | number } } | [gam
 
 /**
 * @see \App\Http\Controllers\Games\GameController::replay
-* @see app/Http/Controllers/Games/GameController.php:373
+* @see app/Http/Controllers/Games/GameController.php:403
 * @route '/games/{game}/replay'
 */
 replay.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -1140,7 +1220,7 @@ replay.head = (args: { game: string | number | { uuid: string | number } } | [ga
 
 /**
 * @see \App\Http\Controllers\Games\GameController::replay
-* @see app/Http/Controllers/Games/GameController.php:373
+* @see app/Http/Controllers/Games/GameController.php:403
 * @route '/games/{game}/replay'
 */
 const replayForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1150,7 +1230,7 @@ const replayForm = (args: { game: string | number | { uuid: string | number } } 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::replay
-* @see app/Http/Controllers/Games/GameController.php:373
+* @see app/Http/Controllers/Games/GameController.php:403
 * @route '/games/{game}/replay'
 */
 replayForm.get = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1160,7 +1240,7 @@ replayForm.get = (args: { game: string | number | { uuid: string | number } } | 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::replay
-* @see app/Http/Controllers/Games/GameController.php:373
+* @see app/Http/Controllers/Games/GameController.php:403
 * @route '/games/{game}/replay'
 */
 replayForm.head = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -1177,7 +1257,7 @@ replay.form = replayForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::store
-* @see app/Http/Controllers/Games/GameController.php:138
+* @see app/Http/Controllers/Games/GameController.php:161
 * @route '/games'
 */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1192,7 +1272,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::store
-* @see app/Http/Controllers/Games/GameController.php:138
+* @see app/Http/Controllers/Games/GameController.php:161
 * @route '/games'
 */
 store.url = (options?: RouteQueryOptions) => {
@@ -1201,7 +1281,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::store
-* @see app/Http/Controllers/Games/GameController.php:138
+* @see app/Http/Controllers/Games/GameController.php:161
 * @route '/games'
 */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1211,7 +1291,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
 /**
 * @see \App\Http\Controllers\Games\GameController::store
-* @see app/Http/Controllers/Games/GameController.php:138
+* @see app/Http/Controllers/Games/GameController.php:161
 * @route '/games'
 */
 const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1221,7 +1301,7 @@ const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => 
 
 /**
 * @see \App\Http\Controllers\Games\GameController::store
-* @see app/Http/Controllers/Games/GameController.php:138
+* @see app/Http/Controllers/Games/GameController.php:161
 * @route '/games'
 */
 storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1233,7 +1313,7 @@ store.form = storeForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::start
-* @see app/Http/Controllers/Games/GameController.php:230
+* @see app/Http/Controllers/Games/GameController.php:256
 * @route '/games/{game}/start'
 */
 export const start = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1248,7 +1328,7 @@ start.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::start
-* @see app/Http/Controllers/Games/GameController.php:230
+* @see app/Http/Controllers/Games/GameController.php:256
 * @route '/games/{game}/start'
 */
 start.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -1281,7 +1361,7 @@ start.url = (args: { game: string | number | { uuid: string | number } } | [game
 
 /**
 * @see \App\Http\Controllers\Games\GameController::start
-* @see app/Http/Controllers/Games/GameController.php:230
+* @see app/Http/Controllers/Games/GameController.php:256
 * @route '/games/{game}/start'
 */
 start.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -1291,7 +1371,7 @@ start.post = (args: { game: string | number | { uuid: string | number } } | [gam
 
 /**
 * @see \App\Http\Controllers\Games\GameController::start
-* @see app/Http/Controllers/Games/GameController.php:230
+* @see app/Http/Controllers/Games/GameController.php:256
 * @route '/games/{game}/start'
 */
 const startForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1301,7 +1381,7 @@ const startForm = (args: { game: string | number | { uuid: string | number } } |
 
 /**
 * @see \App\Http\Controllers\Games\GameController::start
-* @see app/Http/Controllers/Games/GameController.php:230
+* @see app/Http/Controllers/Games/GameController.php:256
 * @route '/games/{game}/start'
 */
 startForm.post = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1313,7 +1393,7 @@ start.form = startForm
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProfile
-* @see app/Http/Controllers/Games/GameController.php:237
+* @see app/Http/Controllers/Games/GameController.php:263
 * @route '/games/{game}/player-profile'
 */
 export const playerProfile = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -1328,7 +1408,7 @@ playerProfile.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProfile
-* @see app/Http/Controllers/Games/GameController.php:237
+* @see app/Http/Controllers/Games/GameController.php:263
 * @route '/games/{game}/player-profile'
 */
 playerProfile.url = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions) => {
@@ -1361,7 +1441,7 @@ playerProfile.url = (args: { game: string | number | { uuid: string | number } }
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProfile
-* @see app/Http/Controllers/Games/GameController.php:237
+* @see app/Http/Controllers/Games/GameController.php:263
 * @route '/games/{game}/player-profile'
 */
 playerProfile.patch = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -1371,7 +1451,7 @@ playerProfile.patch = (args: { game: string | number | { uuid: string | number }
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProfile
-* @see app/Http/Controllers/Games/GameController.php:237
+* @see app/Http/Controllers/Games/GameController.php:263
 * @route '/games/{game}/player-profile'
 */
 const playerProfileForm = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1386,7 +1466,7 @@ const playerProfileForm = (args: { game: string | number | { uuid: string | numb
 
 /**
 * @see \App\Http\Controllers\Games\GameController::playerProfile
-* @see app/Http/Controllers/Games/GameController.php:237
+* @see app/Http/Controllers/Games/GameController.php:263
 * @route '/games/{game}/player-profile'
 */
 playerProfileForm.patch = (args: { game: string | number | { uuid: string | number } } | [game: string | number | { uuid: string | number } ] | string | number | { uuid: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -1413,6 +1493,7 @@ const games = {
     orders: Object.assign(orders, orders),
     cityRecruitment: Object.assign(cityRecruitment, cityRecruitment),
     playerProduction: Object.assign(playerProduction, playerProduction),
+    surrender: Object.assign(surrender, surrender),
     chat: Object.assign(chat, chat),
     replay: Object.assign(replay, replay),
     store: Object.assign(store, store),

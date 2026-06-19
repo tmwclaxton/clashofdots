@@ -46,6 +46,7 @@ Route::middleware(['guest.game'])->group(function () {
     Route::post('games/{game}/orders', [GameController::class, 'submitOrders'])->name('games.orders');
     Route::post('games/{game}/city-recruitment', [GameController::class, 'setCityRecruitment'])->name('games.city-recruitment');
     Route::post('games/{game}/player-production', [GameController::class, 'setPlayerProduction'])->name('games.player-production');
+    Route::post('games/{game}/surrender', [GameController::class, 'surrender'])->name('games.surrender');
     Route::post('games/{game}/chat', [GameController::class, 'sendChat'])->name('games.chat');
     Route::get('games/{game}/replay', [GameController::class, 'replay'])->name('games.replay');
 });

@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { useMediaQuery } from '@vueuse/core';
 import {
     Circle,
+    Compass,
     Copy,
     Flag,
     Landmark,
@@ -146,6 +147,12 @@ watch(
 const auth = computed(() => page.props.auth as { user?: object } | undefined);
 const allowLibraryMutations = computed(() => Boolean(auth.value?.user));
 const isGuest = computed(() => !auth.value?.user);
+const isGuestViewer = computed(
+    () => isGuest.value && props.initialDocument !== null,
+);
+const showGuestBlockOverlay = computed(
+    () => isGuest.value && props.initialDocument === null,
+);
 
 const AUTO_SAVE_DEBOUNCE_MS = 3500;
 
@@ -684,7 +691,7 @@ onUnmounted(() => {
         class="relative flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden"
     >
         <div
-            v-if="isGuest"
+            v-if="showGuestBlockOverlay"
             class="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background/70 backdrop-blur-sm"
         >
             <div
@@ -741,8 +748,8 @@ onUnmounted(() => {
             <Button
                 type="button"
                 size="sm"
-                variant="ghost"
-                class="h-8 px-2 text-xs text-muted-foreground"
+                variant="outline"
+                class="h-8 px-2 text-xs"
                 title="Zoom to fit the whole map in the canvas"
                 @click="editor.requestMapViewFit()"
             >
@@ -788,11 +795,14 @@ onUnmounted(() => {
                     v-if="mapPublished && editor.currentUuid"
                     type="button"
                     size="sm"
-                    variant="ghost"
+                    variant="outline"
                     class="h-8 px-2 text-xs"
                     as-child
                 >
-                    <Link :href="publishedMapExploreUrl">Explore</Link>
+                    <Link :href="publishedMapExploreUrl" class="gap-1.5">
+                        <Compass class="size-3.5" />
+                        Explore
+                    </Link>
                 </Button>
                 <Button
                     v-if="!editorLocked"
@@ -858,7 +868,7 @@ onUnmounted(() => {
                     {{ duplicateBusy ? 'Duplicating…' : 'Duplicate' }}
                 </Button>
                 <Button
-                    v-if="editorLocked && hasSavedMap"
+                    v-if="editorLocked && hasSavedMap && !isGuest"
                     type="button"
                     size="sm"
                     class="gap-1"
@@ -869,6 +879,19 @@ onUnmounted(() => {
                     <Plus class="size-3.5" />
                     {{ createLobbyBusy ? 'Creating…' : 'Create Lobby' }}
                 </Button>
+                <Button
+                    v-else-if="editorLocked && hasSavedMap && isGuest"
+                    type="button"
+                    size="sm"
+                    class="gap-1"
+                    as-child
+                    title="Sign in to create a lobby with this map"
+                >
+                    <Link :href="loginRoute().url">
+                        <Plus class="size-3.5" />
+                        Create Lobby
+                    </Link>
+                </Button>
             </div>
         </div>
 
@@ -876,6 +899,7 @@ onUnmounted(() => {
             class="flex min-h-0 min-h-[clamp(16rem,44svh,50rem)] flex-1 gap-2 overflow-hidden"
         >
             <MapListPanel
+                v-if="!isGuestViewer"
                 :editor="editor"
                 :maps="mapsList"
                 :allow-library-mutations="allowLibraryMutations"
@@ -883,7 +907,11 @@ onUnmounted(() => {
                 @open-map="onOpenMapFromList"
                 @request-new-map="onRequestNewMap"
             />
-            <MapEditorToolbar :editor="editor" :read-only="editorLocked" />
+            <MapEditorToolbar
+                v-if="!isGuestViewer"
+                :editor="editor"
+                :read-only="editorLocked"
+            />
             <MapEditorCanvas
                 :editor="editor"
                 :team-colors="teamColors"
@@ -893,6 +921,7 @@ onUnmounted(() => {
         </div>
 
         <div
+            v-if="!isGuestViewer"
             class="flex min-h-[8.5rem] w-full min-w-0 shrink-0 flex-row items-stretch gap-2 border-t border-foreground/15 py-1.5"
             :class="{ 'pointer-events-none opacity-60': editorLocked }"
         >

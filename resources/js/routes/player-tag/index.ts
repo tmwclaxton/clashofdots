@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\Games\GameController::update
-* @see app/Http/Controllers/Games/GameController.php:605
+* @see app/Http/Controllers/Games/GameController.php:675
 * @route '/player-tag'
 */
 export const update = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -16,7 +16,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::update
-* @see app/Http/Controllers/Games/GameController.php:605
+* @see app/Http/Controllers/Games/GameController.php:675
 * @route '/player-tag'
 */
 update.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ update.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Games\GameController::update
-* @see app/Http/Controllers/Games/GameController.php:605
+* @see app/Http/Controllers/Games/GameController.php:675
 * @route '/player-tag'
 */
 update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -35,7 +35,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
 
 /**
 * @see \App\Http\Controllers\Games\GameController::update
-* @see app/Http/Controllers/Games/GameController.php:605
+* @see app/Http/Controllers/Games/GameController.php:675
 * @route '/player-tag'
 */
 const updateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -50,7 +50,7 @@ const updateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> =>
 
 /**
 * @see \App\Http\Controllers\Games\GameController::update
-* @see app/Http/Controllers/Games/GameController.php:605
+* @see app/Http/Controllers/Games/GameController.php:675
 * @route '/player-tag'
 */
 updateForm.patch = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -30,17 +30,17 @@ class GameController extends Controller
         $userId = $request->user()?->id;
         $guestKey = $this->guestKeyFromSession($request);
 
-        $lobbies = Game::query()
-            ->where('status', GameStatus::Lobby)
-            ->where('created_at', '>=', now()->subSeconds(GameConstants::LOBBY_MAX_AGE_SECONDS))
-            ->with(['players.user', 'host', 'map.user'])
-            ->latest()
-            ->limit(20)
-            ->get()
-            ->map(fn (Game $game) => $this->serializeLobby($game, $userId, $guestKey));
-
         return Inertia::render('games/Lobby', [
-            'lobbies' => $lobbies,
+            'lobbies' => Inertia::defer(function () use ($userId, $guestKey) {
+                return Game::query()
+                    ->where('status', GameStatus::Lobby)
+                    ->where('created_at', '>=', now()->subSeconds(GameConstants::LOBBY_MAX_AGE_SECONDS))
+                    ->with(['players.user', 'host', 'map.user'])
+                    ->latest()
+                    ->limit(20)
+                    ->get()
+                    ->map(fn (Game $game) => $this->serializeLobby($game, $userId, $guestKey));
+            }),
             'playerTag' => $request->user()?->game_display_name,
         ]);
     }
@@ -49,53 +49,76 @@ class GameController extends Controller
     {
         $user = $request->user();
         $guestKey = $this->guestKeyFromSession($request);
-
-        if ($user === null && $guestKey === null) {
-            $matches = collect();
-        } else {
-            $matches = Game::query()
-                ->where('status', GameStatus::Playing)
-                ->where(function ($query) use ($user, $guestKey) {
-                    if ($user !== null) {
-                        $query->whereHas('players', fn ($q) => $q->where('user_id', $user->id));
-                    }
-                    if ($guestKey !== null) {
-                        if ($user !== null) {
-                            $query->orWhereHas('players', fn ($q) => $q->where('guest_key', $guestKey));
-                        } else {
-                            $query->whereHas('players', fn ($q) => $q->where('guest_key', $guestKey));
-                        }
-                    }
-                })
-                ->with(['players.user', 'host', 'map.user'])
-                ->latest('started_at')
-                ->limit(20)
-                ->get()
-                ->map(fn (Game $game) => $this->serializeMatch($game, $user?->id, $guestKey));
-        }
-
-        $matchUuids = $matches->pluck('uuid')->all();
-
-        $liveSpectatable = collect($gameManager->activeGameUuids())
-            ->filter()
-            ->unique()
-            ->reject(fn (string $uuid) => in_array($uuid, $matchUuids, true))
-            ->values();
-
-        $spectatableMatches = $liveSpectatable->isEmpty()
-            ? collect()
-            : Game::query()
-                ->where('status', GameStatus::Playing)
-                ->whereIn('uuid', $liveSpectatable->all())
-                ->with(['players.user', 'host', 'map.user'])
-                ->latest('started_at')
-                ->limit(20)
-                ->get()
-                ->map(fn (Game $game) => $this->serializeLobby($game, $user?->id, $guestKey));
+        $activeUuids = $gameManager->activeGameUuids();
 
         return Inertia::render('matches/Ongoing', [
-            'matches' => $matches,
-            'spectatableMatches' => $spectatableMatches,
+            'matches' => Inertia::defer(function () use ($user, $guestKey) {
+                if ($user === null && $guestKey === null) {
+                    return collect();
+                }
+
+                return Game::query()
+                    ->where('status', GameStatus::Playing)
+                    ->where(function ($query) use ($user, $guestKey) {
+                        if ($user !== null) {
+                            $query->whereHas('players', fn ($q) => $q->where('user_id', $user->id));
+                        }
+                        if ($guestKey !== null) {
+                            if ($user !== null) {
+                                $query->orWhereHas('players', fn ($q) => $q->where('guest_key', $guestKey));
+                            } else {
+                                $query->whereHas('players', fn ($q) => $q->where('guest_key', $guestKey));
+                            }
+                        }
+                    })
+                    ->with(['players.user', 'host', 'map.user'])
+                    ->latest('started_at')
+                    ->limit(20)
+                    ->get()
+                    ->map(fn (Game $game) => $this->serializeMatch($game, $user?->id, $guestKey));
+            }),
+            'spectatableMatches' => Inertia::defer(function () use ($user, $guestKey, $activeUuids) {
+                $matches = $user === null && $guestKey === null
+                    ? collect()
+                    : Game::query()
+                        ->where('status', GameStatus::Playing)
+                        ->where(function ($query) use ($user, $guestKey) {
+                            if ($user !== null) {
+                                $query->whereHas('players', fn ($q) => $q->where('user_id', $user->id));
+                            }
+                            if ($guestKey !== null) {
+                                if ($user !== null) {
+                                    $query->orWhereHas('players', fn ($q) => $q->where('guest_key', $guestKey));
+                                } else {
+                                    $query->whereHas('players', fn ($q) => $q->where('guest_key', $guestKey));
+                                }
+                            }
+                        })
+                        ->latest('started_at')
+                        ->limit(20)
+                        ->pluck('uuid');
+
+                $matchUuids = $matches->all();
+
+                $liveSpectatable = collect($activeUuids)
+                    ->filter()
+                    ->unique()
+                    ->reject(fn (string $uuid) => in_array($uuid, $matchUuids, true))
+                    ->values();
+
+                if ($liveSpectatable->isEmpty()) {
+                    return collect();
+                }
+
+                return Game::query()
+                    ->where('status', GameStatus::Playing)
+                    ->whereIn('uuid', $liveSpectatable->all())
+                    ->with(['players.user', 'host', 'map.user'])
+                    ->latest('started_at')
+                    ->limit(20)
+                    ->get()
+                    ->map(fn (Game $game) => $this->serializeLobby($game, $user?->id, $guestKey));
+            }),
         ]);
     }
 
@@ -169,12 +192,15 @@ class GameController extends Controller
             ->pinterest()
             ->getRawLinks();
 
+        $userId = $request->user()?->id;
+        $guestKey = $this->guestKeyFromSession($request);
+
+        $gamePayload = $game->status === GameStatus::Finished
+            ? $this->serializeMatch($game, $userId, $guestKey)
+            : $this->serializeLobby($game, $userId, $guestKey);
+
         return Inertia::render('games/Show', [
-            'game' => $this->serializeLobby(
-                $game,
-                $request->user()?->id,
-                $this->guestKeyFromSession($request),
-            ),
+            'game' => $gamePayload,
             'shareLinks' => $shareLinks,
             'gameUrl' => $gameUrl,
         ]);
@@ -313,6 +339,10 @@ class GameController extends Controller
 
     public function snapshot(Request $request, Game $game, GameManager $gameManager): JsonResponse
     {
+        if ($game->status === GameStatus::Finished) {
+            return $this->jsonSnapshotNoStore($this->finishedGamePayload($game));
+        }
+
         abort_unless($game->status === GameStatus::Playing, 404);
 
         $gameManager->maybeAdvanceTickIfDaemonAbsent($game);
@@ -452,6 +482,7 @@ class GameController extends Controller
                 'name' => $p->displayLabel(),
                 'color' => $p->color,
                 'teamIndex' => $p->team_index ?? 0,
+                'profileUuid' => $p->user?->profile_uuid ?? null,
             ]),
         ];
     }
@@ -473,8 +504,24 @@ class GameController extends Controller
                 'slot' => $p->slot,
                 'name' => $p->displayLabel(),
                 'color' => $p->color,
+                'profileUuid' => $p->user?->profile_uuid ?? null,
             ]),
         ];
+    }
+
+    public function surrender(Request $request, Game $game, GameManager $gameManager): JsonResponse
+    {
+        abort_unless($game->status === GameStatus::Playing, 422, 'Game is not in progress.');
+
+        $player = $this->actingPlayer($request, $game);
+
+        if ($player === null) {
+            abort(403);
+        }
+
+        $gameManager->surrender($game, $player);
+
+        return response()->json(['ok' => true]);
     }
 
     private function actingPlayer(Request $request, Game $game): ?GamePlayer
@@ -529,6 +576,29 @@ class GameController extends Controller
             'finishedAt' => $game->finished_at?->toIso8601String(),
             'winnerName' => $winnerName,
             'isWinner' => $isWinner,
+        ];
+    }
+
+    /**
+     * Thin payload returned by the snapshot endpoint when the game has already finished.
+     * Lets the canvas client show the correct victory / defeat overlay without needing WebSockets.
+     *
+     * @return array{matchEnded: true, winnerSlot: int|null, winnerUserId: int|null, winnerName: string|null}
+     */
+    private function finishedGamePayload(Game $game): array
+    {
+        $game->loadMissing(['players', 'winner']);
+
+        $winnerName = $game->winner?->name;
+        if ($winnerName === null && $game->winner_slot !== null) {
+            $winnerName = $game->players->firstWhere('slot', $game->winner_slot)?->displayLabel();
+        }
+
+        return [
+            'matchEnded' => true,
+            'winnerSlot' => $game->winner_slot,
+            'winnerUserId' => $game->winner_user_id,
+            'winnerName' => $winnerName,
         ];
     }
 
