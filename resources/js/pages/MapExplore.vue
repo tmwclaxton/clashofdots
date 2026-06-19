@@ -446,22 +446,22 @@ const sortOptions = [
             </div>
         </form>
 
-        <p
-            v-if="pagination && pagination.total > 0"
-            class="text-sm text-muted-foreground"
-        >
+        <p class="text-sm text-muted-foreground">
             Showing
-            <span class="font-medium text-foreground">{{
-                pagination.from ?? 0
-            }}</span>
+            <span
+                class="inline-block font-medium text-foreground"
+                :class="!pagination ? 'w-4 animate-pulse rounded bg-muted text-transparent' : ''"
+            >{{ pagination ? (pagination.from ?? 0) : '0' }}</span>
             –
-            <span class="font-medium text-foreground">{{
-                pagination.to ?? 0
-            }}</span>
+            <span
+                class="inline-block font-medium text-foreground"
+                :class="!pagination ? 'w-4 animate-pulse rounded bg-muted text-transparent' : ''"
+            >{{ pagination ? (pagination.to ?? 0) : '0' }}</span>
             of
-            <span class="font-medium text-foreground">{{
-                pagination.total
-            }}</span>
+            <span
+                class="inline-block font-medium text-foreground"
+                :class="!pagination ? 'w-8 animate-pulse rounded bg-muted text-transparent' : ''"
+            >{{ pagination ? pagination.total : '0' }}</span>
             published maps
         </p>
 

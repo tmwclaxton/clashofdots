@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { Clock3, Radio } from 'lucide-vue-next';
+import { ref, shallowRef, watch } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,10 +28,38 @@ type LobbyCard = {
     players: Array<{ slot: number; name: string; color: string }>;
 };
 
-defineProps<{
+const props = defineProps<{
     matches: Match[] | undefined;
     spectatableMatches: LobbyCard[] | undefined;
 }>();
+
+const MIN_SKELETON_MS = 800;
+const pageLoadedAt = performance.now();
+
+const matchesReady = ref(false);
+const spectatableReady = ref(false);
+const resolvedMatches = shallowRef<Match[] | undefined>(undefined);
+const resolvedSpectatable = shallowRef<LobbyCard[] | undefined>(undefined);
+
+function gated<T>(
+    incoming: T | undefined,
+    isReady: { value: boolean },
+    resolved: { value: T | undefined },
+): void {
+    if (incoming === undefined) {
+        return;
+    }
+
+    const remaining = Math.max(0, MIN_SKELETON_MS - (performance.now() - pageLoadedAt));
+
+    setTimeout(() => {
+        resolved.value = incoming;
+        isReady.value = true;
+    }, remaining);
+}
+
+watch(() => props.matches, (v) => gated(v, matchesReady, resolvedMatches), { immediate: true });
+watch(() => props.spectatableMatches, (v) => gated(v, spectatableReady, resolvedSpectatable), { immediate: true });
 </script>
 
 <template>
@@ -42,7 +71,7 @@ defineProps<{
             description="Return to battles you are in, or watch other live games (commander 1 view, refreshed periodically)."
         />
 
-        <template v-if="matches === undefined">
+        <template v-if="!matchesReady">
             <div class="space-y-3">
                 <div class="h-5 w-24 animate-pulse rounded bg-muted" />
                 <div
@@ -63,7 +92,7 @@ defineProps<{
         </template>
 
         <div
-            v-else-if="matches.length === 0"
+            v-else-if="resolvedMatches!.length === 0"
             class="wod-panel-dashed p-10 text-center text-muted-foreground"
         >
             <Clock3 class="mx-auto mb-2 size-7 opacity-60" />
@@ -77,7 +106,7 @@ defineProps<{
         <div v-else class="space-y-3">
             <h2 class="font-bold">Your battles</h2>
             <article
-                v-for="match in matches"
+                v-for="match in resolvedMatches"
                 :key="match.uuid"
                 class="wod-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
             >
@@ -119,7 +148,7 @@ defineProps<{
             </article>
         </div>
 
-        <template v-if="spectatableMatches === undefined">
+        <template v-if="!spectatableReady">
             <div class="space-y-3">
                 <div class="h-5 w-20 animate-pulse rounded bg-muted" />
                 <div
@@ -136,7 +165,7 @@ defineProps<{
             </div>
         </template>
 
-        <div v-else-if="spectatableMatches.length > 0" class="space-y-3">
+        <div v-else-if="resolvedSpectatable!.length > 0" class="space-y-3">
             <h2 class="flex items-center gap-2 font-bold">
                 <Radio class="size-5 opacity-70" />
                 Live now
@@ -146,7 +175,7 @@ defineProps<{
                 global observer view).
             </p>
             <article
-                v-for="match in spectatableMatches"
+                v-for="match in resolvedSpectatable"
                 :key="`spec-${match.uuid}`"
                 class="wod-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
             >

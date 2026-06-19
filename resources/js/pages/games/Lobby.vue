@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { Loader2, Lock, Map, Tag, Users, Zap } from 'lucide-vue-next';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import { Badge } from '@/components/ui/badge';
@@ -75,11 +75,41 @@ const joinForm = useForm({
     code: '',
 });
 
+const MIN_SKELETON_MS = 800;
+const lobbiesReady = ref(false);
+const resolvedLobbies = shallowRef<Lobby[] | undefined>(undefined);
+
+const pageLoadedAt = performance.now();
+
+watch(
+    () => props.lobbies,
+    (incoming) => {
+        if (incoming === undefined) {
+            return;
+        }
+
+        if (lobbiesReady.value) {
+            // Subsequent poll updates — apply immediately.
+            resolvedLobbies.value = incoming;
+            return;
+        }
+
+        const elapsed = performance.now() - pageLoadedAt;
+        const remaining = Math.max(0, MIN_SKELETON_MS - elapsed);
+
+        setTimeout(() => {
+            resolvedLobbies.value = incoming;
+            lobbiesReady.value = true;
+        }, remaining);
+    },
+    { immediate: true },
+);
+
 const myLobby = computed(
-    () => props.lobbies?.find((l) => l.isParticipant) ?? null,
+    () => resolvedLobbies.value?.find((l) => l.isParticipant) ?? null,
 );
 const otherLobbies = computed(() =>
-    props.lobbies?.filter((l) => !l.isParticipant) ?? [],
+    resolvedLobbies.value?.filter((l) => !l.isParticipant) ?? [],
 );
 
 function leaveLobby(uuid: string) {
@@ -222,15 +252,11 @@ async function leaveQuickStart() {
     startQsIdlePoll();
 }
 
-watch(
-    () => props.lobbies,
-    (lobbies) => {
-        if (lobbies !== undefined) {
-            startLobbiesPoll();
-        }
-    },
-    { immediate: true },
-);
+watch(lobbiesReady, (ready) => {
+    if (ready) {
+        startLobbiesPoll();
+    }
+}, { immediate: true });
 
 onMounted(() => {
     startQsIdlePoll();
@@ -290,7 +316,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Your current lobby -->
-        <div v-if="lobbies !== undefined && myLobby" class="space-y-3">
+        <div v-if="myLobby" class="space-y-3">
             <div class="flex items-center gap-2">
                 <div class="wod-swatch bg-wod-yellow" aria-hidden="true" />
                 <h2 class="font-bold">Your lobby</h2>
@@ -340,7 +366,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Quick Start: queued / matched state (shown when not idle) -->
-        <div v-if="lobbies !== undefined && !myLobby && qsState.status !== 'none'" class="wod-panel p-5">
+        <div v-if="!myLobby && qsState.status !== 'none'" class="wod-panel p-5">
             <div class="mb-3 flex items-center gap-2">
                 <div class="wod-swatch bg-wod-yellow" aria-hidden="true" />
                 <h2 class="font-bold">Quick Start</h2>
@@ -372,7 +398,7 @@ onBeforeUnmount(() => {
 
         <!-- Action panels: Create lobby (auth) · Join by code · Quick Start -->
         <div
-            v-if="lobbies !== undefined && !myLobby && qsState.status === 'none'"
+            v-if="!myLobby && qsState.status === 'none'"
             class="grid gap-4 lg:grid-cols-3"
         >
             <div class="wod-panel relative flex flex-col gap-4 p-5">
@@ -502,7 +528,7 @@ onBeforeUnmount(() => {
                 </div>
             </div>
             <div
-                v-if="lobbies === undefined"
+                v-if="!lobbiesReady"
                 class="space-y-2"
             >
                 <div
