@@ -5,6 +5,13 @@ import { computed, reactive, ref, watch } from 'vue';
 import MapExplorePreview from '@/components/map-explore/MapExplorePreview.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import type { MapDataPayload } from '@/lib/mapEditorGrid';
 import { login, mapBuilder } from '@/routes';
 import { store as createGame } from '@/routes/games';
@@ -71,15 +78,19 @@ const filterForm = reactive({
     teams: props.filters.teams,
 });
 
+let syncingFromProps = false;
+
 watch(
     () => props.filters,
     (f) => {
+        syncingFromProps = true;
         filterForm.q = f.q;
         filterForm.author = f.author;
         filterForm.uuid = f.uuid;
         filterForm.sort = f.sort;
         filterForm.per_page = f.per_page;
         filterForm.teams = f.teams;
+        syncingFromProps = false;
     },
     { deep: true },
 );
@@ -162,17 +173,38 @@ function visitExplore(
     });
 }
 
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 function applyFilters(): void {
     visitExplore({ page: 1 });
 }
 
+function applyFiltersDebounced(): void {
+    if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        visitExplore({ page: 1 });
+    }, 400);
+}
+
+watch(() => filterForm.q, () => { if (!syncingFromProps) applyFiltersDebounced(); });
+watch(() => filterForm.author, () => { if (!syncingFromProps) applyFiltersDebounced(); });
+watch(() => filterForm.sort, () => { if (!syncingFromProps) visitExplore({ page: 1 }); });
+watch(() => filterForm.per_page, () => { if (!syncingFromProps) visitExplore({ page: 1 }); });
+watch(() => filterForm.teams, () => { if (!syncingFromProps) visitExplore({ page: 1 }); });
+
 function resetFilters(): void {
+    syncingFromProps = true;
     filterForm.q = '';
     filterForm.author = '';
     filterForm.uuid = '';
     filterForm.sort = 'newest';
     filterForm.per_page = 12;
     filterForm.teams = null;
+    syncingFromProps = false;
     visitExplore({ page: 1 });
 }
 
@@ -380,20 +412,24 @@ const sortOptions = [
                         for="explore-teams"
                         >Teams</label
                     >
-                    <select
-                        id="explore-teams"
-                        v-model.number="filterForm.teams"
-                        class="wod-field h-9 rounded-md border-2 border-foreground px-2 text-sm"
+                    <Select
+                        :model-value="filterForm.teams !== null ? String(filterForm.teams) : 'any'"
+                        @update:model-value="(v) => { filterForm.teams = v === 'any' ? null : Number(v); }"
                     >
-                        <option :value="null">Any</option>
-                        <option :value="2">2 teams</option>
-                        <option :value="3">3 teams</option>
-                        <option :value="4">4 teams</option>
-                        <option :value="5">5 teams</option>
-                        <option :value="6">6 teams</option>
-                        <option :value="7">7 teams</option>
-                        <option :value="8">8 teams</option>
-                    </select>
+                        <SelectTrigger id="explore-teams" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="any">Any</SelectItem>
+                            <SelectItem value="2">2 teams</SelectItem>
+                            <SelectItem value="3">3 teams</SelectItem>
+                            <SelectItem value="4">4 teams</SelectItem>
+                            <SelectItem value="5">5 teams</SelectItem>
+                            <SelectItem value="6">6 teams</SelectItem>
+                            <SelectItem value="7">7 teams</SelectItem>
+                            <SelectItem value="8">8 teams</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label
@@ -401,19 +437,23 @@ const sortOptions = [
                         for="explore-sort"
                         >Sort by</label
                     >
-                    <select
-                        id="explore-sort"
-                        v-model="filterForm.sort"
-                        class="wod-field h-9 rounded-md border-2 border-foreground px-2 text-sm"
+                    <Select
+                        :model-value="filterForm.sort"
+                        @update:model-value="(v) => { filterForm.sort = v; }"
                     >
-                        <option
-                            v-for="opt in sortOptions"
-                            :key="opt.value"
-                            :value="opt.value"
-                        >
-                            {{ opt.label }}
-                        </option>
-                    </select>
+                        <SelectTrigger id="explore-sort" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem
+                                v-for="opt in sortOptions"
+                                :key="opt.value"
+                                :value="opt.value"
+                            >
+                                {{ opt.label }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label
@@ -421,28 +461,20 @@ const sortOptions = [
                         for="explore-per"
                         >Per page</label
                     >
-                    <select
-                        id="explore-per"
-                        v-model.number="filterForm.per_page"
-                        class="wod-field h-9 rounded-md border-2 border-foreground px-2 text-sm"
+                    <Select
+                        :model-value="String(filterForm.per_page)"
+                        @update:model-value="(v) => { filterForm.per_page = Number(v); }"
                     >
-                        <option :value="12">12</option>
-                        <option :value="24">24</option>
-                        <option :value="48">48</option>
-                    </select>
+                        <SelectTrigger id="explore-per" class="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="12">12</SelectItem>
+                            <SelectItem value="24">24</SelectItem>
+                            <SelectItem value="48">48</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <Button type="submit" size="sm"> Apply filters </Button>
-                <Button
-                    v-if="hasActiveFilters"
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    @click="resetFilters"
-                >
-                    Reset
-                </Button>
             </div>
         </form>
 
