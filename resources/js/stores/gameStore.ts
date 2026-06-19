@@ -30,6 +30,12 @@ type Point = [number, number];
 type EconomySlot = {
     credits: number;
     incomePerTick: number;
+    cityIncome: number;
+    troopUpkeep: number;
+    cityCount: number;
+    capitalCount: number;
+    outpostCount: number;
+    troopCount: number;
 };
 
 type TroopState = {
@@ -147,6 +153,12 @@ function parseEconomy(raw: unknown): EconomySlot[] | null {
         out.push({
             credits: Number(o.credits ?? 0),
             incomePerTick: Number(o.incomePerTick ?? 0),
+            cityIncome: Number(o.cityIncome ?? 0),
+            troopUpkeep: Number(o.troopUpkeep ?? 0),
+            cityCount: Number(o.cityCount ?? 0),
+            capitalCount: Number(o.capitalCount ?? 0),
+            outpostCount: Number(o.outpostCount ?? 0),
+            troopCount: Number(o.troopCount ?? 0),
         });
     }
 

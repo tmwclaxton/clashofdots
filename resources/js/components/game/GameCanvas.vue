@@ -676,66 +676,55 @@ function drawTerritory(
 
     ctx.restore();
 
-    // ── 1. Build per-player boundary-edge adjacency graphs ──────────────────
-    // Each boundary edge is assigned to the player whose cell we are currently
-    // iterating, so every edge belongs to exactly one player's graph.
-    const playerAdj = new Map<number, Map<number, Set<number>>>();
-
-    function playerLink(
-        slot: number,
-        cx1: number,
-        cy1: number,
-        cx2: number,
-        cy2: number,
-    ): void {
-        if (!playerAdj.has(slot)) {
-            playerAdj.set(slot, new Map());
-        }
-
-        const adj = playerAdj.get(slot)!;
-        const a = ci(cx1, cy1);
-        const b = ci(cx2, cy2);
-
-        if (!adj.has(a)) {
-            adj.set(a, new Set());
-        }
-
-        if (!adj.has(b)) {
-            adj.set(b, new Set());
-        }
-
-        adj.get(a)!.add(b);
-        adj.get(b)!.add(a);
-    }
+    // ── 1. Collect boundary edges with both side-slots ───────────────────────
+    // Each edge stores [slotA, slotB] — the player slots on either side.
+    // slotA is the "owner" side (the player whose color draws on that side).
+    type BorderEdge = { a: number; b: number; slotA: number; slotB: number };
+    const borderEdges: BorderEdge[] = [];
 
     for (let gx = 0; gx < w; gx++) {
         for (let gy = 0; gy < h; gy++) {
             const owner = territory[gx][gy];
 
-            // horizontal edge: boundary below this cell
+            // Horizontal boundary: between (gx,gy) above and (gx,gy+1) below.
             if (gy + 1 < h && territory[gx][gy + 1] !== owner) {
                 const other = territory[gx][gy + 1];
-                const edgeSlot = owner >= 0 ? owner : other;
+                const hasPlayer = owner >= 0 || other >= 0;
+                const visible =
+                    isCellVisible(gx, gy, owner) || isCellVisible(gx, gy + 1, other);
 
-                // Only draw the border line if at least one side is visible.
-                if (edgeSlot >= 0 && (isCellVisible(gx, gy, owner) || isCellVisible(gx, gy + 1, other))) {
-                    playerLink(edgeSlot, gx, gy + 1, gx + 1, gy + 1);
+                if (hasPlayer && visible) {
+                    borderEdges.push({
+                        a: ci(gx, gy + 1),
+                        b: ci(gx + 1, gy + 1),
+                        slotA: owner,   // above the line
+                        slotB: other,   // below the line
+                    });
                 }
             }
 
-            // vertical edge: boundary to the right
+            // Vertical boundary: between (gx,gy) left and (gx+1,gy) right.
             if (gx + 1 < w && territory[gx + 1][gy] !== owner) {
                 const other = territory[gx + 1][gy];
-                const edgeSlot = owner >= 0 ? owner : other;
+                const hasPlayer = owner >= 0 || other >= 0;
+                const visible =
+                    isCellVisible(gx, gy, owner) || isCellVisible(gx + 1, gy, other);
 
-                if (edgeSlot >= 0 && (isCellVisible(gx, gy, owner) || isCellVisible(gx + 1, gy, other))) {
-                    playerLink(edgeSlot, gx + 1, gy, gx + 1, gy + 1);
+                if (hasPlayer && visible) {
+                    borderEdges.push({
+                        a: ci(gx + 1, gy),
+                        b: ci(gx + 1, gy + 1),
+                        slotA: owner,   // left of the line
+                        slotB: other,   // right of the line
+                    });
                 }
             }
         }
     }
 
-    // ── 2 & 3. Per player: trace polylines and draw in player color ──────────
+    // ── 2. Group edges into polylines per {slotA,slotB} pair ─────────────────
+    // Edges with the same pair of facing players are chained into polylines
+    // using the same greedy-walk as before, then rendered as dual-colour stripes.
     function ek(a: number, b: number): string {
         return a < b ? `${a}|${b}` : `${b}|${a}`;
     }
@@ -747,57 +736,61 @@ function drawTerritory(
         return [cx * cellSize, cy * cellSize];
     }
 
+    // Build per-pair adjacency (keyed by sorted slot pair so A↔B and B↔A merge).
+    type PairKey = string;
+    const pairAdj = new Map<PairKey, { adj: Map<number, Set<number>>; slotA: number; slotB: number }>();
+
+    for (const edge of borderEdges) {
+        const pairKey: PairKey =
+            edge.slotA <= edge.slotB
+                ? `${edge.slotA}:${edge.slotB}`
+                : `${edge.slotB}:${edge.slotA}`;
+
+        if (!pairAdj.has(pairKey)) {
+            pairAdj.set(pairKey, {
+                adj: new Map(),
+                slotA: edge.slotA,
+                slotB: edge.slotB,
+            });
+        }
+
+        const entry = pairAdj.get(pairKey)!;
+        const { adj } = entry;
+
+        if (!adj.has(edge.a)) { adj.set(edge.a, new Set()); }
+        if (!adj.has(edge.b)) { adj.set(edge.b, new Set()); }
+        adj.get(edge.a)!.add(edge.b);
+        adj.get(edge.b)!.add(edge.a);
+    }
+
+    // ── 3. Render each polyline as a dual-colour border stripe ───────────────
+    // Pass 1: dark outline (thicker, drawn first as shadow/separator).
+    // Pass 2: two coloured stripes offset ±HALF perpendicular to the path.
+    const STRIPE = 1.8; // half-width of each colour stripe in world-units
+
     ctx.save();
-    ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.globalAlpha = 0.9;
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 4;
 
-    for (const [slot, adj] of playerAdj) {
-        const color = playerColors[slot];
-
-        if (!color) {
-            continue;
-        }
-
-        ctx.strokeStyle = `rgba(${color[0]},${color[1]},${color[2]},1)`;
-
+    function buildPolylines(adj: Map<number, Set<number>>): [number, number][][] {
         const usedEdges = new Set<string>();
+        const polys: [number, number][][] = [];
 
-        // Prefer to start from endpoints (odd-degree corners) so closed loops
-        // are handled after all open paths are exhausted.
         const starts: number[] = [];
-
         for (const [c, nbrs] of adj) {
-            if (nbrs.size % 2 !== 0) {
-                starts.push(c);
-            }
+            if (nbrs.size % 2 !== 0) { starts.push(c); }
         }
-
-        for (const [c] of adj) {
-            starts.push(c);
-        }
+        for (const [c] of adj) { starts.push(c); }
 
         for (const seed of starts) {
             const seedNbrs = adj.get(seed);
-
-            if (!seedNbrs) {
-                continue;
-            }
+            if (!seedNbrs) { continue; }
 
             for (const firstNbr of seedNbrs) {
                 const eKey = ek(seed, firstNbr);
+                if (usedEdges.has(eKey)) { continue; }
 
-                if (usedEdges.has(eKey)) {
-                    continue;
-                }
-
-                // Walk greedily, preferring straight continuation at junctions.
-                const poly: [number, number][] = [];
-                poly.push(cpx(seed));
-
+                const poly: [number, number][] = [cpx(seed)];
                 let prev = seed;
                 let cur = firstNbr;
                 usedEdges.add(eKey);
@@ -805,73 +798,83 @@ function drawTerritory(
                 while (true) {
                     poly.push(cpx(cur));
                     const nbrs = adj.get(cur);
-
-                    if (!nbrs) {
-                        break;
-                    }
+                    if (!nbrs) { break; }
 
                     const [px0, py0] = cpx(prev);
                     const [cx0, cy0] = cpx(cur);
-                    const dx = cx0 - px0;
-                    const dy = cy0 - py0;
-
+                    const ddx = cx0 - px0;
+                    const ddy = cy0 - py0;
                     let bestNext = -1;
                     let bestDot = -Infinity;
 
                     for (const n of nbrs) {
-                        if (usedEdges.has(ek(cur, n))) {
-                            continue;
-                        }
-
+                        if (usedEdges.has(ek(cur, n))) { continue; }
                         const [nx, ny] = cpx(n);
-                        const ndx = nx - cx0;
-                        const ndy = ny - cy0;
-                        const dot = dx * ndx + dy * ndy;
-
-                        if (dot > bestDot) {
-                            bestDot = dot;
-                            bestNext = n;
-                        }
+                        const dot = ddx * (nx - cx0) + ddy * (ny - cy0);
+                        if (dot > bestDot) { bestDot = dot; bestNext = n; }
                     }
 
-                    if (bestNext === -1) {
-                        break;
-                    }
-
+                    if (bestNext === -1) { break; }
                     usedEdges.add(ek(cur, bestNext));
                     prev = cur;
                     cur = bestNext;
                 }
 
-                if (poly.length < 2) {
-                    continue;
-                }
+                if (poly.length >= 2) { polys.push(poly); }
+            }
+        }
 
+        return polys;
+    }
+
+    // Render each segment individually so the perpendicular offset is computed
+    // per-segment — this avoids stripes crossing at polyline bends.
+    for (const [, { adj, slotA, slotB }] of pairAdj) {
+        const polys = buildPolylines(adj);
+        const colorA = slotA >= 0 ? playerColors[slotA] : null;
+        const colorB = slotB >= 0 ? playerColors[slotB] : null;
+
+        for (const poly of polys) {
+            for (let i = 0; i < poly.length - 1; i++) {
+                const [x0, y0] = poly[i];
+                const [x1, y1] = poly[i + 1];
+                const sdx = x1 - x0;
+                const sdy = y1 - y0;
+                const sLen = Math.hypot(sdx, sdy) || 1;
+                // Perpendicular normal for this segment.
+                const nx = -sdy / sLen;
+                const ny = sdx / sLen;
+
+                // Dark outline.
+                ctx.lineWidth = STRIPE * 4 + 1;
+                ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+                ctx.globalAlpha = 1;
                 ctx.beginPath();
+                ctx.moveTo(x0, y0);
+                ctx.lineTo(x1, y1);
+                ctx.stroke();
 
-                if (poly.length === 2) {
-                    ctx.moveTo(poly[0][0], poly[0][1]);
-                    ctx.lineTo(poly[1][0], poly[1][1]);
-                } else {
-                    // Midpoint-smoothing: straight sections stay straight;
-                    // direction-changes become smooth quadratic Bézier arcs.
-                    const mx0 = (poly[0][0] + poly[1][0]) / 2;
-                    const my0 = (poly[0][1] + poly[1][1]) / 2;
-                    ctx.moveTo(mx0, my0);
-
-                    for (let i = 1; i < poly.length - 1; i++) {
-                        const mx = (poly[i][0] + poly[i + 1][0]) / 2;
-                        const my = (poly[i][1] + poly[i + 1][1]) / 2;
-                        ctx.quadraticCurveTo(poly[i][0], poly[i][1], mx, my);
-                    }
-
-                    ctx.lineTo(
-                        poly[poly.length - 1][0],
-                        poly[poly.length - 1][1],
-                    );
+                // SlotA colour stripe (offset +normal).
+                if (colorA) {
+                    ctx.lineWidth = STRIPE * 2;
+                    ctx.strokeStyle = `rgb(${colorA[0]},${colorA[1]},${colorA[2]})`;
+                    ctx.globalAlpha = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x0 + nx * STRIPE, y0 + ny * STRIPE);
+                    ctx.lineTo(x1 + nx * STRIPE, y1 + ny * STRIPE);
+                    ctx.stroke();
                 }
 
-                ctx.stroke();
+                // SlotB colour stripe (offset −normal).
+                if (colorB) {
+                    ctx.lineWidth = STRIPE * 2;
+                    ctx.strokeStyle = `rgb(${colorB[0]},${colorB[1]},${colorB[2]})`;
+                    ctx.globalAlpha = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x0 - nx * STRIPE, y0 - ny * STRIPE);
+                    ctx.lineTo(x1 - nx * STRIPE, y1 - ny * STRIPE);
+                    ctx.stroke();
+                }
             }
         }
     }
@@ -890,6 +893,18 @@ function drawCity(
     const [x, y] = position;
     const fill = color ? rgb(color) : '#f1c40f';
     const radius = markerType === 'capital' ? 15 : 13;
+
+    // Faint dashed ring showing the exact capture radius (matches CITY_CAPTURE_RADIUS = 24 wu).
+    const CAPTURE_RADIUS = 24;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, CAPTURE_RADIUS, 0, Math.PI * 2);
+    ctx.strokeStyle = color ? `rgba(${color[0]},${color[1]},${color[2]},0.35)` : 'rgba(255,220,50,0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
 
     if (markerType === 'capital') {
         drawCapitalAtPixel(ctx, x, y, fill, radius);
@@ -1036,23 +1051,19 @@ function drawTroop(
         ctx.setLineDash([]);
     }
 
-    // Health bar (shown only when damaged)
-    if (troop.health < maxHp) {
-        const barY = y - unitR - 8;
-        ctx.fillStyle = 'rgba(0,0,0,0.45)';
-        ctx.fillRect(x - 9, barY, 18, 3);
-        ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(x - 9, barY, (18 * troop.health) / maxHp, 3);
-    }
+    // Health bar — always visible
+    const hBarY = y - unitR - 9;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(x - 9, hBarY, 18, 4);
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(x - 9, hBarY, (18 * troop.health) / maxHp, 4);
 
-    // Morale bar (shown only when depleted)
-    if (morale < 99) {
-        const barY = y - unitR - 4;
-        ctx.fillStyle = 'rgba(0,0,0,0.45)';
-        ctx.fillRect(x - 9, barY, 18, 2);
-        ctx.fillStyle = '#9b59b6';
-        ctx.fillRect(x - 9, barY, (18 * morale) / 100, 2);
-    }
+    // Morale bar — always visible
+    const mBarY = y - unitR - 4;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(x - 9, mBarY, 18, 3);
+    ctx.fillStyle = '#9b59b6';
+    ctx.fillRect(x - 9, mBarY, (18 * morale) / 100, 3);
 }
 
 function drawArrowPath(

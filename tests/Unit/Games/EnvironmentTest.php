@@ -194,8 +194,8 @@ class EnvironmentTest extends TestCase
 
         $environment->updateTroops([], 1);
 
-        $this->assertSame($initialHealth, $troop->health,
-            'A damaged troop in enemy territory should not heal.');
+        $this->assertLessThanOrEqual($initialHealth, $troop->health,
+            'A damaged troop cut off from supply should not heal and takes attrition damage.');
     }
 
     public function test_encircled_troop_loses_extra_morale_when_in_combat(): void

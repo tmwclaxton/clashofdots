@@ -416,7 +416,177 @@ final class Environment
         foreach ($spawns as [$city, $slot]) {
             $player = new Player($city->position, GameConstants::COLORS[$slot], $slot, $this, $this->nextTroopId++);
             $city->owner = $player;
+            $city->markerType = 'capital';
             $this->players[] = $player;
+        }
+
+        // All non-capital cities become outposts.
+        foreach ($this->cities as $city) {
+            if ($city->markerType === null) {
+                $city->markerType = 'flag';
+            }
+        }
+
+        $this->seedInitialBorders();
+    }
+
+    /**
+     * Applies large brushes once at game creation so each player starts with a
+     * well-connected territory blob, with a guaranteed corridor from every unit
+     * back to the capital.  Uses much larger radii than the per-tick brushes;
+     * these values are persisted in the player border grids and then refined
+     * each tick by the normal brushes.
+     */
+    private function seedInitialBorders(): void
+    {
+        $troopSeedBrush = new Brush(200, 0.05, 0);
+        $citySeedBrush = new Brush(350, 0.05, 0);
+        $corridorBrush = new Brush(60, 0.05, 0);
+
+        foreach ($this->players as $player) {
+            foreach ($this->cities as $city) {
+                if ($city->owner === $player) {
+                    $citySeedBrush->apply($player->border, $city->position, 1.0);
+                }
+            }
+
+            $capital = $player->startPos;
+
+            foreach ($player->troops as $troop) {
+                $troopSeedBrush->apply($player->border, $troop->position, 1.0);
+
+                // Stamp corridor brush at intervals along the straight line
+                // from this troop back to the capital so territory is connected.
+                [$tx, $ty] = $troop->position;
+                [$cx, $cy] = $capital;
+                $dx = $cx - $tx;
+                $dy = $cy - $ty;
+                $dist = sqrt($dx ** 2 + $dy ** 2);
+                $steps = max(1, (int) ceil($dist / ($corridorBrush->radius * 0.8)));
+
+                for ($i = 0; $i <= $steps; $i++) {
+                    $t = $i / $steps;
+                    $corridorBrush->apply($player->border, [$tx + $dx * $t, $ty + $dy * $t], 1.0);
+                }
+            }
+        }
+
+        // Push enemy cities down so they don't claim neighbours' seed territory.
+        foreach ($this->players as $player) {
+            foreach ($this->players as $otherPlayer) {
+                if ($otherPlayer === $player) {
+                    continue;
+                }
+
+                foreach ($this->cities as $city) {
+                    if ($city->owner === $otherPlayer) {
+                        $citySeedBrush->apply($player->border, $city->position, 0.0);
+                    }
+                }
+            }
+        }
+
+        $this->fillEnclosedNeutralCells($troopSeedBrush);
+    }
+
+    /**
+     * Flood-fills from every map-edge cell to find all neutral cells reachable
+     * without crossing any player's territory.  Any neutral cell that is NOT
+     * reachable from the edge is fully enclosed by a single player's territory
+     * and gets claimed by that player (by stamping the seed brush on it).
+     *
+     * Only runs at game initialisation so it has no per-tick cost.
+     */
+    private function fillEnclosedNeutralCells(Brush $claimBrush): void
+    {
+        $cs = GameConstants::CELL_SIZE;
+        $gridW = $this->gridMaxX + 1;
+        $gridH = $this->gridMaxY + 1;
+
+        // Build a snapshot of which player (if any) currently has the strongest
+        // border influence at each grid cell (same logic as drawInfo territory).
+        $owner = [];
+        for ($gx = 0; $gx < $gridW; $gx++) {
+            $owner[$gx] = [];
+            for ($gy = 0; $gy < $gridH; $gy++) {
+                $bestSlot = -1;
+                $bestInf = GameConstants::TERRITORY_CLAIM_THRESHOLD;
+                foreach ($this->players as $p) {
+                    $inf = $p->border->grid[$gx][$gy] ?? 0.0;
+                    if ($inf > $bestInf) {
+                        $bestInf = $inf;
+                        $bestSlot = $p->slot;
+                    }
+                }
+                $owner[$gx][$gy] = $bestSlot;
+            }
+        }
+
+        // BFS from all edge cells — only spreading through neutral (-1) cells.
+        $reachable = array_fill(0, $gridW, array_fill(0, $gridH, false));
+        $queue = [];
+
+        for ($gx = 0; $gx < $gridW; $gx++) {
+            for ($gy = 0; $gy < $gridH; $gy++) {
+                if ($gx === 0 || $gx === $gridW - 1 || $gy === 0 || $gy === $gridH - 1) {
+                    if ($owner[$gx][$gy] === -1) {
+                        $reachable[$gx][$gy] = true;
+                        $queue[] = [$gx, $gy];
+                    }
+                }
+            }
+        }
+
+        $dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        $head = 0;
+
+        while ($head < count($queue)) {
+            [$cx, $cy] = $queue[$head++];
+            foreach ($dirs as [$dx, $dy]) {
+                $nx = $cx + $dx;
+                $ny = $cy + $dy;
+                if ($nx < 0 || $nx >= $gridW || $ny < 0 || $ny >= $gridH) {
+                    continue;
+                }
+                if ($reachable[$nx][$ny] || $owner[$nx][$ny] !== -1) {
+                    continue;
+                }
+                $reachable[$nx][$ny] = true;
+                $queue[] = [$nx, $ny];
+            }
+        }
+
+        // Any neutral cell not reached by the flood-fill is enclosed.
+        // Find which single player surrounds it (all 4-neighbours owned by same player).
+        for ($gx = 0; $gx < $gridW; $gx++) {
+            for ($gy = 0; $gy < $gridH; $gy++) {
+                if ($owner[$gx][$gy] !== -1 || $reachable[$gx][$gy]) {
+                    continue;
+                }
+
+                // Collect distinct player slots from the 4 cardinal neighbours.
+                $neighbourSlots = [];
+                foreach ($dirs as [$dx, $dy]) {
+                    $nx = $gx + $dx;
+                    $ny = $gy + $dy;
+                    if ($nx < 0 || $nx >= $gridW || $ny < 0 || $ny >= $gridH) {
+                        continue;
+                    }
+                    $s = $owner[$nx][$ny];
+                    if ($s !== -1) {
+                        $neighbourSlots[$s] = true;
+                    }
+                }
+
+                // Claim only when all bordering owned cells belong to one player.
+                if (count($neighbourSlots) === 1) {
+                    $slot = array_key_first($neighbourSlots);
+                    $player = $this->players[$slot] ?? null;
+                    if ($player !== null) {
+                        $claimBrush->apply($player->border, [$gx * $cs, $gy * $cs], 1.0);
+                    }
+                }
+            }
         }
     }
 
@@ -577,8 +747,101 @@ final class Environment
     }
 
     /**
-     * @param  array{0: float, 1: float}  $troopPosition
+     * BFS from every owned city through contiguous own-territory cells.
+     * Returns a set of "gx,gy" strings for every grid cell that has an
+     * unbroken own-territory path back to at least one owned city (outpost
+     * or capital).  Cells not in this set are cut off from supply.
+     *
+     * Runs once per player per tick; result is used by all that player's troops.
+     *
+     * @return array<string, true>
      */
+    private function buildSuppliedCells(Player $player): array
+    {
+        $cs = GameConstants::CELL_SIZE;
+        $gridW = $this->gridMaxX + 1;
+        $gridH = $this->gridMaxY + 1;
+
+        $supplied = [];
+        $queue = [];
+
+        // Seed the BFS from every city owned by this player (or a teammate).
+        foreach ($this->cities as $city) {
+            $cityOwner = $city->owner;
+
+            if ($cityOwner === null) {
+                continue;
+            }
+
+            $isAlly = $cityOwner === $player
+                || ($player->teamIndex > 0 && $cityOwner->teamIndex === $player->teamIndex);
+
+            if (! $isAlly) {
+                continue;
+            }
+
+            $gx = max(0, min($gridW - 1, (int) ($city->position[0] / $cs)));
+            $gy = max(0, min($gridH - 1, (int) ($city->position[1] / $cs)));
+            $key = "{$gx},{$gy}";
+
+            if (! isset($supplied[$key])) {
+                $supplied[$key] = true;
+                $queue[] = [$gx, $gy];
+            }
+        }
+
+        $dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        $head = 0;
+
+        while ($head < count($queue)) {
+            [$cx, $cy] = $queue[$head++];
+
+            foreach ($dirs as [$dx, $dy]) {
+                $nx = $cx + $dx;
+                $ny = $cy + $dy;
+
+                if ($nx < 0 || $nx >= $gridW || $ny < 0 || $ny >= $gridH) {
+                    continue;
+                }
+
+                $key = "{$nx},{$ny}";
+
+                if (isset($supplied[$key])) {
+                    continue;
+                }
+
+                // Only spread through cells owned by this player (or ally).
+                $bestInfluence = GameConstants::TERRITORY_CLAIM_THRESHOLD;
+                $bestOwner = null;
+
+                foreach ($this->players as $p) {
+                    $inf = $p->border->grid[$nx][$ny] ?? 0.0;
+
+                    if ($inf > $bestInfluence) {
+                        $bestInfluence = $inf;
+                        $bestOwner = $p;
+                    }
+                }
+
+                if ($bestOwner === null) {
+                    continue;
+                }
+
+                $isAlly = $bestOwner === $player
+                    || ($player->teamIndex > 0 && $bestOwner->teamIndex === $player->teamIndex);
+
+                if (! $isAlly) {
+                    continue;
+                }
+
+                $supplied[$key] = true;
+                $queue[] = [$nx, $ny];
+            }
+        }
+
+        return $supplied;
+    }
+
     /**
      * Returns true if the troop's grid cell is owned by the given player (or a teammate).
      *
@@ -698,6 +961,9 @@ final class Environment
 
             $toRemove = [];
 
+            // Build supply connectivity once per player per tick.
+            $suppliedCells = $this->buildSuppliedCells($player);
+
             foreach ($player->troops as $troop) {
                 if ($troop->health <= 0) {
                     $toRemove[] = $troop;
@@ -713,10 +979,17 @@ final class Environment
 
                 $inOwnTerritory = $this->isInOwnTerritory($player, $troop->position);
 
-                // Heal when in own territory.
+                // A troop is in supply only if its territory cell has an unbroken
+                // own-territory path back to at least one owned city.
+                $cs = GameConstants::CELL_SIZE;
+                $tgx = max(0, min($this->gridMaxX, (int) ($troop->position[0] / $cs)));
+                $tgy = max(0, min($this->gridMaxY, (int) ($troop->position[1] / $cs)));
+                $inSupply = isset($suppliedCells["{$tgx},{$tgy}"]);
+
+                // Heal when in supply (connected own territory with an owned city).
                 // Healing is intentionally deferred until after combat resolution below so that
                 // $inCombat can suppress it.
-                $shouldHeal = $inOwnTerritory && $owned !== [];
+                $shouldHeal = $inSupply && $owned !== [];
 
                 $enemiesInRange = [];
 
@@ -804,27 +1077,33 @@ final class Environment
                 // Determine water terrain once (after move resolution updates $onTerrain).
                 $isWaterTerrain = in_array($onTerrain, ['water', 'deep_water', 'river']);
 
-                // Morale: territory-based encirclement replaces the old supply-line distance check.
-                // Being inside own territory (or a teammate's) is sufficient to recover morale.
-                // Being caught in enemy territory - whether fighting or not - drains morale.
+                // Morale: supply-line connectivity determines recovery vs drain.
+                // A troop must have an unbroken own-territory path to an owned city to be in supply.
+                // Supply-cut applies whether the unit is in own territory (isolated blob) or enemy territory.
                 if ($inCombat) {
                     $drain = GameConstants::TROOP_MORALE_COMBAT_DRAIN;
-                    if (! $inOwnTerritory) {
+                    if (! $inSupply) {
                         $drain += GameConstants::TROOP_SUPPLY_CUT_MORALE_DRAIN;
                     }
                     $troop->morale = (int) round($troop->morale - $drain);
-                } elseif ($inOwnTerritory) {
+                } elseif ($inSupply) {
                     $troop->morale = (int) round($troop->morale + GameConstants::TROOP_MORALE_REST_GAIN);
                 } else {
-                    // Encircled: in enemy territory, not in active combat.
+                    // Cut off from supply: drain morale even without active combat.
                     $troop->morale = (int) round($troop->morale - GameConstants::TROOP_SUPPLY_CUT_MORALE_DRAIN * 0.55);
                 }
 
                 $troop->morale = max(GameConstants::TROOP_MORALE_MIN, min(GameConstants::TROOP_MORALE_MAX, $troop->morale));
 
+                // Supply-cut attrition: HP drains when cut off from a city, in addition to morale loss.
+                if (! $inSupply) {
+                    $troop->health -= GameConstants::TROOP_SUPPLY_CUT_DAMAGE_PER_TICK;
+                }
+
                 // Apply healing after combat so we can suppress it while in combat.
-                // Also suppress healing while on water: water damage must not be silently cancelled.
-                if ($shouldHeal && ! $inCombat && ! $isWaterTerrain && $troop->health < $troop->maxHealth()) {
+                // Ships heal on water; wading troops on water do not (water damage must not be cancelled).
+                $isWading = $isWaterTerrain && $troop->waterMode === 'wade';
+                if ($shouldHeal && ! $inCombat && ! $isWading && $troop->health < $troop->maxHealth()) {
                     $troop->health = min($troop->maxHealth(), $troop->health + 1);
                 }
 
@@ -841,10 +1120,8 @@ final class Environment
                         if ($troop->waterTicks >= GameConstants::SHIP_CONVERSION_TICKS && ! $troop->isShip) {
                             $troop->isShip = true;
                         }
-                        // Non-ships take HP damage each tick while embarking.
-                        if (! $troop->isShip) {
-                            $troop->health -= GameConstants::WATER_DAMAGE_PER_TICK;
-                        }
+                        // Embarking troops are protected — no water damage during conversion.
+                        // Ships on water never take water damage.
                     }
                 } else {
                     if ($troop->isShip) {
@@ -868,12 +1145,25 @@ final class Environment
                 }
                 $this->borderBrush->apply($player->border, $troop->position, 1.0);
 
+                // Hard-claim the cell the troop is physically standing on so it
+                // always shows as own territory regardless of enemy brush strength.
+                $tgx = max(0, min($this->gridMaxX, (int) ($troop->position[0] / GameConstants::CELL_SIZE)));
+                $tgy = max(0, min($this->gridMaxY, (int) ($troop->position[1] / GameConstants::CELL_SIZE)));
+                $player->border->grid[$tgx][$tgy] = 1.0;
+
+                // Suppress all enemy players' border influence on that same cell.
+                foreach ($this->players as $otherPlayer) {
+                    if ($otherPlayer !== $player) {
+                        $otherPlayer->border->grid[$tgx][$tgy] = 0.0;
+                    }
+                }
+
                 foreach ($this->cities as $i => $city) {
                     [$cx, $cy] = $city->position;
                     [$tx, $ty] = $troop->position;
                     [, $dist] = GameMath::xyToDirDis([$tx - $cx, $ty - $cy]);
 
-                    if ($dist < GameConstants::CELL_SIZE) {
+                    if ($dist < GameConstants::CITY_CAPTURE_RADIUS) {
                         // Only count each player once per city regardless of how
                         // many troops they have nearby - prevents the player being
                         // listed multiple times which would break the count === 1 check.
@@ -890,6 +1180,132 @@ final class Environment
                     $player->troops,
                     fn (Troop $t) => $t !== $troop,
                 ));
+            }
+        }
+
+        $this->claimEnclosedNeutralCells();
+    }
+
+    /**
+     * Each tick, find neutral cells fully enclosed by a single player's territory
+     * and nudge their border influence toward that player — gradually auto-claiming
+     * surrounded pockets.
+     *
+     * Enemy territory that is connected (via own-territory path) to any owned city
+     * is never touched — only genuinely isolated neutral voids are filled.
+     *
+     * Uses a lightweight per-tick flood-fill; terminates quickly because enclosed
+     * pockets are small by definition.
+     */
+    private function claimEnclosedNeutralCells(): void
+    {
+        $cs = GameConstants::CELL_SIZE;
+        $gridW = $this->gridMaxX + 1;
+        $gridH = $this->gridMaxY + 1;
+
+        // Snapshot ownership (same logic as drawInfo territory).
+        /** @var array<int, array<int, int>> $ownerGrid */
+        $ownerGrid = [];
+
+        for ($gx = 0; $gx < $gridW; $gx++) {
+            $ownerGrid[$gx] = [];
+
+            for ($gy = 0; $gy < $gridH; $gy++) {
+                $bestSlot = -1;
+                $bestInf = GameConstants::TERRITORY_CLAIM_THRESHOLD;
+
+                foreach ($this->players as $p) {
+                    $inf = $p->border->grid[$gx][$gy] ?? 0.0;
+
+                    if ($inf > $bestInf) {
+                        $bestInf = $inf;
+                        $bestSlot = $p->slot;
+                    }
+                }
+
+                $ownerGrid[$gx][$gy] = $bestSlot;
+            }
+        }
+
+        // BFS from every edge cell through neutral cells → reachable from outside.
+        /** @var array<int, array<int, bool>> $reachable */
+        $reachable = array_fill(0, $gridW, array_fill(0, $gridH, false));
+        $queue = [];
+
+        for ($gx = 0; $gx < $gridW; $gx++) {
+            for ($gy = 0; $gy < $gridH; $gy++) {
+                if (($gx === 0 || $gx === $gridW - 1 || $gy === 0 || $gy === $gridH - 1)
+                    && $ownerGrid[$gx][$gy] === -1) {
+                    $reachable[$gx][$gy] = true;
+                    $queue[] = [$gx, $gy];
+                }
+            }
+        }
+
+        $dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        $head = 0;
+
+        while ($head < count($queue)) {
+            [$cx, $cy] = $queue[$head++];
+
+            foreach ($dirs as [$dx, $dy]) {
+                $nx = $cx + $dx;
+                $ny = $cy + $dy;
+
+                if ($nx < 0 || $nx >= $gridW || $ny < 0 || $ny >= $gridH) {
+                    continue;
+                }
+
+                if ($reachable[$nx][$ny] || $ownerGrid[$nx][$ny] !== -1) {
+                    continue;
+                }
+
+                $reachable[$nx][$ny] = true;
+                $queue[] = [$nx, $ny];
+            }
+        }
+
+        // For each unreachable neutral cell, find if exactly one player surrounds it.
+        // Apply a tiny nudge toward that player — they claim it gradually over ticks.
+        $nudge = 0.004; // small per-tick nudge; full claim takes ~100 ticks
+
+        for ($gx = 0; $gx < $gridW; $gx++) {
+            for ($gy = 0; $gy < $gridH; $gy++) {
+                if ($ownerGrid[$gx][$gy] !== -1 || $reachable[$gx][$gy]) {
+                    continue;
+                }
+
+                // Collect distinct owning slots from all 4 neighbours.
+                $neighbourSlots = [];
+
+                foreach ($dirs as [$dx, $dy]) {
+                    $nx = $gx + $dx;
+                    $ny = $gy + $dy;
+
+                    if ($nx < 0 || $nx >= $gridW || $ny < 0 || $ny >= $gridH) {
+                        continue;
+                    }
+
+                    $s = $ownerGrid[$nx][$ny];
+
+                    if ($s >= 0) {
+                        $neighbourSlots[$s] = true;
+                    }
+                }
+
+                if (count($neighbourSlots) !== 1) {
+                    continue; // contested or no owned neighbours — leave neutral
+                }
+
+                $slot = array_key_first($neighbourSlots);
+                $player = $this->players[$slot] ?? null;
+
+                if ($player === null) {
+                    continue;
+                }
+
+                $old = $player->border->grid[$gx][$gy] ?? 0.0;
+                $player->border->grid[$gx][$gy] = min(1.0, $old + $nudge);
             }
         }
     }

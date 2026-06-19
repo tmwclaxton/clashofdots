@@ -41,11 +41,6 @@ final class GameTickService
 
         $worldTick = (int) ($state['worldTick'] ?? 0);
 
-        // Economy is passed by reference into updateCities so spawn costs are deducted atomically.
-        $economy = $state['economy'] ?? [];
-        $environment->updateCities($worldTick, $economy);
-        $state['economy'] = $economy;
-
         // Clear any stale city-path inputs from before the rally-path system was removed.
         if (isset($state['playerCityInputs'])) {
             $state['playerCityInputs'] = array_fill(0, count($state['playerCityInputs']), []);
@@ -56,7 +51,15 @@ final class GameTickService
             $troopPaths = array_merge($troopPaths, $inputs);
         }
         $state['playerInputs'] = array_fill(0, count($state['playerInputs']), []);
+
+        // Troops must move first so playersInCities is populated before city
+        // capture and spawning are evaluated (updateCities reads playersInCities).
         $environment->updateTroops($troopPaths, $worldTick);
+
+        // Economy is passed by reference into updateCities so spawn costs are deducted atomically.
+        $economy = $state['economy'] ?? [];
+        $environment->updateCities($worldTick, $economy);
+        $state['economy'] = $economy;
 
         $state['environment'] = $environment->toArray();
         $state['worldTick'] = $worldTick + 1;
@@ -189,13 +192,22 @@ final class GameTickService
                 continue;
             }
 
-            $ownedCities = count(array_filter($environment->cities, fn (City $c) => $c->owner === $player));
-            $income = $ownedCities * GameConstants::ECONOMY_INCOME_PER_CITY_PER_TICK;
+            $ownedCapitals = count(array_filter($environment->cities, fn (City $c) => $c->owner === $player && $c->markerType === 'capital'));
+            $ownedOutposts = count(array_filter($environment->cities, fn (City $c) => $c->owner === $player && $c->markerType !== 'capital'));
+            $ownedCities = $ownedCapitals + $ownedOutposts;
+            $income = ($ownedCapitals * GameConstants::ECONOMY_INCOME_PER_CAPITAL_PER_TICK)
+                + ($ownedOutposts * GameConstants::ECONOMY_INCOME_PER_OUTPOST_PER_TICK);
             $upkeep = count($player->troops) * GameConstants::ECONOMY_UPKEEP_PER_TROOP_PER_TICK;
 
             $credits = (int) ($economy[$slot]['credits'] ?? 0);
             $credits += $income - $upkeep;
             $economy[$slot]['credits'] = $credits;
+            $economy[$slot]['cityIncome'] = $income;
+            $economy[$slot]['troopUpkeep'] = $upkeep;
+            $economy[$slot]['cityCount'] = $ownedCities;
+            $economy[$slot]['capitalCount'] = $ownedCapitals;
+            $economy[$slot]['outpostCount'] = $ownedOutposts;
+            $economy[$slot]['troopCount'] = count($player->troops);
             // incomePerTick reflects net income so the UI can show a negative value when in debt.
             $economy[$slot]['incomePerTick'] = $income - $upkeep;
 

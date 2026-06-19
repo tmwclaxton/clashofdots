@@ -44,6 +44,13 @@ final class GameConstants
     public const float TROOP_SUPPLY_CUT_MORALE_DRAIN = 0.5;
 
     /**
+     * HP drained per tick when a troop is cut off from supply
+     * (no unbroken own-territory path to an owned city).
+     * At 30 Hz this is ~1 HP/sec — enough to kill a full-health infantry in ~100 sec.
+     */
+    public const float TROOP_SUPPLY_CUT_DAMAGE_PER_TICK = 0.033;
+
+    /**
      * Minimum border-brush influence a player must have at a grid cell to claim it as
      * their territory.  Cells where no player reaches this threshold are neutral and
      * render without fills or border lines.
@@ -53,8 +60,11 @@ final class GameConstants
     /** Starting credits per commander. */
     public const int ECONOMY_STARTING_CREDITS = 220;
 
-    /** Credits earned per owned city per tick (flags + capitals). */
-    public const int ECONOMY_INCOME_PER_CITY_PER_TICK = 1;
+    /** Credits earned per owned capital per tick. */
+    public const int ECONOMY_INCOME_PER_CAPITAL_PER_TICK = 10;
+
+    /** Credits earned per owned outpost per tick. */
+    public const int ECONOMY_INCOME_PER_OUTPOST_PER_TICK = 5;
 
     /** Cost to spawn one infantry from an owned city. */
     public const int ECONOMY_RECRUIT_COST = 200;
@@ -150,6 +160,9 @@ final class GameConstants
 
     /** Minimum world-unit separation enforced between any two troops during movement resolution. */
     public const int TROOP_MIN_SEPARATION = 14;
+
+    /** World-unit radius within which a troop is considered to be occupying a city for capture. */
+    public const int CITY_CAPTURE_RADIUS = 24;
 
     /** World-unit radius within which an enemy troop registers as "in melee range". */
     public const int TROOP_COMBAT_RANGE = 32;
