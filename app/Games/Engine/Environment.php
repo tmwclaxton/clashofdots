@@ -1103,8 +1103,8 @@ final class Environment
                 $gx = max(0, min($this->gridMaxX, $troop->position[0] / GameConstants::CELL_SIZE));
                 $gy = max(0, min($this->gridMaxY, $troop->position[1] / GameConstants::CELL_SIZE));
 
-                $lit = $player->vision->getGridValue($gx, $gy) >= GameConstants::THRESHOLD;
-                /** Always return your own army - vision sampling can sit below {@see GameConstants::THRESHOLD} where brushes pull toward 0. */
+                $lit = $player->vision->getGridValue($gx, $gy) < GameConstants::THRESHOLD;
+                /** Always return your own army - vision sampling can sit above {@see GameConstants::THRESHOLD} where brushes pull toward 0. */
                 $isOwnTroop = $troop->owner->slot === $playerSlot;
                 /** Allied troops (same non-zero team) are always visible. */
                 $isAlly = $player->teamIndex > 0 && $troop->owner->teamIndex === $player->teamIndex;
