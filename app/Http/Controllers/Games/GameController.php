@@ -126,35 +126,35 @@ class GameController extends Controller
     {
         $userId = $request->user()->id;
 
-        $matches = Game::query()
-            ->where('status', GameStatus::Finished)
-            ->whereHas('players', fn ($query) => $query->where('user_id', $userId))
-            ->with(['players.user', 'host', 'winner', 'map.user'])
-            ->latest('finished_at')
-            ->limit(20)
-            ->get()
-            ->map(function (Game $game) use ($userId): array {
-                $gameUrl = route('games.show', $game);
-
-                /** @var array<string, string> $shareLinks */
-                $shareLinks = Share::page($gameUrl, "Check out this War of Dots match - code {$game->code}!")
-                    ->facebook()
-                    ->twitter()
-                    ->linkedin()
-                    ->whatsapp()
-                    ->telegram()
-                    ->reddit()
-                    ->pinterest()
-                    ->getRawLinks();
-
-                return array_merge($this->serializeMatch($game, $userId, null), [
-                    'shareLinks' => $shareLinks,
-                    'gameUrl' => $gameUrl,
-                ]);
-            });
-
         return Inertia::render('matches/Past', [
-            'matches' => $matches,
+            'matches' => Inertia::defer(function () use ($userId) {
+                return Game::query()
+                    ->where('status', GameStatus::Finished)
+                    ->whereHas('players', fn ($query) => $query->where('user_id', $userId))
+                    ->with(['players.user', 'host', 'winner', 'map.user'])
+                    ->latest('finished_at')
+                    ->limit(20)
+                    ->get()
+                    ->map(function (Game $game) use ($userId): array {
+                        $gameUrl = route('games.show', $game);
+
+                        /** @var array<string, string> $shareLinks */
+                        $shareLinks = Share::page($gameUrl, "Check out this War of Dots match - code {$game->code}!")
+                            ->facebook()
+                            ->twitter()
+                            ->linkedin()
+                            ->whatsapp()
+                            ->telegram()
+                            ->reddit()
+                            ->pinterest()
+                            ->getRawLinks();
+
+                        return array_merge($this->serializeMatch($game, $userId, null), [
+                            'shareLinks' => $shareLinks,
+                            'gameUrl' => $gameUrl,
+                        ]);
+                    });
+            }),
         ]);
     }
 

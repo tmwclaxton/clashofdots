@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { History } from 'lucide-vue-next';
+import { ref, shallowRef, watch } from 'vue';
 import Heading from '@/components/Heading.vue';
 import ShareButton from '@/components/ShareButton.vue';
 import { Badge } from '@/components/ui/badge';
@@ -22,9 +23,31 @@ type Match = {
     gameUrl: string;
 };
 
-defineProps<{
-    matches: Match[];
+const props = defineProps<{
+    matches: Match[] | undefined;
 }>();
+
+const MIN_SKELETON_MS = 800;
+const pageLoadedAt = performance.now();
+const ready = ref(false);
+const resolvedMatches = shallowRef<Match[] | undefined>(undefined);
+
+watch(
+    () => props.matches,
+    (incoming) => {
+        if (incoming === undefined) {
+            return;
+        }
+
+        const remaining = Math.max(0, MIN_SKELETON_MS - (performance.now() - pageLoadedAt));
+
+        setTimeout(() => {
+            resolvedMatches.value = incoming;
+            ready.value = true;
+        }, remaining);
+    },
+    { immediate: true },
+);
 
 function formatDate(value: string | null): string {
     if (!value) {
@@ -41,8 +64,32 @@ function formatDate(value: string | null): string {
     <div class="flex flex-col gap-8">
         <Heading title="Past Matches" description="Your campaign history." />
 
+        <div v-if="!ready" class="space-y-3">
+            <div
+                v-for="i in 3"
+                :key="i"
+                class="wod-panel flex animate-pulse flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <div class="space-y-2">
+                    <div class="flex gap-2">
+                        <div class="h-5 w-20 rounded bg-muted" />
+                        <div class="h-5 w-16 rounded bg-muted" />
+                    </div>
+                    <div class="h-4 w-48 rounded bg-muted" />
+                    <div class="mt-1 flex gap-2">
+                        <div class="h-5 w-20 rounded-full bg-muted" />
+                        <div class="h-5 w-20 rounded-full bg-muted" />
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <div class="h-9 w-28 rounded bg-muted" />
+                    <div class="h-9 w-20 rounded bg-muted" />
+                </div>
+            </div>
+        </div>
+
         <div
-            v-if="matches.length === 0"
+            v-else-if="resolvedMatches!.length === 0"
             class="wod-panel-dashed p-10 text-center text-muted-foreground"
         >
             <History class="mx-auto mb-2 size-7 opacity-60" />
@@ -51,7 +98,7 @@ function formatDate(value: string | null): string {
 
         <div v-else class="space-y-3">
             <article
-                v-for="match in matches"
+                v-for="match in resolvedMatches"
                 :key="match.uuid"
                 class="wod-panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
             >
