@@ -450,7 +450,7 @@ function draw() {
 
     if (state) {
         drawTerritory(ctx, state.territory, state.playerColors);
-        drawFog(ctx, state.vision);
+        drawFog(ctx, state.vision, state.territory);
     }
 
     for (const city of state?.cities ??
@@ -513,51 +513,79 @@ function draw() {
 /**
  * Fog of war — dims cells outside the viewing player's vision.
  *
- * Vision convention: the grid starts at high values (≥ 0.5, fogged) and
- * friendly brushes drive values toward 0 (clear/lit).  So:
+ * Vision convention: grid starts at high values (≥ 0.5 = fogged) and
+ * friendly brushes drive values toward 0 (lit/clear).  So:
  *   value < ENGINE_FOREST_THRESHOLD  → lit (visible)
  *   value ≥ ENGINE_FOREST_THRESHOLD  → fogged
  *
- * Fog opacity is proportional to how fogged the cell is, giving a smooth
- * gradient at the sight-line boundary rather than a hard step.  Own-territory
- * cells are never fully blacked out — a lighter veil keeps them readable.
+ * Rendered by writing per-pixel alpha into a small offscreen canvas (one
+ * pixel per grid cell) and then scaling it up with bilinear smoothing — this
+ * produces a continuous, blurred fog boundary with no grid artifacts.
+ * Own-territory cells are always fully clear so players can see their backfield.
  */
-function drawFog(ctx: CanvasRenderingContext2D, vision: number[][] | undefined) {
+function drawFog(
+    ctx: CanvasRenderingContext2D,
+    vision: number[][] | undefined,
+    territory: number[][] | undefined,
+) {
     if (!vision?.length || !vision[0]?.length) {
         return;
     }
 
-    const { cellSize } = store.world;
+    const { cellSize, width, height } = store.world;
     const cols = vision.length;
     const rows = vision[0]?.length ?? 0;
+    const mySlot = store.slot;
 
-    // Base fog colour components (no alpha — we set that per cell).
-    const [fr, fg, fb] = isDark.value ? [6, 5, 3] : [160, 148, 128];
-    const maxAlpha = isDark.value ? 0.82 : 0.62;
+    // Build a small RGBA bitmap — one pixel per grid cell.
+    const fogCanvas = document.createElement('canvas');
+    fogCanvas.width = cols;
+    fogCanvas.height = rows;
+    const fogCtx = fogCanvas.getContext('2d')!;
+    const imgData = fogCtx.createImageData(cols, rows);
+    const data = imgData.data;
 
-    ctx.save();
+    // Dark, opaque fog colour.
+    const [fr, fg, fb] = isDark.value ? [4, 3, 2] : [120, 108, 90];
+    const maxAlpha = isDark.value ? 230 : 200; // out of 255
 
     for (let gx = 0; gx < cols; gx++) {
         for (let gy = 0; gy < rows; gy++) {
+            // Own territory is always clear.
+            const owner = territory?.[gx]?.[gy] ?? -1;
+            if (owner === mySlot) {
+                continue;
+            }
+
             const v = vision[gx]?.[gy] ?? ENGINE_FOREST_THRESHOLD;
 
-            // Normalise: 0 = fully lit, 1 = fully fogged.
-            // The threshold is the boundary; values below are lit, above are fogged.
-            const fogFraction = Math.max(
-                0,
-                Math.min(1, (v - ENGINE_FOREST_THRESHOLD) / ENGINE_FOREST_THRESHOLD + 0.5),
-            );
+            // Map vision value to fog fraction (0 = clear, 1 = fully fogged).
+            // Values below threshold are lit; above are fogged.  Apply a small
+            // gamma curve to make the boundary sharper while keeping edges soft.
+            const raw = Math.max(0, Math.min(1, (v - ENGINE_FOREST_THRESHOLD * 0.6) / (ENGINE_FOREST_THRESHOLD * 0.8)));
+            const fogFraction = Math.pow(raw, 0.7);
 
             if (fogFraction <= 0.01) {
                 continue;
             }
 
-            const alpha = fogFraction * maxAlpha;
-            ctx.fillStyle = `rgba(${fr},${fg},${fb},${alpha.toFixed(3)})`;
-            ctx.fillRect(gx * cellSize, gy * cellSize, cellSize + 1, cellSize + 1);
+            // ImageData is row-major: index = (gy * cols + gx) * 4
+            const idx = (gy * cols + gx) * 4;
+            data[idx] = fr;
+            data[idx + 1] = fg;
+            data[idx + 2] = fb;
+            data[idx + 3] = Math.round(fogFraction * maxAlpha);
         }
     }
 
+    fogCtx.putImageData(imgData, 0, 0);
+
+    // Scale the tiny fog canvas up to world dimensions with bilinear smoothing
+    // to eliminate the pixel-grid look and get smooth gradient edges.
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(fogCanvas, 0, 0, width, height);
     ctx.restore();
 }
 

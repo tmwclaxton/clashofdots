@@ -61,8 +61,8 @@ final class Environment
             $this->generateDefaultVision();
             $this->assignPlayers();
         }
-        $this->visionBrush = new Brush(75, 1, 0);
-        $this->cityVisionBrush = new Brush(175, 1, 0);
+        $this->visionBrush = new Brush(160, 1, 0);
+        $this->cityVisionBrush = new Brush(260, 1, 0);
         $this->borderBrush = new Brush(40, 0.05, 0);
         $this->cityBorderBrush = new Brush(80, 0.05, 0);
         $this->playersInCities = array_fill(0, count($this->cities), []);
