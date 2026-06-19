@@ -15,18 +15,28 @@ export const useDraftStore = defineStore('draft', {
         activeDraft: null as DraftPath | null,
         /** IDs of troops currently selected via lasso. Empty = no lasso selection. */
         selectedTroopIds: [] as number[],
+        /** Active line-order drawing mode. Null when no line order is in progress. */
+        lineOrderMode: null as null | 'advance' | 'defend',
     }),
     actions: {
         reset() {
             this.draftPaths = [];
             this.activeDraft = null;
             this.selectedTroopIds = [];
+            this.lineOrderMode = null;
         },
         setSelection(ids: number[]) {
             this.selectedTroopIds = ids;
         },
         clearSelection() {
             this.selectedTroopIds = [];
+            this.lineOrderMode = null;
+        },
+        setLineOrderMode(mode: 'advance' | 'defend') {
+            this.lineOrderMode = mode;
+        },
+        clearLineOrderMode() {
+            this.lineOrderMode = null;
         },
         beginPath(entityId: number, start: Point) {
             if (
@@ -85,6 +95,7 @@ export const useDraftStore = defineStore('draft', {
             this.draftPaths = [];
             this.activeDraft = null;
             this.selectedTroopIds = [];
+            this.lineOrderMode = null;
         },
     },
 });
