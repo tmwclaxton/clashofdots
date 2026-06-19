@@ -563,7 +563,13 @@ function drawFog(
             // Values below threshold are lit; above are fogged.  Apply a small
             // gamma curve to make the boundary sharper while keeping edges soft.
             const raw = Math.max(0, Math.min(1, (v - ENGINE_FOREST_THRESHOLD * 0.6) / (ENGINE_FOREST_THRESHOLD * 0.8)));
-            const fogFraction = Math.pow(raw, 0.7);
+            let fogFraction = Math.pow(raw, 0.7);
+
+            // Enemy territory that is fogged must be fully opaque so the
+            // territory colour fill beneath is completely hidden.
+            if (fogFraction > 0.05 && owner !== -1 && owner !== mySlot) {
+                fogFraction = Math.max(fogFraction, 1.0);
+            }
 
             if (fogFraction <= 0.01) {
                 continue;
