@@ -449,7 +449,8 @@ function draw() {
     const state = store.latestState;
 
     if (state) {
-        drawTerritory(ctx, state.territory, state.playerColors); // battle lines on top
+        drawTerritory(ctx, state.territory, state.playerColors);
+        drawFog(ctx, state.vision);
     }
 
     for (const city of state?.cities ??
@@ -510,39 +511,50 @@ function draw() {
 }
 
 /**
- * Fog of war - dims cells outside the viewing player's vision.
+ * Fog of war — dims cells outside the viewing player's vision.
  *
- * Drawn BEFORE territory lines so the battle-front stays readable even at
- * the edge of visibility.  Uses a medium-opacity fill adapted to dark/light
- * mode so the terrain is still faintly perceptible rather than pitch-black.
+ * Vision convention: the grid starts at high values (≥ 0.5, fogged) and
+ * friendly brushes drive values toward 0 (clear/lit).  So:
+ *   value < ENGINE_FOREST_THRESHOLD  → lit (visible)
+ *   value ≥ ENGINE_FOREST_THRESHOLD  → fogged
+ *
+ * Fog opacity is proportional to how fogged the cell is, giving a smooth
+ * gradient at the sight-line boundary rather than a hard step.  Own-territory
+ * cells are never fully blacked out — a lighter veil keeps them readable.
  */
-function _drawFog(
-    ctx: CanvasRenderingContext2D,
-    vision: number[][] | undefined,
-    territory: number[][] | undefined,
-) {
+function drawFog(ctx: CanvasRenderingContext2D, vision: number[][] | undefined) {
     if (!vision?.length || !vision[0]?.length) {
         return;
     }
 
     const { cellSize } = store.world;
-    const w = vision.length - 1;
-    const h = vision[0].length - 1;
-    const mySlot = store.slot;
+    const cols = vision.length;
+    const rows = vision[0]?.length ?? 0;
+
+    // Base fog colour components (no alpha — we set that per cell).
+    const [fr, fg, fb] = isDark.value ? [6, 5, 3] : [160, 148, 128];
+    const maxAlpha = isDark.value ? 0.82 : 0.62;
 
     ctx.save();
-    ctx.fillStyle = isDark.value
-        ? 'rgba(10, 8, 5, 0.68)'
-        : 'rgba(180, 168, 150, 0.58)';
 
-    for (let gx = 0; gx < w; gx++) {
-        for (let gy = 0; gy < h; gy++) {
-            // Only fog cells that are in enemy territory - own backfield stays clear.
-            const owner = territory?.[gx]?.[gy] ?? -1;
+    for (let gx = 0; gx < cols; gx++) {
+        for (let gy = 0; gy < rows; gy++) {
+            const v = vision[gx]?.[gy] ?? ENGINE_FOREST_THRESHOLD;
 
-            if (owner !== mySlot && vision[gx][gy] < ENGINE_FOREST_THRESHOLD) {
-                ctx.fillRect(gx * cellSize, gy * cellSize, cellSize, cellSize);
+            // Normalise: 0 = fully lit, 1 = fully fogged.
+            // The threshold is the boundary; values below are lit, above are fogged.
+            const fogFraction = Math.max(
+                0,
+                Math.min(1, (v - ENGINE_FOREST_THRESHOLD) / ENGINE_FOREST_THRESHOLD + 0.5),
+            );
+
+            if (fogFraction <= 0.01) {
+                continue;
             }
+
+            const alpha = fogFraction * maxAlpha;
+            ctx.fillStyle = `rgba(${fr},${fg},${fb},${alpha.toFixed(3)})`;
+            ctx.fillRect(gx * cellSize, gy * cellSize, cellSize + 1, cellSize + 1);
         }
     }
 
