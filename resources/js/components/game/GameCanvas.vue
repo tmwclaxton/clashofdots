@@ -449,8 +449,8 @@ function draw() {
     const state = store.latestState;
 
     if (state) {
-        drawTerritory(ctx, state.territory, state.playerColors);
         drawFog(ctx, state.vision, state.territory);
+        drawTerritory(ctx, state.territory, state.playerColors, state.vision);
     }
 
     for (const city of state?.cities ??
@@ -559,17 +559,24 @@ function drawFog(
 
             const v = vision[gx]?.[gy] ?? ENGINE_FOREST_THRESHOLD;
 
-            // Map vision value to fog fraction (0 = clear, 1 = fully fogged).
-            // Values below threshold are lit; above are fogged.  Apply a small
-            // gamma curve to make the boundary sharper while keeping edges soft.
-            const raw = Math.max(0, Math.min(1, (v - ENGINE_FOREST_THRESHOLD * 0.6) / (ENGINE_FOREST_THRESHOLD * 0.8)));
-            let fogFraction = Math.pow(raw, 0.7);
-
-            // Enemy territory that is fogged must be fully opaque so the
-            // territory colour fill beneath is completely hidden.
-            if (fogFraction > 0.05 && owner !== -1 && owner !== mySlot) {
-                fogFraction = Math.max(fogFraction, 1.0);
+            // Fogged = at or above threshold. All fogged cells (enemy, neutral,
+            // or unowned) get full opacity — no terrain or topology leaks through.
+            if (v >= ENGINE_FOREST_THRESHOLD) {
+                const idx = (gy * cols + gx) * 4;
+                data[idx] = fr;
+                data[idx + 1] = fg;
+                data[idx + 2] = fb;
+                data[idx + 3] = maxAlpha;
+                continue;
             }
+
+            // Lit cell — apply a soft fade only in the narrow band just inside
+            // the vision radius so the edge isn't a hard pixel step.
+            const transitionWidth = ENGINE_FOREST_THRESHOLD * 0.4;
+            const raw = Math.max(0, Math.min(1, v / transitionWidth));
+            // raw=0 at threshold edge (full fog), raw=1 well inside (clear).
+            const clearFraction = Math.pow(raw, 1.5);
+            const fogFraction = 1 - clearFraction;
 
             if (fogFraction <= 0.01) {
                 continue;
@@ -619,6 +626,7 @@ function drawTerritory(
     ctx: CanvasRenderingContext2D,
     territory: number[][] | undefined,
     playerColors: Record<number, number[]> | undefined,
+    vision: number[][] | undefined,
 ) {
     if (!territory?.length || !territory[0]?.length || !playerColors) {
         return;
@@ -627,11 +635,22 @@ function drawTerritory(
     const { cellSize } = store.world;
     const w = territory.length;
     const h = territory[0].length;
+    const mySlot = store.slot;
 
     const cH = h + 1; // stride for corner-index encoding
 
     function ci(cx: number, cy: number): number {
         return cx * cH + cy;
+    }
+
+    function isCellVisible(gx: number, gy: number, slot: number): boolean {
+        if (slot === mySlot) {
+            return true;
+        }
+
+        const v = vision?.[gx]?.[gy] ?? ENGINE_FOREST_THRESHOLD;
+
+        return v < ENGINE_FOREST_THRESHOLD;
     }
 
     // ── 0. Fill territory cells with the owning player's color ──────────────
@@ -643,6 +662,10 @@ function drawTerritory(
             const color = playerColors[slot];
 
             if (!color) {
+                continue;
+            }
+
+            if (!isCellVisible(gx, gy, slot)) {
                 continue;
             }
 
@@ -692,10 +715,10 @@ function drawTerritory(
             // horizontal edge: boundary below this cell
             if (gy + 1 < h && territory[gx][gy + 1] !== owner) {
                 const other = territory[gx][gy + 1];
-                // Assign to the real player's slot; neutral (-1) cells have no color of their own.
                 const edgeSlot = owner >= 0 ? owner : other;
 
-                if (edgeSlot >= 0) {
+                // Only draw the border line if at least one side is visible.
+                if (edgeSlot >= 0 && (isCellVisible(gx, gy, owner) || isCellVisible(gx, gy + 1, other))) {
                     playerLink(edgeSlot, gx, gy + 1, gx + 1, gy + 1);
                 }
             }
@@ -705,7 +728,7 @@ function drawTerritory(
                 const other = territory[gx + 1][gy];
                 const edgeSlot = owner >= 0 ? owner : other;
 
-                if (edgeSlot >= 0) {
+                if (edgeSlot >= 0 && (isCellVisible(gx, gy, owner) || isCellVisible(gx + 1, gy, other))) {
                     playerLink(edgeSlot, gx + 1, gy, gx + 1, gy + 1);
                 }
             }

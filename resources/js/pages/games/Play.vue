@@ -232,7 +232,12 @@ async function submitChat() {
         return;
     }
 
-    await store.sendChatMessage(props.game.uuid, body);
+    const myPlayer = props.game.players.find(
+        (p) => p.slot === props.game.slot,
+    );
+    const senderName = myPlayer?.name ?? 'Commander';
+
+    await store.sendChatMessage(props.game.uuid, body, senderName);
     chatInput.value = '';
 }
 

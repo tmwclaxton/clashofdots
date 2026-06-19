@@ -13,6 +13,7 @@ use App\Games\GameConstants;
 use App\Games\Logging\GameSimLog;
 use App\Jobs\LaunchLobbyJob;
 use App\Maps\MapMarkers;
+use App\Models\ChatMessage;
 use App\Models\Game;
 use App\Models\GamePlayer;
 use App\Models\Map;
@@ -458,9 +459,10 @@ final class GameManager
                     $teamCount = (int) ($m->data['teamCount'] ?? 0);
 
                     // Sort ascending: exact match → 0, non-exact → 1 (exact comes first).
-                    // Then prefer larger team counts (negate for ascending sort).
+                    // Then prefer smaller team counts so the lobby can be filled
+                    // (and auto-launched) with the available ready players.
                     // likes_count already sorted descending by the DB query.
-                    return [($teamCount === $playerCount) ? 0 : 1, -$teamCount];
+                    return [($teamCount === $playerCount) ? 0 : 1, $teamCount];
                 });
 
             if ($maps->isEmpty()) {
@@ -1215,6 +1217,20 @@ final class GameManager
         $terrainInfo = $environment->getTerrainInfo();
         $terrainCells = $this->terrainCellsForSnapshot($game->map_data, $terrainInfo['terrain']);
 
+        $chatMessages = ChatMessage::query()
+            ->where('game_id', $game->id)
+            ->with('gamePlayer.user')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (ChatMessage $msg) => [
+                'id' => $msg->id,
+                'body' => $msg->body,
+                'senderName' => $msg->gamePlayer?->user?->name ?? 'Commander',
+                'senderSlot' => $msg->gamePlayer?->slot,
+                'createdAt' => $msg->created_at?->toISOString(),
+            ])
+            ->all();
+
         return [
             'gameUuid' => $game->uuid,
             'slot' => $player->slot,
@@ -1226,6 +1242,7 @@ final class GameManager
             'state' => $environment->drawInfo($player->slot, $worldTick),
             'economy' => $state['economy'] ?? [],
             'worldTick' => $worldTick,
+            'chatMessages' => $chatMessages,
             ...($terrainCells !== null ? ['terrainCells' => $terrainCells] : []),
         ];
     }
