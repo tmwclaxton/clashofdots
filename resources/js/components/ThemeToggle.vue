@@ -40,9 +40,9 @@ function selectTheme(value: Appearance): void {
     <DropdownMenu>
         <DropdownMenuTrigger as-child>
             <Button
-                variant="ghost"
-                size="icon"
-                class="wod-nav-ghost rounded-md"
+                variant="outline"
+                size="sm"
+                class="rounded-none"
                 aria-label="Toggle theme"
             >
                 <component :is="ActiveIcon" class="size-4" />

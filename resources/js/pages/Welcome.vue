@@ -97,10 +97,10 @@ const steps = [
                     >
                         <ThemeToggle />
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             as-child
-                            class="wod-nav-ghost shrink-0 px-2 sm:px-3"
+                            class="shrink-0 px-2 sm:px-3"
                         >
                             <a
                                 :href="GITHUB_REPOSITORY_URL"
@@ -112,10 +112,10 @@ const steps = [
                             </a>
                         </Button>
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             as-child
-                            class="wod-nav-ghost shrink-0 px-2 sm:px-3"
+                            class="shrink-0 px-2 sm:px-3"
                         >
                             <Link :href="wiki().url">
                                 <BookOpen class="size-4" />
@@ -123,10 +123,10 @@ const steps = [
                             </Link>
                         </Button>
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             as-child
-                            class="wod-nav-ghost shrink-0 px-2 sm:px-3"
+                            class="shrink-0 px-2 sm:px-3"
                         >
                             <Link :href="leaderboardIndex().url">
                                 <Trophy class="size-4" />
@@ -136,7 +136,7 @@ const steps = [
                         <Button
                             size="sm"
                             as-child
-                            class="shrink-0 sm:h-10 sm:px-4 sm:text-sm"
+                            class="shrink-0"
                         >
                             <Link :href="lobbiesIndex().url">
                                 <Users class="size-4" />
@@ -152,11 +152,11 @@ const steps = [
                                         variant: 'outline',
                                         size: 'sm',
                                     }),
-                                    'shrink-0 sm:h-10 sm:px-4 sm:text-sm',
+                                    'shrink-0',
                                 )
                             "
                         >
-                            <GameLogoMark class="size-4 rounded-sm sm:size-5" />
+                            <GameLogoMark class="size-4 rounded-none" />
                             <span class="hidden min-[380px]:inline"
                                 >Sign in</span
                             >
@@ -272,7 +272,7 @@ const steps = [
                 class="wod-panel-dark wod-panel-shine mt-10 p-5 sm:mt-12 sm:p-8 md:p-10"
             >
                 <h2
-                    class="font-display text-xl font-bold sm:text-2xl md:text-3xl"
+                    class="font-display text-xl font-bold text-[#f5e8c8] sm:text-2xl md:text-3xl"
                 >
                     How it plays
                 </h2>
@@ -280,15 +280,15 @@ const steps = [
                     <li
                         v-for="step in steps"
                         :key="step.number"
-                        class="border-t-2 border-card/25 pt-5"
+                        class="border-t-2 border-[#f5e8c8]/25 pt-5"
                     >
-                        <p class="text-sm font-bold text-wod-green-lt">
+                        <p class="text-sm font-bold text-[#c9a86c]">
                             {{ step.number }}
                         </p>
-                        <h3 class="mt-2 font-display text-lg font-bold">
+                        <h3 class="mt-2 font-display text-lg font-bold text-[#f5e8c8]">
                             {{ step.title }}
                         </h3>
-                        <p class="mt-1 text-sm leading-relaxed text-card/80">
+                        <p class="mt-1 text-sm leading-relaxed text-[#f5e8c8]/80">
                             {{ step.description }}
                         </p>
                     </li>

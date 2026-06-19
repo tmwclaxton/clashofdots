@@ -88,11 +88,11 @@ const navItems = computed<NavItem[]>(() => {
                         <Button
                             v-for="item in navItems"
                             :key="item.title"
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             as-child
                             :class="[
-                                'wod-nav-ghost shrink-0',
+                                'shrink-0',
                                 isCurrentOrParentUrl(item.href)
                                     ? 'wod-nav-active'
                                     : '',
@@ -110,10 +110,10 @@ const navItems = computed<NavItem[]>(() => {
             <div class="flex shrink-0 items-center gap-2">
                 <ThemeToggle />
                 <Button
-                    variant="ghost"
-                    size="icon"
+                    variant="outline"
+                    size="sm"
                     as-child
-                    class="wod-nav-ghost rounded-md"
+                    class="rounded-none"
                 >
                     <a
                         :href="GITHUB_REPOSITORY_URL"
@@ -127,13 +127,13 @@ const navItems = computed<NavItem[]>(() => {
                 <template v-if="user">
                     <DropdownMenu>
                         <DropdownMenuTrigger as-child>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                class="wod-nav-ghost rounded-md"
+                            <button
+                                class="shrink-0 cursor-pointer overflow-hidden border-2 border-foreground"
+                                style="width:2rem;height:2rem;padding:0;background:none;box-shadow:2px 2px 0 var(--wod-shadow);"
+                                aria-label="Open user menu"
                             >
                                 <Avatar
-                                    class="size-8 overflow-hidden rounded-md border-2 border-foreground bg-black"
+                                    class="size-full rounded-none bg-black"
                                 >
                                     <AvatarImage
                                         v-if="user.profile_uuid"
@@ -148,7 +148,7 @@ const navItems = computed<NavItem[]>(() => {
                                         "
                                     />
                                     <AvatarFallback
-                                        class="rounded-md bg-card text-xs font-bold"
+                                        class="rounded-none bg-card text-xs font-bold"
                                     >
                                         {{
                                             getInitials(
@@ -158,7 +158,7 @@ const navItems = computed<NavItem[]>(() => {
                                         }}
                                     </AvatarFallback>
                                 </Avatar>
-                            </Button>
+                            </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" class="w-56">
                             <UserMenuContent :user="user" />
@@ -180,11 +180,11 @@ const navItems = computed<NavItem[]>(() => {
             <Button
                 v-for="item in navItems"
                 :key="`mobile-${item.title}`"
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 as-child
                 :class="[
-                    'wod-nav-ghost shrink-0 gap-2',
+                    'shrink-0 gap-2',
                     isCurrentOrParentUrl(item.href) ? 'wod-nav-active' : '',
                 ]"
             >

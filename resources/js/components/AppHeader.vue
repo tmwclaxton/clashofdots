@@ -160,9 +160,9 @@ const rightNavItems: NavItem[] = [
                                         navigationMenuTriggerStyle(),
                                         whenCurrentUrl(
                                             item.href,
-                                            activeItemStyles,
+                                            'sdv-btn-outline',
                                         ),
-                                        'h-9 cursor-pointer px-3',
+                                        'sdv-btn sdv-btn-outline h-9 cursor-pointer px-3',
                                     ]"
                                     :href="item.href"
                                 >
@@ -185,7 +185,7 @@ const rightNavItems: NavItem[] = [
                 <div class="ml-auto flex items-center space-x-2">
                     <div class="relative flex items-center space-x-1">
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon"
                             class="group h-9 w-9 cursor-pointer"
                         >
@@ -203,7 +203,7 @@ const rightNavItems: NavItem[] = [
                                     <Tooltip>
                                         <TooltipTrigger>
                                             <Button
-                                                variant="ghost"
+                                                variant="outline"
                                                 size="icon"
                                                 as-child
                                                 class="group h-9 w-9 cursor-pointer"
@@ -235,9 +235,9 @@ const rightNavItems: NavItem[] = [
                     <DropdownMenu v-if="auth.user">
                         <DropdownMenuTrigger :as-child="true">
                             <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="icon"
-                                class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
+                                class="relative size-10 w-auto rounded-none p-1 focus-within:ring-2 focus-within:ring-primary"
                             >
                                 <Avatar
                                     class="size-8 overflow-hidden rounded-full bg-black"
