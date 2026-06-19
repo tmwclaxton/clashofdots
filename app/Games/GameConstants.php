@@ -22,7 +22,7 @@ final class GameConstants
      * Per-tick step along a move order: {@code terrainSpeed * this} world units at {@see self::TICK_RATE} Hz.
      * Plains baseline uses {@see self::TERRAIN_SPEEDS} (plains = 1.0); raise this for faster marches.
      */
-    public const float TROOP_MOVEMENT_PER_TICK_SCALE = 0.75;
+    public const float TROOP_MOVEMENT_PER_TICK_SCALE = 3.75;
 
     /** Ticks (~seconds×30) fresh troops get an attack “adrenaline” bonus that decays to neutral. */
     public const int TROOP_WARMUP_TICKS = 120;
@@ -187,6 +187,9 @@ final class GameConstants
 
     /** Speed multiplier applied to ships on water terrain (faster than normal water movement). */
     public const float SHIP_WATER_SPEED_MULT = 3.0;
+
+    /** Consecutive land ticks before a ship completes disembarkation (90 ticks ≈ 3 s at 30 Hz). */
+    public const int SHIP_DISEMBARK_TICKS = 90;
 
     /** HP drained per tick while a unit is on water (before ship conversion). */
     public const int WATER_DAMAGE_PER_TICK = 1;

@@ -54,6 +54,41 @@ class BattlefieldFromMapTest extends TestCase
         $this->assertCount(2, $environment->players);
     }
 
+    public function test_flag_cities_start_pre_owned_by_their_assigned_team(): void
+    {
+        $cells = array_fill(0, 200, array_fill(0, 100, 'plains'));
+        $mapData = [
+            'version' => 2,
+            'cellRows' => 200,
+            'cellCols' => 100,
+            'cells' => $cells,
+            'teamCount' => 2,
+            'markers' => [
+                ['type' => MapMarkers::TYPE_CAPITAL, 'team' => 0, 'row' => 80, 'col' => 45],
+                ['type' => MapMarkers::TYPE_CAPITAL, 'team' => 1, 'row' => 110, 'col' => 65],
+                ['type' => MapMarkers::TYPE_FLAG, 'team' => 0, 'row' => 66, 'col' => 70],
+                ['type' => MapMarkers::TYPE_FLAG, 'team' => 1, 'row' => 128, 'col' => 38],
+            ],
+        ];
+
+        $environment = Environment::fromMapEditorData(12_345, 2, $mapData);
+
+        $flagCities = array_values(array_filter(
+            $environment->cities,
+            fn ($c) => $c->markerType === 'flag',
+        ));
+
+        $this->assertCount(2, $flagCities);
+
+        foreach ($flagCities as $city) {
+            $this->assertNotNull($city->owner, 'Flag cities should start pre-owned by their assigned team.');
+        }
+
+        $ownerSlots = array_map(fn ($c) => $c->owner?->slot, $flagCities);
+        sort($ownerSlots);
+        $this->assertSame([0, 1], $ownerSlots, 'Each team should own one flag city at game start.');
+    }
+
     public function test_throws_when_capital_is_outside_declared_cell_grid(): void
     {
         $rows = 20;

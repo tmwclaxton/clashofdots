@@ -155,6 +155,15 @@ final class BattlefieldFromMap
             $players[$slot] = $player;
         }
 
+        // Assign pre-owned flags: each flag city starts owned by the team whose slot
+        // matches the flag's team index (same ordering as the sorted $flagSites list).
+        foreach ($flagSites as $index => $f) {
+            $team = $f['team'];
+            if (isset($players[$team], $cities[$index])) {
+                $cities[$index]->owner = $players[$team];
+            }
+        }
+
         foreach ($troopSites as $site) {
             $team = $site['team'];
             if ($team < 0 || $team >= $teamCount || ! isset($players[$team])) {

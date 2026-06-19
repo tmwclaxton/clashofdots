@@ -62,7 +62,7 @@ let lastRafTimeMs = 0;
  * Chosen to be slightly faster than the max game speed so troops always catch up
  * before the next snapshot, giving fluid motion at any update frequency.
  */
-const SMOOTH_SPEED_WU_MS = 0.028; // ~28 wu/sec display speed (game plains = 22.5 wu/sec)
+const SMOOTH_SPEED_WU_MS = 0.14; // ~140 wu/sec display speed (game plains = 112.5 wu/sec at 5× scale)
 const troopDisplayPositions = new Map<number, [number, number]>();
 const troopTargetPositions = new Map<number, [number, number]>();
 
@@ -308,17 +308,112 @@ function rafLoop(nowMs: number): void {
         }
     }
 
-    // Also redraw when any unit is actively embarking so the pulsing ring animates.
+    // Also redraw when any unit is actively embarking or disembarking so the pulsing ring animates.
     const anyEmbarking = (store.latestState?.troops ?? []).some(
         (t) => !t.isShip && t.waterMode === 'embark' && (t.waterTicks ?? 0) > 0,
     );
+    const anyDisembarking = (store.latestState?.troops ?? []).some(
+        (t) => t.isShip && (t.landTicks ?? 0) > 0,
+    );
 
-    if (needsRedraw || anyMoving || anyEmbarking) {
+    if (needsRedraw || anyMoving || anyEmbarking || anyDisembarking) {
         needsRedraw = false;
         draw();
     }
 
     rafId = requestAnimationFrame(rafLoop);
+}
+
+/**
+ * When multiple troops share nearly the same display position, they'd render
+ * on top of each other and become invisible.  This function computes a
+ * per-troop screen-space render offset so every unit remains visible.
+ *
+ * Only the *render* position is nudged — the canonical display/target
+ * positions (used for smooth movement and hit-testing) are unchanged.
+ */
+function separateTroopPositions(
+    troops: Array<{ id: number; position: [number, number]; type?: string; isShip?: boolean }>,
+): Map<number, [number, number]> {
+    const CLUSTER_RADIUS = 18; // world-units: closer than this → same cluster
+    const SPREAD_RADIUS = 14; // world-units: target orbit radius when clustered
+
+    const result = new Map<number, [number, number]>();
+
+    if (troops.length === 0) {
+        return result;
+    }
+
+    // Seed from smooth display positions (same as what draw() uses for movement).
+    const positions: [number, number][] = troops.map(
+        (t) => troopDisplayPositions.get(t.id) ?? t.position,
+    );
+
+    // Find clusters: groups of troops within CLUSTER_RADIUS of each other.
+    const visited = new Set<number>();
+
+    for (let i = 0; i < troops.length; i++) {
+        if (visited.has(i)) {
+            continue;
+        }
+
+        // BFS to collect all troops that are within CLUSTER_RADIUS of any
+        // already-collected member.
+        const cluster: number[] = [i];
+        visited.add(i);
+        let head = 0;
+
+        while (head < cluster.length) {
+            const ci = cluster[head++];
+            const [cx, cy] = positions[ci];
+
+            for (let j = 0; j < troops.length; j++) {
+                if (visited.has(j)) {
+                    continue;
+                }
+
+                const [jx, jy] = positions[j];
+                const dist = Math.hypot(jx - cx, jy - cy);
+
+                if (dist < CLUSTER_RADIUS) {
+                    cluster.push(j);
+                    visited.add(j);
+                }
+            }
+        }
+
+        if (cluster.length === 1) {
+            // No overlap - use the display position directly.
+            result.set(troops[cluster[0]].id, positions[cluster[0]]);
+            continue;
+        }
+
+        // Centroid of the cluster.
+        let sumX = 0;
+        let sumY = 0;
+
+        for (const ci of cluster) {
+            sumX += positions[ci][0];
+            sumY += positions[ci][1];
+        }
+
+        const cx = sumX / cluster.length;
+        const cy = sumY / cluster.length;
+
+        // Spread troops evenly around the centroid.
+        const step = (Math.PI * 2) / cluster.length;
+
+        cluster.forEach((ci, rank) => {
+            const angle = rank * step;
+            const r = cluster.length === 1 ? 0 : SPREAD_RADIUS;
+            result.set(troops[ci].id, [
+                cx + Math.cos(angle) * r,
+                cy + Math.sin(angle) * r,
+            ]);
+        });
+    }
+
+    return result;
 }
 
 function draw() {
@@ -379,10 +474,13 @@ function draw() {
         );
     }
 
-    for (const troop of state?.troops ?? []) {
+    const troops = state?.troops ?? [];
+    const troopRenderPositions = separateTroopPositions(troops);
+
+    for (const troop of troops) {
         const isSelected = drafts.selectedTroopIds.includes(troop.id);
-        const display = troopDisplayPositions.get(troop.id) ?? troop.position;
-        drawTroop(ctx, { ...troop, position: display }, isSelected);
+        const renderPos = troopRenderPositions.get(troop.id) ?? troopDisplayPositions.get(troop.id) ?? troop.position;
+        drawTroop(ctx, { ...troop, position: renderPos }, isSelected);
     }
 
     for (const draft of drafts.draftPaths) {
@@ -765,6 +863,7 @@ type TroopDraw = {
     isShip?: boolean;
     waterMode?: 'wade' | 'embark';
     waterTicks?: number;
+    landTicks?: number;
 };
 
 /** Radii that match the shared mapMarkers pixel-centre functions. */
@@ -783,7 +882,9 @@ function drawTroop(
     const isShip = troop.isShip === true;
     const waterMode = troop.waterMode ?? 'embark';
     const waterTicks = troop.waterTicks ?? 0;
+    const landTicks = troop.landTicks ?? 0;
     const isEmbarking = !isShip && waterMode === 'embark' && waterTicks > 0;
+    const isDisembarking = isShip && landTicks > 0;
     const maxHp = troop.maxHealth ?? (isTank ? 200 : 100);
     const ink = canvasInk();
     const fillColor = rgb(troop.color);
@@ -833,6 +934,20 @@ function drawTroop(
         const alpha = 0.35 + 0.3 * Math.sin(Date.now() / 250);
         ctx.globalAlpha = alpha;
         ctx.strokeStyle = fillColor;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(x, y, unitR + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+    }
+
+    // Disembarkation pulsing ring: shown while a ship is converting back to a land unit.
+    if (isDisembarking) {
+        const alpha = 0.35 + 0.3 * Math.sin(Date.now() / 250);
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
