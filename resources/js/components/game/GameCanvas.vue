@@ -462,13 +462,32 @@ function draw() {
             markerType: null as string | null,
             recruitmentEnabled: true,
         }))) {
+        const isOwn = city.ownerSlot === store.slot;
         const showRing =
-            props.recruitmentPanelOpen && city.ownerSlot === store.slot;
+            props.recruitmentPanelOpen && isOwn;
         const isHovered = props.hoveredCityId === city.id;
+
+        // Check vision at this city's grid cell.
+        const { cellSize } = store.world;
+        const cgx = Math.floor(city.position[0] / cellSize);
+        const cgy = Math.floor(city.position[1] / cellSize);
+        const visionVal = state?.vision?.[cgx]?.[cgy] ?? ENGINE_FOREST_THRESHOLD;
+        const isLit = visionVal < ENGINE_FOREST_THRESHOLD;
+        const isFullyFogged = visionVal >= ENGINE_FOREST_THRESHOLD;
+
+        // Own cities always visible with full colour.
+        // Enemy/neutral cities: hidden when fully fogged, shown as neutral yellow
+        // when at the fog edge (lit), and only show true owner colour when lit.
+        if (!isOwn && isFullyFogged) {
+            continue;
+        }
+
+        const revealedColor = isOwn || isLit ? city.ownerColor : null;
+
         drawCity(
             ctx,
             city.position,
-            city.ownerColor,
+            revealedColor,
             city.markerType,
             showRing ? (city.recruitmentEnabled ?? true) : null,
             isHovered,
@@ -545,9 +564,9 @@ function drawFog(
     const imgData = fogCtx.createImageData(cols, rows);
     const data = imgData.data;
 
-    // Dark, opaque fog colour.
-    const [fr, fg, fb] = isDark.value ? [4, 3, 2] : [120, 108, 90];
-    const maxAlpha = isDark.value ? 230 : 200; // out of 255
+    // Fog colour and opacity.
+    const [fr, fg, fb] = isDark.value ? [20, 18, 14] : [120, 108, 90];
+    const maxAlpha = isDark.value ? 155 : 200; // out of 255
 
     for (let gx = 0; gx < cols; gx++) {
         for (let gy = 0; gy < rows; gy++) {
@@ -652,29 +671,6 @@ function drawTerritory(
 
         return v < ENGINE_FOREST_THRESHOLD;
     }
-
-    // ── 0. Fill territory cells with the owning player's color ──────────────
-    ctx.save();
-
-    for (let gx = 0; gx < w; gx++) {
-        for (let gy = 0; gy < h; gy++) {
-            const slot = territory[gx][gy];
-            const color = playerColors[slot];
-
-            if (!color) {
-                continue;
-            }
-
-            if (!isCellVisible(gx, gy, slot)) {
-                continue;
-            }
-
-            ctx.fillStyle = `rgba(${color[0]},${color[1]},${color[2]},0.18)`;
-            ctx.fillRect(gx * cellSize, gy * cellSize, cellSize, cellSize);
-        }
-    }
-
-    ctx.restore();
 
     // ── 1. Collect boundary edges with both side-slots ───────────────────────
     // Each edge stores [slotA, slotB] — the player slots on either side.
@@ -1184,12 +1180,17 @@ function onMouseDown(e: MouseEvent) {
             dragging = true;
 
             for (const id of drafts.selectedTroopIds) {
-                drafts.beginPath(id, world);
+                // Start from the troop's actual server position, not the mouse click,
+                // so the first waypoint doesn't cause a spurious initial movement.
+                const troopPos = troopTargetPositions.get(id) ?? world;
+                drafts.beginPath(id, [troopPos[0], troopPos[1]]);
             }
         } else {
             drafts.clearSelection();
             dragging = true;
-            drafts.beginPath(entity.id, world);
+            // Start from the troop's actual server position, not the mouse click.
+            const troopPos = troopTargetPositions.get(entity.id) ?? world;
+            drafts.beginPath(entity.id, [troopPos[0], troopPos[1]]);
         }
     } else {
         // No entity hit - start lasso selection (clears existing selection first).
@@ -1376,7 +1377,8 @@ function onTouchStart(e: TouchEvent) {
         if (entity) {
             touchDrafting = true;
             touchPanning = false;
-            drafts.beginPath(entity.id, world);
+            const troopPos = troopTargetPositions.get(entity.id) ?? world;
+            drafts.beginPath(entity.id, [troopPos[0], troopPos[1]]);
         } else {
             touchPanning = true;
             touchDrafting = false;

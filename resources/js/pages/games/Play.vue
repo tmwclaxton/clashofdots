@@ -635,6 +635,44 @@ onUnmounted(() => {
                 is running.
             </div>
 
+            <!-- Economy card (top-right of canvas) -->
+            <div
+                v-if="!spectatorMode && store.initialized && !store.matchEnded"
+                class="pointer-events-none absolute top-0 right-0 p-3 z-10"
+            >
+                <div class="pointer-events-auto wod-panel min-w-[9rem] px-3 py-2 text-[0.6rem]">
+                    <div class="flex items-baseline justify-between gap-3">
+                        <span class="font-display font-bold tracking-wide text-muted-foreground uppercase">Credits</span>
+                        <span
+                            class="font-mono text-lg leading-none font-bold"
+                            :class="(myCredits ?? 0) < 0 ? 'text-destructive' : 'text-foreground'"
+                        >{{ myCredits ?? '-' }}</span>
+                    </div>
+                    <div class="my-1.5 border-t-2 border-foreground/20" />
+                    <div class="space-y-0.5">
+                        <div v-if="capitalCount > 0" class="flex justify-between gap-2">
+                            <span class="text-muted-foreground">{{ capitalCount }}× capital</span>
+                            <span class="font-mono font-bold text-wod-green-dk">+{{ capitalCount * 10 }}</span>
+                        </div>
+                        <div v-if="outpostCount > 0" class="flex justify-between gap-2">
+                            <span class="text-muted-foreground">{{ outpostCount }}× outpost</span>
+                            <span class="font-mono font-bold text-wod-green-dk">+{{ outpostCount * 5 }}</span>
+                        </div>
+                        <div class="flex justify-between gap-2">
+                            <span class="text-muted-foreground">{{ troopCount }}× troop</span>
+                            <span class="font-mono font-bold text-destructive">-{{ troopUpkeep }}</span>
+                        </div>
+                    </div>
+                    <div class="mt-1.5 border-t-2 border-foreground/20 pt-1.5 flex justify-between gap-2 font-bold">
+                        <span class="text-muted-foreground">Net/tick</span>
+                        <span
+                            class="font-mono"
+                            :class="incomePerTick < 0 ? 'text-destructive' : 'text-wod-green-dk'"
+                        >{{ incomePerTick > 0 ? '+' : '' }}{{ incomePerTick }}</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Left-side panel toggles (Chat & Recruitment) -->
             <div
                 v-if="!spectatorMode && store.initialized && !store.matchEnded"
@@ -681,46 +719,6 @@ onUnmounted(() => {
                 class="pointer-events-none absolute inset-x-0 bottom-0 p-3"
             >
                 <div class="flex items-end gap-2">
-                    <!-- Economy card -->
-                    <div class="pointer-events-auto wod-panel shrink-0 min-w-[9rem] px-3 py-2">
-                        <!-- Balance row -->
-                        <div class="flex items-baseline justify-between gap-3">
-                            <span class="font-display text-[0.6rem] font-bold tracking-wide text-muted-foreground uppercase">Credits</span>
-                            <span
-                                class="font-mono text-lg leading-none font-bold"
-                                :class="(myCredits ?? 0) < 0 ? 'text-destructive' : 'text-foreground'"
-                            >{{ myCredits ?? '-' }}</span>
-                        </div>
-
-                        <!-- Divider -->
-                        <div class="my-1.5 border-t-2 border-foreground/20" />
-
-                        <!-- Income rows -->
-                        <div class="space-y-0.5 text-[0.6rem]">
-                            <div v-if="capitalCount > 0" class="flex justify-between gap-2">
-                                <span class="text-muted-foreground">{{ capitalCount }}× capital</span>
-                                <span class="font-mono font-bold text-wod-green-dk">+{{ capitalCount * 10 }}</span>
-                            </div>
-                            <div v-if="outpostCount > 0" class="flex justify-between gap-2">
-                                <span class="text-muted-foreground">{{ outpostCount }}× outpost</span>
-                                <span class="font-mono font-bold text-wod-green-dk">+{{ outpostCount * 5 }}</span>
-                            </div>
-                            <div class="flex justify-between gap-2">
-                                <span class="text-muted-foreground">{{ troopCount }}× troop</span>
-                                <span class="font-mono font-bold text-destructive">-{{ troopUpkeep }}</span>
-                            </div>
-                        </div>
-
-                        <!-- Net -->
-                        <div class="mt-1.5 border-t-2 border-foreground/20 pt-1.5 flex justify-between gap-2 text-[0.6rem] font-bold">
-                            <span class="text-muted-foreground">Net/tick</span>
-                            <span
-                                class="font-mono"
-                                :class="incomePerTick < 0 ? 'text-destructive' : 'text-wod-green-dk'"
-                            >{{ incomePerTick > 0 ? '+' : '' }}{{ incomePerTick }}</span>
-                        </div>
-                    </div>
-
                     <!-- Orders -->
                     <div
                         class="pointer-events-auto flex flex-1 justify-center gap-1.5"
