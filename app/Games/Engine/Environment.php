@@ -1775,12 +1775,41 @@ final class Environment
         $borderGrid = $player->border->grid;
         $visionGrid = &$player->vision->grid;
         $threshold = GameConstants::TERRITORY_CLAIM_THRESHOLD;
+        // Core owned cells: dimly lit (below the 0.5 fog threshold).
         $territoryVision = 0.35;
+        // Cells adjacent to owned territory (e.g. coastal sea): slightly dimmer.
+        $coastalVision = 0.43;
+
+        $maxX = count($visionGrid) - 1;
+        $maxY = $maxX >= 0 ? count($visionGrid[0]) - 1 : 0;
 
         foreach ($borderGrid as $x => $col) {
             foreach ($col as $y => $influence) {
-                if ($influence > $threshold && isset($visionGrid[$x][$y]) && $visionGrid[$x][$y] > $territoryVision) {
+                if ($influence <= $threshold) {
+                    continue;
+                }
+
+                // Clear the owned cell itself.
+                if (isset($visionGrid[$x][$y]) && $visionGrid[$x][$y] > $territoryVision) {
                     $visionGrid[$x][$y] = $territoryVision;
+                }
+
+                // Also partially clear the 8 neighbours so coastal sea and
+                // border-adjacent cells get some visibility from territory alone.
+                for ($dx = -1; $dx <= 1; $dx++) {
+                    for ($dy = -1; $dy <= 1; $dy++) {
+                        if ($dx === 0 && $dy === 0) {
+                            continue;
+                        }
+                        $nx = $x + $dx;
+                        $ny = $y + $dy;
+                        if ($nx >= 0 && $nx <= $maxX && $ny >= 0 && $ny <= $maxY
+                            && $visionGrid[$nx][$ny] > $coastalVision
+                            && ($borderGrid[$nx][$ny] ?? 0.0) <= $threshold
+                        ) {
+                            $visionGrid[$nx][$ny] = $coastalVision;
+                        }
+                    }
                 }
             }
         }
