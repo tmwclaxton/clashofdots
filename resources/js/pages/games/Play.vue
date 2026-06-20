@@ -476,7 +476,7 @@ onUnmounted(() => {
                 <p
                     class="text-[0.55rem] font-semibold tracking-widest text-muted-foreground uppercase"
                 >
-                    War of Dots
+                    Clash of Dots
                 </p>
                 <p
                     class="font-mono text-sm leading-none font-bold tracking-widest"
