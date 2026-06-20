@@ -1011,7 +1011,6 @@ final class Environment
                     || ($troop->isShip && $troop->landTicks > 0);
 
                 if (! $isConverting && $troop->path !== []) {
-                    $target = $troop->path[0];
                     $isWater = in_array($onTerrain, ['water', 'deep_water', 'river']);
                     if ($troop->isShip && $isWater) {
                         $terrainSpeed = GameConstants::TERRAIN_SPEEDS[$onTerrain] * GameConstants::SHIP_WATER_SPEED_MULT;
@@ -1020,34 +1019,48 @@ final class Environment
                     } else {
                         $terrainSpeed = GameConstants::TERRAIN_SPEEDS[$onTerrain];
                     }
-                    [$dir] = GameMath::xyToDirDis([$target[0] - $oldPos[0], $target[1] - $oldPos[1]]);
-                    $distance = $terrainSpeed * GameConstants::TROOP_MOVEMENT_PER_TICK_SCALE;
-                    [$newOffX, $newOffY] = GameMath::dirDisToXy($dir, $distance);
-                    $newPos = [$oldPos[0] + $newOffX, $oldPos[1] + $newOffY];
 
-                    foreach ($player->troops as $otherT) {
-                        if ($otherT === $troop) {
-                            continue;
+                    // Skip leading waypoints the troop has already passed or overshot.
+                    // This prevents a brief backwards lurch when path[0] was recorded at
+                    // the troop's client-side position and the server has since moved the
+                    // troop past it.
+                    $this->prunePassedWaypoints($troop, $oldPos, $terrainSpeed);
+
+                    $target = $troop->path[0] ?? null;
+
+                    if ($target === null) {
+                        // Path emptied by pruning — treat as idle this tick.
+                        $newPos = $oldPos;
+                    } else {
+                        [$dir] = GameMath::xyToDirDis([$target[0] - $oldPos[0], $target[1] - $oldPos[1]]);
+                        $distance = $terrainSpeed * GameConstants::TROOP_MOVEMENT_PER_TICK_SCALE;
+                        [$newOffX, $newOffY] = GameMath::dirDisToXy($dir, $distance);
+                        $newPos = [$oldPos[0] + $newOffX, $oldPos[1] + $newOffY];
+
+                        foreach ($player->troops as $otherT) {
+                            if ($otherT === $troop) {
+                                continue;
+                            }
+                            [$otherX, $otherY] = $otherT->position;
+                            $oldOffX = $newPos[0] - $otherX;
+                            $oldOffY = $newPos[1] - $otherY;
+                            [$dir, $sepDist] = GameMath::xyToDirDis([$oldOffX, $oldOffY]);
+                            if ($sepDist < GameConstants::TROOP_MIN_SEPARATION) {
+                                $sepDist = GameConstants::TROOP_MIN_SEPARATION;
+                                [$newOffX, $newOffY] = GameMath::dirDisToXy($dir, $sepDist);
+                                $changeX = $newOffX - $oldOffX;
+                                $changeY = $newOffY - $oldOffY;
+                                $newPos = [$newPos[0] + $changeX, $newPos[1] + $changeY];
+                            }
                         }
-                        [$otherX, $otherY] = $otherT->position;
-                        $oldOffX = $newPos[0] - $otherX;
-                        $oldOffY = $newPos[1] - $otherY;
-                        [$dir, $sepDist] = GameMath::xyToDirDis([$oldOffX, $oldOffY]);
-                        if ($sepDist < GameConstants::TROOP_MIN_SEPARATION) {
-                            $sepDist = GameConstants::TROOP_MIN_SEPARATION;
-                            [$newOffX, $newOffY] = GameMath::dirDisToXy($dir, $sepDist);
-                            $changeX = $newOffX - $oldOffX;
-                            $changeY = $newOffY - $oldOffY;
-                            $newPos = [$newPos[0] + $changeX, $newPos[1] + $changeY];
-                        }
-                    }
 
-                    [$hitEnemy, $enemiesInRange, $onTerrain, $newPos] = $this->resolveTroopMove($player, $troop, $newPos, $enemiesInRange, $onTerrain);
+                        [$hitEnemy, $enemiesInRange, $onTerrain, $newPos] = $this->resolveTroopMove($player, $troop, $newPos, $enemiesInRange, $onTerrain);
 
-                    if (! $hitEnemy) {
-                        [$dir, $distToTarget] = GameMath::xyToDirDis([$target[0] - $troop->position[0], $target[1] - $troop->position[1]]);
-                        if ($distToTarget < ($terrainSpeed * 2)) {
-                            array_shift($troop->path);
+                        if (! $hitEnemy) {
+                            [$dir, $distToTarget] = GameMath::xyToDirDis([$target[0] - $troop->position[0], $target[1] - $troop->position[1]]);
+                            if ($distToTarget < ($terrainSpeed * 2)) {
+                                array_shift($troop->path);
+                            }
                         }
                     }
                 } else {
@@ -1745,5 +1758,40 @@ final class Environment
         }
 
         return null;
+    }
+
+    /**
+     * Remove leading waypoints from a troop's path that it has already passed
+     * or overshot. This prevents the troop from briefly reversing direction when
+     * the first waypoint was recorded at the client's last-known troop position
+     * (which the server has since moved past by the time the order arrives).
+     *
+     * A waypoint is pruned when there is a successor and either:
+     *   (a) the troop is already within one movement step of it, or
+     *   (b) the troop has overshot it: dot(troop→wp, wp→next) < 0.
+     *
+     * @param  array{0:float,1:float}  $pos  current troop position
+     */
+    private function prunePassedWaypoints(Troop $troop, array $pos, float $terrainSpeed): void
+    {
+        $stepDist = $terrainSpeed * GameConstants::TROOP_MOVEMENT_PER_TICK_SCALE;
+
+        while (count($troop->path) >= 2) {
+            [$wpX, $wpY] = $troop->path[0];
+            [$nextX, $nextY] = $troop->path[1];
+
+            [, $distToWp] = GameMath::xyToDirDis([$wpX - $pos[0], $wpY - $pos[1]]);
+
+            // Overshoot: troop is on the far side of the waypoint relative to next.
+            $toWpX = $wpX - $pos[0];
+            $toWpY = $wpY - $pos[1];
+            $overshot = ($toWpX * ($nextX - $wpX) + $toWpY * ($nextY - $wpY)) < 0;
+
+            if ($distToWp < $stepDist || $overshot) {
+                array_shift($troop->path);
+            } else {
+                break;
+            }
+        }
     }
 }
