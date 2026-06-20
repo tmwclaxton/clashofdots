@@ -158,8 +158,12 @@ final class GameConstants
         'snow' => 0.9,
     ];
 
-    /** Minimum world-unit separation enforced between any two troops during movement resolution. */
-    public const int TROOP_MIN_SEPARATION = 14;
+    /** Minimum world-unit separation enforced between any two friendly troops during movement resolution.
+     *  Infantry radius = 9wu, tank radius = 12wu; 22wu gives a small visible gap between two infantry. */
+    public const int TROOP_MIN_SEPARATION = 22;
+
+    /** Grid-cell radius around a troop within which an enemy-owned border cell suppresses healing. */
+    public const int TROOP_HEAL_ENEMY_BORDER_TILES = 5;
 
     /** World-unit radius within which a troop is considered to be occupying a city for capture. */
     public const int CITY_CAPTURE_RADIUS = 24;

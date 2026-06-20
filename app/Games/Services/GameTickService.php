@@ -8,6 +8,7 @@ use App\Games\Engine\Environment;
 use App\Games\GameConstants;
 use App\Models\Game;
 use App\Models\GameReplaySnapshot;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 final class GameTickService
@@ -18,6 +19,20 @@ final class GameTickService
             return;
         }
 
+        $lock = Cache::lock('game-state:'.$game->uuid, 5);
+        if (! $lock->get()) {
+            return;
+        }
+
+        try {
+            $this->doTick($game, $manager);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function doTick(Game $game, GameManager $manager): void
+    {
         $state = $manager->getLiveState($game);
         $manager->repairLiveStateEconomy($game, $state);
 

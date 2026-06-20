@@ -54,6 +54,7 @@ type TroopState = {
     landTicks?: number;
     warmupMultiplier?: number;
     combatMultiplier?: number;
+    isHealing?: boolean;
 };
 
 type CityState = {
@@ -481,6 +482,7 @@ export const useGameStore = defineStore('game', {
                         string,
                     ],
             );
+
 
             try {
                 const res = await fetch(orders(gameUuid).url, {

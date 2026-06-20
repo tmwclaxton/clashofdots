@@ -61,8 +61,8 @@ final class Environment
             $this->generateDefaultVision();
             $this->assignPlayers();
         }
-        $this->visionBrush = new Brush(160, 1, 0);
-        $this->cityVisionBrush = new Brush(260, 1, 0);
+        $this->visionBrush = new Brush(80, 1, 0);
+        $this->cityVisionBrush = new Brush(120, 1, 0);
         $this->borderBrush = new Brush(40, 0.05, 0);
         $this->cityBorderBrush = new Brush(80, 0.05, 0);
         $this->playersInCities = array_fill(0, count($this->cities), []);
@@ -942,31 +942,22 @@ final class Environment
 
         $this->assignTroopPathsFromOrders($pathsToApply);
 
-        // Merge vision grids between teammates (non-zero teamIndex = team play).
-        $this->mergeTeamVision();
-
+        // Territory is persistent — the border grid carries over between ticks.
+        // Re-stamp all living city and troop brushes so supply checks see the
+        // current full territory before movement runs this tick.
         foreach ($this->players as $player) {
-            $player->vision->setGrid($this->defaultVision);
-            $this->applyTerritoryVision($player);
-
             foreach ($this->cities as $city) {
                 if ($city->owner === $player) {
-                    $this->cityVisionBrush->apply($player->vision, $city->position, 0);
                     $this->cityBorderBrush->apply($player->border, $city->position, 1.0);
                 }
             }
 
-            foreach ($this->players as $otherPlayer) {
-                if ($otherPlayer === $player) {
-                    continue;
-                }
-
-                foreach ($this->cities as $city) {
-                    if ($city->owner === $otherPlayer) {
-                        $this->cityBorderBrush->apply($player->border, $city->position, 0.0);
-                    }
-                }
+            foreach ($player->troops as $troop) {
+                $this->borderBrush->apply($player->border, $troop->position, 1.0);
             }
+        }
+
+        foreach ($this->players as $player) {
 
             $toRemove = [];
 
@@ -999,6 +990,34 @@ final class Environment
                 // Healing is intentionally deferred until after combat resolution below so that
                 // $inCombat can suppress it.
                 $shouldHeal = $inSupply && $owned !== [];
+
+                // Suppress healing within TROOP_HEAL_ENEMY_BORDER_TILES grid cells of any
+                // enemy-owned border cell — troops can't recover under enemy pressure.
+                if ($shouldHeal) {
+                    $healRadius = GameConstants::TROOP_HEAL_ENEMY_BORDER_TILES;
+                    $gxMin = max(0, $tgx - $healRadius);
+                    $gxMax = min($this->gridMaxX, $tgx + $healRadius);
+                    $gyMin = max(0, $tgy - $healRadius);
+                    $gyMax = min($this->gridMaxY, $tgy + $healRadius);
+
+                    foreach ($this->players as $otherPlayer) {
+                        if ($otherPlayer === $player) {
+                            continue;
+                        }
+
+                        for ($egx = $gxMin; $egx <= $gxMax && $shouldHeal; $egx++) {
+                            for ($egy = $gyMin; $egy <= $gyMax && $shouldHeal; $egy++) {
+                                if (($otherPlayer->border->grid[$egx][$egy] ?? 0.0) >= GameConstants::TERRITORY_CLAIM_THRESHOLD) {
+                                    $shouldHeal = false;
+                                }
+                            }
+                        }
+
+                        if (! $shouldHeal) {
+                            break;
+                        }
+                    }
+                }
 
                 $enemiesInRange = [];
 
@@ -1033,25 +1052,67 @@ final class Environment
                         // Path emptied by pruning — treat as idle this tick.
                         $newPos = $oldPos;
                     } else {
-                        [$dir] = GameMath::xyToDirDis([$target[0] - $oldPos[0], $target[1] - $oldPos[1]]);
+                        [$desiredDir] = GameMath::xyToDirDis([$target[0] - $oldPos[0], $target[1] - $oldPos[1]]);
                         $distance = $terrainSpeed * GameConstants::TROOP_MOVEMENT_PER_TICK_SCALE;
-                        [$newOffX, $newOffY] = GameMath::dirDisToXy($dir, $distance);
-                        $newPos = [$oldPos[0] + $newOffX, $oldPos[1] + $newOffY];
+
+                        // Compute a steering direction that blends the desired heading with
+                        // repulsion forces from nearby friendly troops, so troops flow around
+                        // each other rather than stacking and getting stuck.
+                        $steerX = cos(deg2rad($desiredDir));
+                        $steerY = sin(deg2rad($desiredDir));
 
                         foreach ($player->troops as $otherT) {
                             if ($otherT === $troop) {
                                 continue;
                             }
-                            [$otherX, $otherY] = $otherT->position;
-                            $oldOffX = $newPos[0] - $otherX;
-                            $oldOffY = $newPos[1] - $otherY;
-                            [$dir, $sepDist] = GameMath::xyToDirDis([$oldOffX, $oldOffY]);
-                            if ($sepDist < GameConstants::TROOP_MIN_SEPARATION) {
-                                $sepDist = GameConstants::TROOP_MIN_SEPARATION;
-                                [$newOffX, $newOffY] = GameMath::dirDisToXy($dir, $sepDist);
-                                $changeX = $newOffX - $oldOffX;
-                                $changeY = $newOffY - $oldOffY;
-                                $newPos = [$newPos[0] + $changeX, $newPos[1] + $changeY];
+                            $sepX = $oldPos[0] - $otherT->position[0];
+                            $sepY = $oldPos[1] - $otherT->position[1];
+                            $sepDist = sqrt($sepX ** 2 + $sepY ** 2);
+                            $repulseRadius = GameConstants::TROOP_MIN_SEPARATION * 2.5;
+
+                            if ($sepDist < $repulseRadius && $sepDist > 0.001) {
+                                // Repulsion weight: strongest when overlapping, zero at repulseRadius.
+                                $weight = 1.0 - ($sepDist / $repulseRadius);
+                                $steerX += ($sepX / $sepDist) * $weight;
+                                $steerY += ($sepY / $sepDist) * $weight;
+                            }
+                        }
+
+                        // Normalise blended steering vector back to a direction.
+                        $steerLen = sqrt($steerX ** 2 + $steerY ** 2);
+                        if ($steerLen > 0.001) {
+                            $steerDir = rad2deg(atan2($steerY / $steerLen, $steerX / $steerLen));
+                        } else {
+                            $steerDir = $desiredDir;
+                        }
+
+                        // Try the steered direction first, then ±15 °, ±30 °, ±45 ° offsets,
+                        // then fall back to staying put if all directions are blocked.
+                        $candidates = [0, -15, 15, -30, 30, -45, 45];
+                        $newPos = $oldPos; // default: stay put if all directions blocked
+
+                        $worldW = ($this->gridMaxX + 1) * GameConstants::CELL_SIZE;
+                        $worldH = ($this->gridMaxY + 1) * GameConstants::CELL_SIZE;
+
+                        foreach ($candidates as $offset) {
+                            $tryDir = $steerDir + $offset;
+                            [$tryX, $tryY] = GameMath::dirDisToXy($tryDir, $distance);
+                            $candidate = [$oldPos[0] + $tryX, $oldPos[1] + $tryY];
+
+                            $cgx = $candidate[0] / GameConstants::CELL_SIZE;
+                            $cgy = $candidate[1] / GameConstants::CELL_SIZE;
+                            $cTerrain = $this->getTerrainName(
+                                $this->terrainMarching->getGridValue($cgx, $cgy),
+                                $this->forestMarching->getGridValue($cgx, $cgy),
+                            );
+
+                            $outOfWorld = $candidate[0] > $worldW || $candidate[0] < 0
+                                || $candidate[1] > $worldH || $candidate[1] < 0;
+                            $blockedForWade = $troop->waterMode === 'wade' && $cTerrain === 'deep_water';
+
+                            if ($cTerrain !== 'mountain' && ! $outOfWorld && ! $blockedForWade) {
+                                $newPos = $candidate;
+                                break;
                             }
                         }
 
@@ -1065,22 +1126,28 @@ final class Environment
                         }
                     }
                 } else {
+                    // Idle: apply a gentle push so stationary troops don't stack.
                     $newPos = $oldPos;
+                    $pushX = 0.0;
+                    $pushY = 0.0;
+
                     foreach ($player->troops as $otherT) {
                         if ($otherT === $troop) {
                             continue;
                         }
-                        [$otherX, $otherY] = $otherT->position;
-                        $oldOffX = $newPos[0] - $otherX;
-                        $oldOffY = $newPos[1] - $otherY;
-                        [$dir, $sepDist] = GameMath::xyToDirDis([$oldOffX, $oldOffY]);
-                        if ($sepDist < 15) {
-                            $sepDist += 0.025;
-                            [$newOffX, $newOffY] = GameMath::dirDisToXy($dir, $sepDist);
-                            $changeX = $newOffX - $oldOffX;
-                            $changeY = $newOffY - $oldOffY;
-                            $newPos = [$newPos[0] + $changeX, $newPos[1] + $changeY];
+                        $sepX = $oldPos[0] - $otherT->position[0];
+                        $sepY = $oldPos[1] - $otherT->position[1];
+                        $sepDist = sqrt($sepX ** 2 + $sepY ** 2);
+
+                        if ($sepDist < GameConstants::TROOP_MIN_SEPARATION && $sepDist > 0.001) {
+                            $pushMag = (GameConstants::TROOP_MIN_SEPARATION - $sepDist) * 0.3;
+                            $pushX += ($sepX / $sepDist) * $pushMag;
+                            $pushY += ($sepY / $sepDist) * $pushMag;
                         }
+                    }
+
+                    if ($pushX !== 0.0 || $pushY !== 0.0) {
+                        $newPos = [$oldPos[0] + $pushX, $oldPos[1] + $pushY];
                     }
 
                     [$hitEnemy, $enemiesInRange, $onTerrain, $newPos] = $this->resolveTroopMove($player, $troop, $newPos, $enemiesInRange, $onTerrain);
@@ -1128,7 +1195,8 @@ final class Environment
                 // Apply healing after combat so we can suppress it while in combat.
                 // Ships heal on water; wading troops on water do not (water damage must not be cancelled).
                 $isWading = $isWaterTerrain && $troop->waterMode === 'wade';
-                if ($shouldHeal && ! $inCombat && ! $isWading && $troop->health < $troop->maxHealth()) {
+                $troop->isHealing = $shouldHeal && ! $inCombat && ! $isWading && $troop->health < $troop->maxHealth();
+                if ($troop->isHealing) {
                     $troop->health = min($troop->maxHealth(), $troop->health + 1);
                 }
 
@@ -1163,11 +1231,6 @@ final class Environment
                     }
                 }
 
-                if ($onTerrain === 'hill') {
-                    $this->cityVisionBrush->apply($player->vision, $troop->position, 0);
-                } else {
-                    $this->visionBrush->apply($player->vision, $troop->position, 0);
-                }
                 $this->borderBrush->apply($player->border, $troop->position, 1.0);
 
                 // Hard-claim the cell the troop is physically standing on so it
@@ -1201,6 +1264,9 @@ final class Environment
             }
 
             foreach (array_reverse($toRemove) as $troop) {
+                // Erase this troop's border brush footprint so its territory
+                // doesn't linger after death.
+                $this->borderBrush->apply($player->border, $troop->position, 0.0);
                 $player->troops = array_values(array_filter(
                     $player->troops,
                     fn (Troop $t) => $t !== $troop,
@@ -1209,6 +1275,31 @@ final class Environment
         }
 
         $this->claimEnclosedNeutralCells();
+
+        // Pass 2: now that border grids are fully populated from this tick's troop
+        // and city positions, compute vision. Territory vision (BFS from owned cells)
+        // must run after the border grid is built, before troop/city vision brushes.
+        foreach ($this->players as $player) {
+            $player->vision->setGrid($this->defaultVision);
+            $this->applyTerritoryVision($player);
+
+            foreach ($this->cities as $city) {
+                if ($city->owner === $player) {
+                    $this->cityVisionBrush->apply($player->vision, $city->position, 0);
+                }
+            }
+
+            foreach ($player->troops as $troop) {
+                $onTerrain = $this->terrainNameAtWorldPosition($troop->position);
+                if ($onTerrain === 'hill') {
+                    $this->cityVisionBrush->apply($player->vision, $troop->position, 0);
+                } else {
+                    $this->visionBrush->apply($player->vision, $troop->position, 0);
+                }
+            }
+        }
+
+        $this->mergeTeamVision();
     }
 
     /**
@@ -1292,11 +1383,20 @@ final class Environment
 
         // For each unreachable neutral cell, find if exactly one player surrounds it.
         // Apply a tiny nudge toward that player — they claim it gradually over ticks.
+        // Water cells are never auto-claimed; only land can form enclosed territory.
         $nudge = 0.004; // small per-tick nudge; full claim takes ~100 ticks
 
         for ($gx = 0; $gx < $gridW; $gx++) {
             for ($gy = 0; $gy < $gridH; $gy++) {
                 if ($ownerGrid[$gx][$gy] !== -1 || $reachable[$gx][$gy]) {
+                    continue;
+                }
+
+                // Skip water cells — ocean cannot become enclosed territory.
+                $terrainVal = $this->terrainMarching->grid[$gx][$gy] ?? 0.0;
+                $forestVal = $this->forestMarching->grid[$gx][$gy] ?? 0.0;
+                $cellTerrain = $this->getTerrainName($terrainVal, $forestVal);
+                if ($cellTerrain === 'water' || $cellTerrain === 'deep_water') {
                     continue;
                 }
 
@@ -1570,6 +1670,7 @@ final class Environment
                         'landTicks' => $troop->landTicks,
                         'warmupMultiplier' => round($warmup, 3),
                         'combatMultiplier' => round($warmup * $moraleFac, 3),
+                        'isHealing' => $troop->isHealing,
                     ];
                 }
             }
@@ -1775,41 +1876,69 @@ final class Environment
         $borderGrid = $player->border->grid;
         $visionGrid = &$player->vision->grid;
         $threshold = GameConstants::TERRITORY_CLAIM_THRESHOLD;
-        // Core owned cells: dimly lit (below the 0.5 fog threshold).
-        $territoryVision = 0.35;
-        // Cells adjacent to owned territory (e.g. coastal sea): slightly dimmer.
-        $coastalVision = 0.43;
 
         $maxX = count($visionGrid) - 1;
         $maxY = $maxX >= 0 ? count($visionGrid[0]) - 1 : 0;
 
+        // How many grid cells of visibility beyond the territory border.
+        // Extra reach beyond the desired 5 visible tiles absorbs the bilinear
+        // smoothing fringe when the fog bitmap is scaled up, ensuring sea and
+        // land look equally clear at the edge.
+        $fogReach = 7;
+
+        // Vision value per step from the border edge (step 0 = owned cell).
+        // All values must be below the 0.5 fog threshold to be visible.
+        // Step 0 (owned): 0.35 — clearly lit territory.
+        // Steps 1-7 (fog fringe): fade toward 0.49 so the outermost ring fades naturally.
+        $visionAtStep = [
+            0 => 0.35,
+            1 => 0.40,
+            2 => 0.43,
+            3 => 0.45,
+            4 => 0.47,
+            5 => 0.48,
+            6 => 0.49,
+            7 => 0.49,
+        ];
+
+        // BFS outward from owned cells up to $fogReach steps.
+        // $frontier holds [x, y, step] entries.
+        $visited = [];
+        $frontier = [];
+
         foreach ($borderGrid as $x => $col) {
             foreach ($col as $y => $influence) {
-                if ($influence <= $threshold) {
-                    continue;
+                if ($influence > $threshold) {
+                    $visited[$x][$y] = 0;
+                    $frontier[] = [$x, $y, 0];
                 }
+            }
+        }
 
-                // Clear the owned cell itself.
-                if (isset($visionGrid[$x][$y]) && $visionGrid[$x][$y] > $territoryVision) {
-                    $visionGrid[$x][$y] = $territoryVision;
-                }
+        $i = 0;
+        while ($i < count($frontier)) {
+            [$cx, $cy, $step] = $frontier[$i++];
 
-                // Also partially clear the 8 neighbours so coastal sea and
-                // border-adjacent cells get some visibility from territory alone.
-                for ($dx = -1; $dx <= 1; $dx++) {
-                    for ($dy = -1; $dy <= 1; $dy++) {
-                        if ($dx === 0 && $dy === 0) {
-                            continue;
-                        }
-                        $nx = $x + $dx;
-                        $ny = $y + $dy;
-                        if ($nx >= 0 && $nx <= $maxX && $ny >= 0 && $ny <= $maxY
-                            && $visionGrid[$nx][$ny] > $coastalVision
-                            && ($borderGrid[$nx][$ny] ?? 0.0) <= $threshold
-                        ) {
-                            $visionGrid[$nx][$ny] = $coastalVision;
-                        }
-                    }
+            $vision = $visionAtStep[$step] ?? $visionAtStep[$fogReach];
+            if (isset($visionGrid[$cx][$cy]) && $visionGrid[$cx][$cy] > $vision) {
+                $visionGrid[$cx][$cy] = $vision;
+            }
+
+            if ($step >= $fogReach) {
+                continue;
+            }
+
+            $nextStep = $step + 1;
+            foreach ([[-1, 0], [1, 0], [0, -1], [0, 1]] as [$dx, $dy]) {
+                $nx = $cx + $dx;
+                $ny = $cy + $dy;
+                // Only visit each cell once — first time is always the shortest path
+                // since we seed all owned cells at step 0 simultaneously (multi-source BFS).
+                if ($nx >= 0 && $nx <= $maxX && $ny >= 0 && $ny <= $maxY
+                    && ! isset($visited[$nx][$ny])
+                ) {
+                    $visited[$nx][$ny] = $nextStep;
+                    $frontier[] = [$nx, $ny, $nextStep];
                 }
             }
         }

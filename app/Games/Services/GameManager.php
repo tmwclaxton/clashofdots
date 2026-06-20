@@ -608,25 +608,23 @@ final class GameManager
             abort(403);
         }
 
-        $state = $this->getLiveState($game);
         $slot = $player->slot;
-
         [$troopOrders] = $orders;
         $cityOrders = $orders[1] ?? [];
-        $state['playerInputs'][$slot] = $this->mergeOrdersById($state['playerInputs'][$slot] ?? [], $troopOrders);
 
-        $environment = $this->environmentFromState($state);
-        $mergedTroopPaths = [];
-        foreach ($state['playerInputs'] as $inputs) {
-            if (is_array($inputs)) {
-                $mergedTroopPaths = array_merge($mergedTroopPaths, $inputs);
-            }
+        // Acquire the same lock the tick daemon holds so orders are never
+        // interleaved with a tick write, which would cause orders to be lost.
+        $lock = Cache::lock('game-state:'.$game->uuid, 5);
+        $lock->block(5);
+
+        try {
+            $state = $this->getLiveState($game);
+            $state['playerInputs'][$slot] = $this->mergeOrdersById($state['playerInputs'][$slot] ?? [], $troopOrders);
+            $this->touchPlayerActivityInState($state, $slot);
+            $this->storeLiveState($game, $state);
+        } finally {
+            $lock->release();
         }
-        $environment->assignTroopPathsFromOrders($mergedTroopPaths);
-        $state['environment'] = $environment->toArray();
-
-        $this->touchPlayerActivityInState($state, $slot);
-        $this->storeLiveState($game, $state);
 
         GameSimLog::info('game.orders.accepted', [
             'game_uuid' => $game->uuid,

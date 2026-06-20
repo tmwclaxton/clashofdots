@@ -17,6 +17,13 @@ export const useDraftStore = defineStore('draft', {
         selectedTroopIds: [] as number[],
         /** Active line-order drawing mode. Null when no line order is in progress. */
         lineOrderMode: null as null | 'advance' | 'defend',
+        /**
+         * Group drag state: each troop's start position keyed by id.
+         * The activeDraft is drawn for the anchor troop; all others mirror it
+         * offset by the difference between their start and the anchor's start.
+         */
+        groupDragStarts: null as Map<number, Point> | null,
+        groupDragAnchorStart: null as Point | null,
     }),
     actions: {
         reset() {
@@ -24,6 +31,8 @@ export const useDraftStore = defineStore('draft', {
             this.activeDraft = null;
             this.selectedTroopIds = [];
             this.lineOrderMode = null;
+            this.groupDragStarts = null;
+            this.groupDragAnchorStart = null;
         },
         setSelection(ids: number[]) {
             this.selectedTroopIds = ids;
@@ -47,6 +56,22 @@ export const useDraftStore = defineStore('draft', {
             }
 
             this.activeDraft = { entityId, points: [start] };
+        },
+        /**
+         * Begin a group drag where all troops in `starts` follow the same drawn
+         * path, each offset from their own start position. The anchor troop is
+         * the first entry; its path becomes `activeDraft` for live preview.
+         */
+        beginGroupPath(starts: Map<number, Point>) {
+            this.finishPath();
+            this.groupDragStarts = starts;
+
+            const first = starts.entries().next().value as [number, Point] | undefined;
+            if (!first) { return; }
+
+            const [anchorId, anchorPos] = first;
+            this.groupDragAnchorStart = anchorPos;
+            this.activeDraft = { entityId: anchorId, points: [[anchorPos[0], anchorPos[1]]] };
         },
         extendPath(point: Point) {
             if (!this.activeDraft) {
@@ -76,13 +101,30 @@ export const useDraftStore = defineStore('draft', {
             }
 
             if (this.activeDraft.points.length > 1) {
-                this.draftPaths = this.draftPaths.filter(
-                    (p) => p.entityId !== this.activeDraft!.entityId,
-                );
-                this.draftPaths.push({ ...this.activeDraft });
+                if (this.groupDragStarts && this.groupDragAnchorStart) {
+                    // Commit a translated copy of the anchor path for every troop in the group.
+                    const [ax, ay] = this.groupDragAnchorStart;
+                    for (const [id, troopStart] of this.groupDragStarts) {
+                        const [ox, oy] = [troopStart[0] - ax, troopStart[1] - ay];
+                        const translated: Point[] = this.activeDraft.points.map(
+                            ([px, py]) => [px + ox, py + oy],
+                        );
+                        // Override the first point to be exactly the troop's own start.
+                        translated[0] = [troopStart[0], troopStart[1]];
+                        this.draftPaths = this.draftPaths.filter((p) => p.entityId !== id);
+                        this.draftPaths.push({ entityId: id, points: translated });
+                    }
+                } else {
+                    this.draftPaths = this.draftPaths.filter(
+                        (p) => p.entityId !== this.activeDraft!.entityId,
+                    );
+                    this.draftPaths.push({ ...this.activeDraft });
+                }
             }
 
             this.activeDraft = null;
+            this.groupDragStarts = null;
+            this.groupDragAnchorStart = null;
         },
         setWaterMode(entityId: number, mode: 'wade' | 'embark') {
             const draft = this.draftPaths.find((p) => p.entityId === entityId);
@@ -96,6 +138,8 @@ export const useDraftStore = defineStore('draft', {
             this.activeDraft = null;
             this.selectedTroopIds = [];
             this.lineOrderMode = null;
+            this.groupDragStarts = null;
+            this.groupDragAnchorStart = null;
         },
     },
 });

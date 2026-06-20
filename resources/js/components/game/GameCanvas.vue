@@ -5,6 +5,7 @@ import WaterModeModal from '@/components/game/WaterModeModal.vue';
 import { useIsDark } from '@/composables/useIsDark';
 import {
     drawCapitalAtPixel,
+    drawDamageCracks,
     drawInfantryAtPixel,
     drawOutpostAtPixel,
     drawTankAtPixel,
@@ -542,7 +543,7 @@ function draw() {
     const state = store.latestState;
 
     if (state) {
-        drawFog(ctx, state.vision, state.territory);
+        drawFog(ctx, state.vision);
         drawTerritory(ctx, state.territory, state.playerColors, state.vision);
     }
 
@@ -590,9 +591,39 @@ function draw() {
     const troops = state?.troops ?? [];
     const troopRenderPositions = separateTroopPositions(troops);
 
+    // Detect which troops are currently in melee range of an enemy.
+    const COMBAT_RANGE = 32;
+    const inCombat = new Set<number>();
+    for (const a of troops) {
+        for (const b of troops) {
+            if (a.ownerSlot === b.ownerSlot) { continue; }
+            const dp = troopDisplayPositions.get(a.id) ?? a.position;
+            const ep = troopDisplayPositions.get(b.id) ?? b.position;
+            if (Math.hypot(dp[0] - ep[0], dp[1] - ep[1]) <= COMBAT_RANGE) {
+                inCombat.add(a.id);
+                inCombat.add(b.id);
+            }
+        }
+    }
+
+    const nowMs = performance.now();
+
     for (const troop of troops) {
         const isSelected = drafts.selectedTroopIds.includes(troop.id);
-        const renderPos = troopRenderPositions.get(troop.id) ?? troopDisplayPositions.get(troop.id) ?? troop.position;
+        let renderPos = troopRenderPositions.get(troop.id) ?? troopDisplayPositions.get(troop.id) ?? troop.position;
+
+        if (inCombat.has(troop.id)) {
+            // Shake: independent x/y sine waves at slightly different frequencies
+            // seeded by troop.id so each unit shakes differently.
+            const phase = troop.id * 2.399; // golden-angle offset per troop
+            const SHAKE_AMP = 1.8;
+            const SHAKE_HZ  = 18;
+            const t = nowMs / 1000;
+            const sx = Math.sin(t * SHAKE_HZ * Math.PI * 2 + phase) * SHAKE_AMP;
+            const sy = Math.sin(t * SHAKE_HZ * Math.PI * 2 + phase + 1.1) * SHAKE_AMP;
+            renderPos = [renderPos[0] + sx, renderPos[1] + sy];
+        }
+
         drawTroop(ctx, { ...troop, position: renderPos }, isSelected);
     }
 
@@ -703,7 +734,6 @@ function draw() {
 function drawFog(
     ctx: CanvasRenderingContext2D,
     vision: number[][] | undefined,
-    territory: number[][] | undefined,
 ) {
     if (!vision?.length || !vision[0]?.length) {
         return;
@@ -712,7 +742,6 @@ function drawFog(
     const { cellSize, width, height } = store.world;
     const cols = vision.length;
     const rows = vision[0]?.length ?? 0;
-    const mySlot = store.slot;
 
     // Build a small RGBA bitmap — one pixel per grid cell.
     const fogCanvas = document.createElement('canvas');
@@ -728,12 +757,6 @@ function drawFog(
 
     for (let gx = 0; gx < cols; gx++) {
         for (let gy = 0; gy < rows; gy++) {
-            // Own territory is always clear.
-            const owner = territory?.[gx]?.[gy] ?? -1;
-            if (owner === mySlot) {
-                continue;
-            }
-
             const v = vision[gx]?.[gy] ?? ENGINE_FOREST_THRESHOLD;
 
             // Fogged = at or above threshold. All fogged cells (enemy, neutral,
@@ -747,13 +770,14 @@ function drawFog(
                 continue;
             }
 
-            // Lit cell — apply a soft fade only in the narrow band just inside
-            // the vision radius so the edge isn't a hard pixel step.
+            // Lit cell — apply a soft fade only in the narrow band just below
+            // the threshold so the fog edge isn't a hard pixel step.
+            // v=0 → fully lit (own troop/territory), v→threshold → fading to fog.
             const transitionWidth = ENGINE_FOREST_THRESHOLD * 0.4;
-            const raw = Math.max(0, Math.min(1, v / transitionWidth));
-            // raw=0 at threshold edge (full fog), raw=1 well inside (clear).
-            const clearFraction = Math.pow(raw, 1.5);
-            const fogFraction = 1 - clearFraction;
+            const edgeStart = ENGINE_FOREST_THRESHOLD - transitionWidth;
+            // t=0 when well inside lit zone (v ≤ edgeStart), t=1 at threshold edge.
+            const t = Math.max(0, Math.min(1, (v - edgeStart) / transitionWidth));
+            const fogFraction = Math.pow(t, 1.5);
 
             if (fogFraction <= 0.01) {
                 continue;
@@ -1092,6 +1116,7 @@ function drawCity(
 }
 
 type TroopDraw = {
+    id: number;
     position: [number, number];
     color: number[];
     health: number;
@@ -1102,6 +1127,7 @@ type TroopDraw = {
     waterMode?: 'wade' | 'embark';
     waterTicks?: number;
     landTicks?: number;
+    isHealing?: boolean;
 };
 
 /** Radii that match the shared mapMarkers pixel-centre functions. */
@@ -1167,6 +1193,9 @@ function drawTroop(
         drawInfantryAtPixel(ctx, x, y, fillColor, TROOP_R_INFANTRY);
     }
 
+    // Damage cracks — drawn on top of the shape, clipped to the unit circle.
+    drawDamageCracks(ctx, x, y, unitR, troop.health / maxHp, troop.id);
+
     // Embarkation pulsing ring: shown while a unit is converting to a ship.
     if (isEmbarking) {
         const alpha = 0.35 + 0.3 * Math.sin(Date.now() / 250);
@@ -1218,6 +1247,23 @@ function drawTroop(
     ctx.fillRect(x - 9, mBarY, 18, 3);
     ctx.fillStyle = '#9b59b6';
     ctx.fillRect(x - 9, mBarY, (18 * morale) / 100, 3);
+
+    // Healing indicator — small green heart top-right of the unit circle.
+    if (troop.isHealing) {
+        const hx = x + unitR - 1;
+        const hy = y - unitR + 1;
+        const hs = 5; // half-size of heart bounding box
+        ctx.save();
+        ctx.fillStyle = '#2ecc71';
+        ctx.beginPath();
+        // Heart shape via two arcs + bottom point, centred on (hx, hy).
+        ctx.moveTo(hx, hy + hs * 0.6);
+        ctx.bezierCurveTo(hx - hs * 1.4, hy - hs * 0.2, hx - hs * 1.4, hy - hs * 1.1, hx, hy - hs * 0.4);
+        ctx.bezierCurveTo(hx + hs * 1.4, hy - hs * 1.1, hx + hs * 1.4, hy - hs * 0.2, hx, hy + hs * 0.6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
 }
 
 function drawArrowPath(
@@ -1357,6 +1403,7 @@ function onMouseDown(e: MouseEvent) {
         if (drafts.selectedTroopIds.length > 1) {
             dragging = true;
 
+            const groupStarts = new Map<number, [number, number]>();
             for (const id of drafts.selectedTroopIds) {
                 const troopState = state.troops.find((t) => t.id === id);
                 const groupTroopIsEmbarking =
@@ -1369,10 +1416,19 @@ function onMouseDown(e: MouseEvent) {
                 if (groupTroopIsEmbarking || groupTroopIsDisembarking) {
                     continue;
                 }
-                // Start from the troop's actual server position, not the mouse click,
-                // so the first waypoint doesn't cause a spurious initial movement.
                 const troopPos = troopTargetPositions.get(id) ?? world;
-                drafts.beginPath(id, [troopPos[0], troopPos[1]]);
+                groupStarts.set(id, [troopPos[0], troopPos[1]]);
+            }
+            // Put the clicked troop first so it becomes the anchor.
+            if (groupStarts.has(entity.id)) {
+                const anchorPos = groupStarts.get(entity.id)!;
+                groupStarts.delete(entity.id);
+                const reordered = new Map<number, [number, number]>();
+                reordered.set(entity.id, anchorPos);
+                for (const [id, pos] of groupStarts) { reordered.set(id, pos); }
+                drafts.beginGroupPath(reordered);
+            } else {
+                drafts.beginGroupPath(groupStarts);
             }
         } else {
             drafts.clearSelection();
@@ -1442,8 +1498,11 @@ function onMouseUp() {
             const assignedIds = [...drafts.selectedTroopIds];
             distributeAlongLine(lineStart, lineCurrent, assignedIds);
 
-            // Show the water-mode modal once if any assigned path crosses water.
+            // Show the water-mode modal once if any non-ship path crosses water.
+            // Ships already know they're on water and will auto-disembark on land.
             const waterIds = assignedIds.filter((id) => {
+                const troop = store.latestState?.troops.find((t) => t.id === id);
+                if (troop?.isShip) { return false; }
                 const path = drafts.draftPaths.find((p) => p.entityId === id);
 
                 return path ? pathCrossesWater(path.points) : false;
@@ -1497,20 +1556,39 @@ function onMouseUp() {
 
     if (dragging) {
         const entityIdBeforeFinish = drafts.activeDraft?.entityId ?? null;
+        const groupIdsBeforeFinish = drafts.groupDragStarts
+            ? [...drafts.groupDragStarts.keys()]
+            : null;
         drafts.finishPath();
         dragging = false;
         scheduleRedraw();
 
         // After finishing the path, check whether any segment crosses water and
         // prompt the player to choose wade vs embark.
-        if (entityIdBeforeFinish !== null && !props.readOnly) {
-            const finished = drafts.draftPaths.find(
-                (p) => p.entityId === entityIdBeforeFinish,
-            );
-
-            if (finished && pathCrossesWater(finished.points)) {
-                waterModalEntityId = entityIdBeforeFinish;
-                waterModalVisible.value = true;
+        if (!props.readOnly) {
+            if (groupIdsBeforeFinish && groupIdsBeforeFinish.length > 0) {
+                // Group drag: check all committed paths for water crossings, skip ships.
+                const waterIds = groupIdsBeforeFinish.filter((id) => {
+                    const troop = store.latestState?.troops.find((t) => t.id === id);
+                    if (troop?.isShip) { return false; }
+                    const p = drafts.draftPaths.find((d) => d.entityId === id);
+                    return p ? pathCrossesWater(p.points) : false;
+                });
+                if (waterIds.length > 0) {
+                    waterModalGroupIds = waterIds;
+                    waterModalVisible.value = true;
+                }
+            } else if (entityIdBeforeFinish !== null) {
+                const troop = store.latestState?.troops.find((t) => t.id === entityIdBeforeFinish);
+                if (!troop?.isShip) {
+                    const finished = drafts.draftPaths.find(
+                        (p) => p.entityId === entityIdBeforeFinish,
+                    );
+                    if (finished && pathCrossesWater(finished.points)) {
+                        waterModalEntityId = entityIdBeforeFinish;
+                        waterModalVisible.value = true;
+                    }
+                }
             }
         }
     }

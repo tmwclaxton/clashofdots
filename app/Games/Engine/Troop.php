@@ -21,6 +21,13 @@ final class Troop
     public bool $isShip = false;
 
     /**
+     * Set each tick: true when this troop is actively regenerating HP this tick.
+     * False when in combat, supply-cut, wading, or within {@see GameConstants::TROOP_HEAL_ENEMY_BORDER_TILES}
+     * grid cells of an enemy border cell.  Not persisted between ticks.
+     */
+    public bool $isHealing = false;
+
+    /**
      * 'wade'   = cross water as a troop (takes damage, no ship conversion, blocked from deep_water).
      * 'embark' = convert to a ship after {@see GameConstants::SHIP_CONVERSION_TICKS} ticks.
      */
@@ -78,6 +85,7 @@ final class Troop
             'landTicks' => $this->landTicks,
             'isShip' => $this->isShip,
             'waterMode' => $this->waterMode,
+            'isHealing' => $this->isHealing,
         ];
     }
 

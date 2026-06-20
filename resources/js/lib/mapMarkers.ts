@@ -337,6 +337,78 @@ export function drawTankAtPixel(
     ctx.stroke();
 }
 
+/**
+ * Draws lightning-bolt crack lines over a troop marker to indicate damage.
+ * Cracks are seeded from `troopId` so they are stable across frames.
+ *
+ * @param healthFraction  current health / maxHealth (0–1)
+ * @param r               the troop circle radius
+ */
+export function drawDamageCracks(
+    ctx: CanvasRenderingContext2D,
+    cx: number,
+    cy: number,
+    r: number,
+    healthFraction: number,
+    troopId: number,
+): void {
+    const crackCount =
+        healthFraction < 0.33 ? 3
+        : healthFraction < 0.66 ? 2
+        : healthFraction < 0.90 ? 1
+        : 0;
+
+    if (crackCount === 0) {
+        return;
+    }
+
+    // Simple deterministic PRNG seeded by troopId so cracks are stable.
+    let seed = troopId * 2654435761;
+    function rand(): number {
+        seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+        return (seed >>> 0) / 0xffffffff;
+    }
+
+    ctx.save();
+    // Clip to the troop circle so cracks don't bleed outside.
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    const alpha = 0.55 + (1 - healthFraction) * 0.3;
+    ctx.strokeStyle = `rgba(0,0,0,${alpha.toFixed(2)})`;
+    ctx.lineWidth = Math.max(0.8, r * 0.09);
+    ctx.lineCap = 'round';
+
+    for (let i = 0; i < crackCount; i++) {
+        // Start each crack from a random point on the inner half of the circle.
+        const startAngle = rand() * Math.PI * 2;
+        const startDist = rand() * r * 0.35;
+        let x = cx + Math.cos(startAngle) * startDist;
+        let y = cy + Math.sin(startAngle) * startDist;
+
+        // Lightning bolt: 3–4 segments with random jags.
+        const segments = 3 + Math.floor(rand() * 2);
+        const baseAngle = rand() * Math.PI * 2;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+
+        for (let s = 0; s < segments; s++) {
+            const jag = (rand() - 0.5) * 1.1;
+            const angle = baseAngle + jag;
+            const segLen = (r * 0.28) + rand() * r * 0.22;
+            x += Math.cos(angle) * segLen;
+            y += Math.sin(angle) * segLen;
+            ctx.lineTo(x, y);
+        }
+
+        ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
 // ---------------------------------------------------------------------------
 // Grid-based drawing functions - used by the map editor canvas.
 // These are thin wrappers that convert (grid col, grid row, cellPx) to a
