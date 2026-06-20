@@ -188,6 +188,8 @@ final class BattlefieldFromMap
             $nextCityId,
             $nextTroopId,
         );
+
+        $environment->seedInitialBorders();
     }
 
     /**

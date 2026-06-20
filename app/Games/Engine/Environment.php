@@ -437,7 +437,7 @@ final class Environment
      * these values are persisted in the player border grids and then refined
      * each tick by the normal brushes.
      */
-    private function seedInitialBorders(): void
+    public function seedInitialBorders(): void
     {
         $troopSeedBrush = new Brush(200, 0.05, 0);
         $citySeedBrush = new Brush(350, 0.05, 0);
