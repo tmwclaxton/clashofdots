@@ -947,6 +947,7 @@ final class Environment
 
         foreach ($this->players as $player) {
             $player->vision->setGrid($this->defaultVision);
+            $this->applyTerritoryVision($player);
 
             foreach ($this->cities as $city) {
                 if ($city->owner === $player) {
@@ -1505,6 +1506,7 @@ final class Environment
     {
         foreach ($this->players as $player) {
             $player->vision->setGrid($this->defaultVision);
+            $this->applyTerritoryVision($player);
 
             foreach ($this->cities as $city) {
                 if ($city->owner === $player) {
@@ -1758,6 +1760,30 @@ final class Environment
         }
 
         return null;
+    }
+
+    /**
+     * Partially clear fog over all cells the player currently owns.
+     *
+     * Owned territory provides dim visibility (value 0.35, below the 0.5 fog
+     * threshold) so players can see what is happening inside their borders even
+     * when no troops are present. Troops and cities still paint a stronger 0
+     * (fully clear) on top of this.
+     */
+    private function applyTerritoryVision(Player $player): void
+    {
+        $borderGrid = $player->border->grid;
+        $visionGrid = &$player->vision->grid;
+        $threshold = GameConstants::TERRITORY_CLAIM_THRESHOLD;
+        $territoryVision = 0.35;
+
+        foreach ($borderGrid as $x => $col) {
+            foreach ($col as $y => $influence) {
+                if ($influence > $threshold && isset($visionGrid[$x][$y]) && $visionGrid[$x][$y] > $territoryVision) {
+                    $visionGrid[$x][$y] = $territoryVision;
+                }
+            }
+        }
     }
 
     /**
