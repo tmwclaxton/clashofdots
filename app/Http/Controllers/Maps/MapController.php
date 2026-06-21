@@ -29,6 +29,7 @@ class MapController extends Controller
     public function explore(ExploreMapsRequest $request): InertiaResponse
     {
         $filters = $request->exploreFilters();
+        $hasActiveFilters = $request->hasActiveFilters();
 
         $query = Map::query()
             ->where('published', true)
@@ -58,10 +59,10 @@ class MapController extends Controller
             $query->whereRaw("(data->>'teamCount')::int = ?", [$filters['teams']]);
         }
 
-        // Pinned geo maps — only shown when no filters are active
+        // When no filters active, fetch geo maps separately so they can be prepended
         $pinnedMaps = collect();
 
-        if (! $request->hasActiveFilters()) {
+        if (! $hasActiveFilters) {
             $pinnedMaps = Map::query()
                 ->where('published', true)
                 ->where('is_geo_map', true)
@@ -73,7 +74,6 @@ class MapController extends Controller
                 ->orderBy('name')
                 ->get();
 
-            // Exclude pinned geo maps from the main paginated results
             if ($pinnedMaps->isNotEmpty()) {
                 $query->whereNotIn('id', $pinnedMaps->pluck('id'));
             }
@@ -93,6 +93,7 @@ class MapController extends Controller
         $paginator = $query->paginate($filters['per_page'])->withQueryString();
 
         $viewerId = $request->user()?->id;
+
         $voteByMapId = [];
         if ($viewerId !== null && $paginator->isNotEmpty()) {
             $voteByMapId = MapVote::query()
@@ -114,17 +115,20 @@ class MapController extends Controller
         }
 
         return Inertia::render('MapExplore', [
-            'pinnedMaps' => $pinnedMaps->map(function (Map $map) use ($pinnedVoteByMapId) {
-                $vote = $pinnedVoteByMapId[$map->id] ?? null;
+            'maps' => Inertia::defer(function () use ($paginator, $voteByMapId, $pinnedMaps, $pinnedVoteByMapId) {
+                $pinned = $pinnedMaps->map(function (Map $map) use ($pinnedVoteByMapId) {
+                    $vote = $pinnedVoteByMapId[$map->id] ?? null;
 
-                return $this->exploreCard($map, $vote instanceof MapVote ? $vote : null);
-            })->values()->all(),
-            'maps' => Inertia::defer(function () use ($paginator, $voteByMapId) {
-                return $paginator->getCollection()->map(function (Map $map) use ($voteByMapId) {
+                    return $this->exploreCard($map, $vote instanceof MapVote ? $vote : null, true);
+                })->values()->all();
+
+                $rest = $paginator->getCollection()->map(function (Map $map) use ($voteByMapId) {
                     $vote = $voteByMapId[$map->id] ?? null;
 
-                    return $this->exploreCard($map, $vote instanceof MapVote ? $vote : null);
+                    return $this->exploreCard($map, $vote instanceof MapVote ? $vote : null, false);
                 })->values()->all();
+
+                return array_merge($pinned, $rest);
             }),
             'pagination' => Inertia::defer(function () use ($paginator) {
                 return [
@@ -303,7 +307,7 @@ class MapController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function exploreCard(Map $map, ?MapVote $viewerVote): array
+    private function exploreCard(Map $map, ?MapVote $viewerVote, bool $isPinned = false): array
     {
         $forkAttribution = null;
         if ($map->forked_from_id !== null && $map->forkedFrom !== null) {
@@ -332,6 +336,7 @@ class MapController extends Controller
             'viewerVote' => $viewerVote === null
                 ? null
                 : ($viewerVote->value === 1 ? 'like' : 'dislike'),
+            'isPinned' => $isPinned,
         ];
     }
 

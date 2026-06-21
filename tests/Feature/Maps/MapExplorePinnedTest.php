@@ -25,156 +25,117 @@ class MapExplorePinnedTest extends TestCase
         ]);
     }
 
-    public function test_pinned_maps_prop_is_empty_when_no_geo_maps_exist(): void
+    /**
+     * @param  array<string, mixed>  $query
+     * @return list<array<string, mixed>>
+     */
+    private function deferredMaps(array $query = []): array
     {
-        $this->get(route('maps.explore'))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('MapExplore')
-                ->where('pinnedMaps', [])
-            );
+        $manifest = public_path('build/manifest.json');
+        $version = file_exists($manifest) ? hash_file('xxh128', $manifest) : '';
+
+        $response = $this->get(
+            route('maps.explore', $query),
+            [
+                'X-Inertia' => 'true',
+                'X-Inertia-Version' => $version,
+                'X-Inertia-Partial-Component' => 'MapExplore',
+                'X-Inertia-Partial-Data' => 'maps,pagination',
+            ],
+        );
+
+        $response->assertOk();
+
+        /** @var array{props: array{maps: list<array<string, mixed>>}} $json */
+        $json = $response->json();
+
+        return $json['props']['maps'];
     }
 
-    public function test_geo_maps_appear_in_pinned_maps_when_no_filters(): void
+    public function test_no_maps_are_pinned_when_no_geo_maps_exist(): void
+    {
+        $maps = $this->deferredMaps();
+
+        $this->assertEmpty(array_filter($maps, fn ($m) => $m['isPinned']));
+    }
+
+    public function test_geo_maps_have_is_pinned_true_when_no_filters(): void
     {
         $admin = $this->adminUser();
-        $europe = $this->createGeoMap($admin, 'Europe');
-        $world = $this->createGeoMap($admin, 'The World');
+        $this->createGeoMap($admin, 'Europe');
+        $this->createGeoMap($admin, 'The World');
 
-        $this->get(route('maps.explore'))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('MapExplore')
-                ->has('pinnedMaps', 2)
-            );
+        $maps = $this->deferredMaps();
+
+        $pinned = array_filter($maps, fn ($m) => $m['isPinned']);
+        $this->assertCount(2, $pinned);
     }
 
-    public function test_pinned_maps_are_ordered_by_name(): void
+    public function test_geo_maps_appear_first_ordered_by_name(): void
     {
         $admin = $this->adminUser();
         $this->createGeoMap($admin, 'The World');
         $this->createGeoMap($admin, 'Europe');
         $this->createGeoMap($admin, 'North America');
 
-        $this->get(route('maps.explore'))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('MapExplore')
-                ->has('pinnedMaps', 3)
-                ->where('pinnedMaps.0.name', 'Europe')
-                ->where('pinnedMaps.1.name', 'North America')
-                ->where('pinnedMaps.2.name', 'The World')
-            );
+        $maps = $this->deferredMaps();
+
+        $this->assertEquals('Europe', $maps[0]['name']);
+        $this->assertEquals('North America', $maps[1]['name']);
+        $this->assertEquals('The World', $maps[2]['name']);
+        $this->assertTrue($maps[0]['isPinned']);
+        $this->assertTrue($maps[1]['isPinned']);
+        $this->assertTrue($maps[2]['isPinned']);
     }
 
-    public function test_pinned_maps_are_hidden_when_text_filter_active(): void
+    public function test_geo_maps_not_pinned_when_text_filter_active(): void
     {
         $admin = $this->adminUser();
         $this->createGeoMap($admin, 'Europe');
 
-        $this->get(route('maps.explore', ['q' => 'battle']))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('pinnedMaps', [])
-            );
+        $maps = $this->deferredMaps(['q' => 'Europe']);
+
+        foreach ($maps as $map) {
+            $this->assertFalse($map['isPinned']);
+        }
     }
 
-    public function test_pinned_maps_are_hidden_when_author_filter_active(): void
+    public function test_geo_maps_not_pinned_when_author_filter_active(): void
     {
         $admin = $this->adminUser();
         $this->createGeoMap($admin, 'Europe');
 
-        $this->get(route('maps.explore', ['author' => 'someone']))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('pinnedMaps', [])
-            );
+        $maps = $this->deferredMaps(['author' => 'someone']);
+
+        $this->assertEmpty($maps);
     }
 
-    public function test_pinned_maps_are_hidden_when_uuid_filter_active(): void
+    public function test_geo_maps_not_pinned_when_sort_is_not_newest(): void
     {
         $admin = $this->adminUser();
         $this->createGeoMap($admin, 'Europe');
 
-        $user = User::factory()->create();
-        $other = Map::factory()->for($user)->published()->create(['name' => 'Other Map']);
+        $maps = $this->deferredMaps(['sort' => 'most_games']);
 
-        $this->get(route('maps.explore', ['uuid' => $other->uuid]))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('pinnedMaps', [])
-            );
+        foreach ($maps as $map) {
+            $this->assertFalse($map['isPinned']);
+        }
     }
 
-    public function test_pinned_maps_are_hidden_when_sort_is_not_newest(): void
+    public function test_geo_maps_prepended_before_regular_maps_when_no_filters(): void
     {
-        $admin = $this->adminUser();
-        $this->createGeoMap($admin, 'Europe');
-
-        $this->get(route('maps.explore', ['sort' => 'most_games']))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('pinnedMaps', [])
-            );
-    }
-
-    public function test_geo_maps_are_excluded_from_main_paginated_results_when_pinned(): void
-    {
-        $manifest = public_path('build/manifest.json');
-        $version = file_exists($manifest) ? hash_file('xxh128', $manifest) : '';
-
         $admin = $this->adminUser();
         $this->createGeoMap($admin, 'Europe');
 
         $regular = User::factory()->create();
         Map::factory()->for($regular)->published()->create(['name' => 'Regular Map']);
 
-        $response = $this->get(
-            route('maps.explore'),
-            [
-                'X-Inertia' => 'true',
-                'X-Inertia-Version' => $version,
-                'X-Inertia-Partial-Component' => 'MapExplore',
-                'X-Inertia-Partial-Data' => 'maps,pagination',
-            ],
-        );
+        $maps = $this->deferredMaps();
 
-        $response->assertOk();
-
-        /** @var array{props: array{maps: list<array<string, mixed>>, pagination: array<string, mixed>}} $json */
-        $json = $response->json();
-        $maps = $json['props']['maps'];
-
-        $this->assertCount(1, $maps);
-        $this->assertEquals('Regular Map', $maps[0]['name']);
-    }
-
-    public function test_geo_maps_appear_in_main_results_when_filters_applied(): void
-    {
-        $manifest = public_path('build/manifest.json');
-        $version = file_exists($manifest) ? hash_file('xxh128', $manifest) : '';
-
-        $admin = $this->adminUser();
-        $this->createGeoMap($admin, 'Europe');
-
-        $response = $this->get(
-            route('maps.explore', ['q' => 'Europe']),
-            [
-                'X-Inertia' => 'true',
-                'X-Inertia-Version' => $version,
-                'X-Inertia-Partial-Component' => 'MapExplore',
-                'X-Inertia-Partial-Data' => 'maps,pagination',
-            ],
-        );
-
-        $response->assertOk();
-
-        /** @var array{props: array{maps: list<array<string, mixed>>, pagination: array<string, mixed>}} $json */
-        $json = $response->json();
-        $maps = $json['props']['maps'];
-
-        $this->assertCount(1, $maps);
         $this->assertEquals('Europe', $maps[0]['name']);
+        $this->assertTrue($maps[0]['isPinned']);
+        $this->assertEquals('Regular Map', $maps[1]['name']);
+        $this->assertFalse($maps[1]['isPinned']);
     }
 
     public function test_non_geo_published_maps_are_never_pinned(): void
@@ -185,10 +146,21 @@ class MapExplorePinnedTest extends TestCase
             'is_geo_map' => false,
         ]);
 
+        $maps = $this->deferredMaps();
+
+        foreach ($maps as $map) {
+            $this->assertFalse($map['isPinned']);
+        }
+    }
+
+    public function test_explore_page_renders_without_pinnedmaps_prop(): void
+    {
         $this->get(route('maps.explore'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('pinnedMaps', [])
+                ->component('MapExplore')
+                ->missing('pinnedMaps')
+                ->has('filters')
             );
     }
 }
