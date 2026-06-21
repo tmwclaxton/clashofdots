@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, Github, Swords, Trophy, Users } from 'lucide-vue-next';
+import DiscordIcon from '@/components/DiscordIcon.vue';
 import GameLogoMark from '@/components/GameLogoMark.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { GITHUB_REPOSITORY_URL } from '@/lib/site';
+import { DISCORD_SERVER_URL, GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { cn } from '@/lib/utils';
 import { login, wiki } from '@/routes';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
@@ -96,6 +97,22 @@ const steps = [
                         class="flex w-full min-w-0 flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2"
                     >
                         <ThemeToggle />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            as-child
+                            class="shrink-0 px-2 sm:px-3"
+                        >
+                            <a
+                                :href="DISCORD_SERVER_URL"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="Join the Discord server"
+                            >
+                                <DiscordIcon class="size-4" />
+                                <span class="hidden sm:inline">Discord</span>
+                            </a>
+                        </Button>
                         <Button
                             variant="outline"
                             size="sm"

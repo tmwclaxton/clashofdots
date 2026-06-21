@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
+import DiscordIcon from '@/components/DiscordIcon.vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import GameLogoMark from '@/components/GameLogoMark.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,6 +37,7 @@ import { avatarUrl, resolveAvatarSeed } from '@/composables/useAvatar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
+import { DISCORD_SERVER_URL, GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { index as lobbies } from '@/routes/lobbies';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
@@ -64,8 +66,13 @@ const mainNavItems = computed<NavItem[]>(() => [
 
 const rightNavItems: NavItem[] = [
     {
+        title: 'Discord',
+        href: DISCORD_SERVER_URL,
+        icon: DiscordIcon,
+    },
+    {
         title: 'GitHub',
-        href: 'https://github.com/tmwclaxton/clashofdots',
+        href: GITHUB_REPOSITORY_URL,
         icon: Folder,
     },
 ];

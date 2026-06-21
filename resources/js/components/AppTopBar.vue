@@ -13,6 +13,7 @@ import {
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import FactionSwatches from '@/components/FactionSwatches.vue';
+import DiscordIcon from '@/components/DiscordIcon.vue';
 import GameLogoMark from '@/components/GameLogoMark.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,7 +27,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { avatarUrl, resolveAvatarSeed } from '@/composables/useAvatar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
-import { GITHUB_REPOSITORY_URL } from '@/lib/site';
+import { DISCORD_SERVER_URL, GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { home, login, mapBuilder, wiki } from '@/routes';
 import { index as leaderboard } from '@/routes/leaderboard';
 import { index as lobbies } from '@/routes/lobbies';
@@ -110,6 +111,21 @@ const navItems = computed<NavItem[]>(() => {
 
             <div class="flex shrink-0 items-center gap-2">
                 <ThemeToggle />
+                <Button
+                    variant="outline"
+                    size="sm"
+                    as-child
+                    class="rounded-none"
+                >
+                    <a
+                        :href="DISCORD_SERVER_URL"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Join the Discord server"
+                    >
+                        <DiscordIcon class="size-4" />
+                    </a>
+                </Button>
                 <Button
                     variant="outline"
                     size="sm"
