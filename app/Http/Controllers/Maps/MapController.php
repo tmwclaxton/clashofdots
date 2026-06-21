@@ -33,9 +33,9 @@ class MapController extends Controller
         $query = Map::query()
             ->where('published', true)
             ->with([
-                'user:id,name',
+                'user:id,name,game_display_name,profile_uuid',
                 'forkedFrom:id,uuid,name,user_id',
-                'forkedFrom.user:id,name',
+                'forkedFrom.user:id,name,game_display_name,profile_uuid',
             ]);
 
         if ($filters['q'] !== '') {
@@ -66,9 +66,9 @@ class MapController extends Controller
                 ->where('published', true)
                 ->where('is_geo_map', true)
                 ->with([
-                    'user:id,name',
+                    'user:id,name,game_display_name,profile_uuid',
                     'forkedFrom:id,uuid,name,user_id',
-                    'forkedFrom.user:id,name',
+                    'forkedFrom.user:id,name,game_display_name,profile_uuid',
                 ])
                 ->orderBy('name')
                 ->get();
@@ -296,7 +296,7 @@ class MapController extends Controller
             ->first();
 
         return response()->json([
-            'map' => $this->exploreCard($map->fresh(['user:id,name', 'forkedFrom:id,uuid,name,user_id', 'forkedFrom.user:id,name']), $viewerVote),
+            'map' => $this->exploreCard($map->fresh(['user:id,name,game_display_name', 'forkedFrom:id,uuid,name,user_id', 'forkedFrom.user:id,name,game_display_name']), $viewerVote),
         ]);
     }
 
@@ -309,7 +309,8 @@ class MapController extends Controller
         if ($map->forked_from_id !== null && $map->forkedFrom !== null) {
             $forkAttribution = [
                 'parentName' => $map->forkedFrom->name,
-                'parentAuthorName' => $map->forkedFrom->user?->name ?? 'Unknown',
+                'parentAuthorName' => $map->forkedFrom->user?->game_display_name ?? $map->forkedFrom->user?->name ?? 'Unknown',
+                'parentAuthorProfileUuid' => $map->forkedFrom->user?->profile_uuid,
                 'parentUuid' => $map->forkedFrom->uuid,
             ];
         }
@@ -317,8 +318,9 @@ class MapController extends Controller
         return [
             'uuid' => $map->uuid,
             'name' => $map->name,
-            'ownerName' => $map->user?->name ?? 'Unknown',
+            'ownerName' => $map->user?->game_display_name ?? $map->user?->name ?? 'Unknown',
             'ownerId' => $map->user_id,
+            'ownerProfileUuid' => $map->user?->profile_uuid,
             'teamCount' => (int) ($map->data['teamCount'] ?? 0),
             'data' => $map->data,
             'gamesCount' => $map->games_count,

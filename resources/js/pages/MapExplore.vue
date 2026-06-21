@@ -16,6 +16,7 @@ import type { MapDataPayload } from '@/lib/mapEditorGrid';
 import { login, mapBuilder } from '@/routes';
 import { store as createGame } from '@/routes/games';
 import { explore as mapsExplore, fork, vote } from '@/routes/maps';
+import { show as profileShow } from '@/routes/profiles';
 import { useToastStore } from '@/stores/toastStore';
 
 export type ExploreMapCard = {
@@ -23,6 +24,7 @@ export type ExploreMapCard = {
     name: string;
     ownerName: string;
     ownerId: number;
+    ownerProfileUuid: string | null;
     teamCount: number;
     data: MapDataPayload;
     gamesCount: number;
@@ -33,6 +35,7 @@ export type ExploreMapCard = {
     forkAttribution: null | {
         parentName: string;
         parentAuthorName: string;
+        parentAuthorProfileUuid: string | null;
         parentUuid: string;
     };
     viewerVote: 'like' | 'dislike' | null;
@@ -521,17 +524,6 @@ const sortOptions = [
             v-if="pinnedCards.length > 0"
             class="flex flex-col gap-4"
         >
-            <div class="flex items-center gap-2">
-                <span
-                    class="inline-flex items-center gap-1.5 rounded-full border border-foreground/20 bg-muted/60 px-2.5 py-0.5 text-xs font-semibold tracking-wide uppercase"
-                >
-                    Featured
-                </span>
-                <p class="text-xs text-muted-foreground">
-                    Official real-world maps
-                </p>
-            </div>
-
             <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 <article
                     v-for="m in pinnedCards"
@@ -559,7 +551,13 @@ const sortOptions = [
                             </Link>
                         </h2>
                         <p class="mt-1 text-xs text-muted-foreground">
-                            By {{ m.ownerName }}
+                            By
+                            <Link
+                                v-if="m.ownerProfileUuid"
+                                :href="profileShow.url(m.ownerProfileUuid)"
+                                class="font-medium text-foreground hover:underline"
+                            >{{ m.ownerName }}</Link>
+                            <span v-else>{{ m.ownerName }}</span>
                         </p>
                     </div>
 
@@ -727,7 +725,13 @@ const sortOptions = [
                         </Link>
                     </h2>
                     <p class="mt-1 text-xs text-muted-foreground">
-                        By {{ m.ownerName }}
+                        By
+                        <Link
+                            v-if="m.ownerProfileUuid"
+                            :href="profileShow.url(m.ownerProfileUuid)"
+                            class="font-medium text-foreground hover:underline"
+                        >{{ m.ownerName }}</Link>
+                        <span v-else>{{ m.ownerName }}</span>
                         <span
                             v-if="m.publishedAt"
                             class="text-muted-foreground/80"
@@ -744,7 +748,13 @@ const sortOptions = [
                         <span class="font-medium text-foreground">{{
                             m.forkAttribution.parentName
                         }}</span>
-                        by {{ m.forkAttribution.parentAuthorName }}
+                        by
+                        <Link
+                            v-if="m.forkAttribution.parentAuthorProfileUuid"
+                            :href="profileShow.url(m.forkAttribution.parentAuthorProfileUuid)"
+                            class="font-medium text-foreground hover:underline"
+                        >{{ m.forkAttribution.parentAuthorName }}</Link>
+                        <span v-else>{{ m.forkAttribution.parentAuthorName }}</span>
                     </p>
                 </div>
 
