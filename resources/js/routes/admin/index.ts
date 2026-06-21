@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
+* @see app/Http/Controllers/Admin/OverviewController.php:17
 * @route '/admin'
 */
 export const overview = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ overview.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
+* @see app/Http/Controllers/Admin/OverviewController.php:17
 * @route '/admin'
 */
 overview.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ overview.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
+* @see app/Http/Controllers/Admin/OverviewController.php:17
 * @route '/admin'
 */
 overview.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ overview.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
+* @see app/Http/Controllers/Admin/OverviewController.php:17
 * @route '/admin'
 */
 overview.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ overview.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
+* @see app/Http/Controllers/Admin/OverviewController.php:17
 * @route '/admin'
 */
 const overviewForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ const overviewForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
+* @see app/Http/Controllers/Admin/OverviewController.php:17
 * @route '/admin'
 */
 overviewForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -65,7 +65,7 @@ overviewForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => 
 
 /**
 * @see \App\Http\Controllers\Admin\OverviewController::__invoke
-* @see app/Http/Controllers/Admin/OverviewController.php:16
+* @see app/Http/Controllers/Admin/OverviewController.php:17
 * @route '/admin'
 */
 overviewForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,9 +136,66 @@ seedFakeDataForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post
 
 seedFakeData.form = seedFakeDataForm
 
+/**
+* @see \App\Http\Controllers\Admin\CreateGeoMapsController::__invoke
+* @see app/Http/Controllers/Admin/CreateGeoMapsController.php:13
+* @route '/admin/create-geo-maps'
+*/
+export const createGeoMaps = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: createGeoMaps.url(options),
+    method: 'post',
+})
+
+createGeoMaps.definition = {
+    methods: ["post"],
+    url: '/admin/create-geo-maps',
+} satisfies RouteDefinition<["post"]>
+
+/**
+* @see \App\Http\Controllers\Admin\CreateGeoMapsController::__invoke
+* @see app/Http/Controllers/Admin/CreateGeoMapsController.php:13
+* @route '/admin/create-geo-maps'
+*/
+createGeoMaps.url = (options?: RouteQueryOptions) => {
+    return createGeoMaps.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\Admin\CreateGeoMapsController::__invoke
+* @see app/Http/Controllers/Admin/CreateGeoMapsController.php:13
+* @route '/admin/create-geo-maps'
+*/
+createGeoMaps.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+    url: createGeoMaps.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Admin\CreateGeoMapsController::__invoke
+* @see app/Http/Controllers/Admin/CreateGeoMapsController.php:13
+* @route '/admin/create-geo-maps'
+*/
+const createGeoMapsForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: createGeoMaps.url(options),
+    method: 'post',
+})
+
+/**
+* @see \App\Http\Controllers\Admin\CreateGeoMapsController::__invoke
+* @see app/Http/Controllers/Admin/CreateGeoMapsController.php:13
+* @route '/admin/create-geo-maps'
+*/
+createGeoMapsForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    action: createGeoMaps.url(options),
+    method: 'post',
+})
+
+createGeoMaps.form = createGeoMapsForm
+
 const admin = {
     overview: Object.assign(overview, overview),
     seedFakeData: Object.assign(seedFakeData, seedFakeData),
+    createGeoMaps: Object.assign(createGeoMaps, createGeoMaps),
 }
 
 export default admin

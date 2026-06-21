@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\GameStatus;
 use App\Http\Controllers\Controller;
+use App\Maps\GeoMapGenerator;
 use App\Models\Game;
 use App\Models\Map;
 use App\Models\MapVote;
@@ -17,7 +18,30 @@ class OverviewController extends Controller
     {
         return Inertia::render('admin/Overview', [
             'stats' => $this->liveStats(),
+            'geoMapsStatus' => $this->geoMapsStatus(),
         ]);
+    }
+
+    /**
+     * Returns which geo maps have already been published.
+     *
+     * @return array<string, bool>
+     */
+    private function geoMapsStatus(): array
+    {
+        $existing = Map::query()
+            ->where('is_geo_map', true)
+            ->where('published', true)
+            ->pluck('name')
+            ->all();
+
+        $status = [];
+
+        foreach (GeoMapGenerator::TYPES as $type => $label) {
+            $status[$type] = in_array($label, $existing, true);
+        }
+
+        return $status;
     }
 
     /**

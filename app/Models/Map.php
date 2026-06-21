@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
     'data',
     'published',
     'published_at',
+    'is_geo_map',
     'forked_from_id',
 ])]
 class Map extends Model
@@ -79,6 +80,7 @@ class Map extends Model
             'data' => 'array',
             'published' => 'boolean',
             'published_at' => 'datetime',
+            'is_geo_map' => 'boolean',
         ];
     }
 

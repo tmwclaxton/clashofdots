@@ -70,4 +70,19 @@ class ExploreMapsRequest extends FormRequest
             'teams' => $teams,
         ];
     }
+
+    /**
+     * Returns true when the user has applied any search filter or non-default sort,
+     * which suppresses the pinned geo maps section on the explore page.
+     */
+    public function hasActiveFilters(): bool
+    {
+        $filters = $this->exploreFilters();
+
+        return $filters['q'] !== ''
+            || $filters['author'] !== ''
+            || $filters['uuid'] !== ''
+            || $filters['teams'] !== null
+            || $filters['sort'] !== 'newest';
+    }
 }

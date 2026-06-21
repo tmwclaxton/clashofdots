@@ -10,6 +10,8 @@ import {
     Users,
     Wand2,
 } from 'lucide-vue-next';
+import { computed } from 'vue';
+import CreateGeoMapsController from '@/actions/App/Http/Controllers/Admin/CreateGeoMapsController';
 import SeedFakeDataController from '@/actions/App/Http/Controllers/Admin/SeedFakeDataController';
 import Heading from '@/components/Heading.vue';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +57,7 @@ type ActivityItem = {
     time: string;
 };
 
-defineProps<{
+const props = defineProps<{
     stats: {
         summary: SummaryStats;
         games: GameStats;
@@ -64,6 +66,7 @@ defineProps<{
         topMaps: TopMap[];
         recentActivity: ActivityItem[];
     };
+    geoMapsStatus: Record<string, boolean>;
 }>();
 
 function formatNumber(value: number): string {
@@ -78,6 +81,10 @@ const activityColors: Record<string, string> = {
     map_forked: 'bg-wod-faction-purple',
     user_joined: 'bg-wod-faction-orange',
 };
+
+const allGeoMapsExist = computed(() =>
+    Object.values(props.geoMapsStatus).every(Boolean),
+);
 </script>
 
 <template>
@@ -90,32 +97,79 @@ const activityColors: Record<string, string> = {
                 description="Platform health at a glance. Placeholder figures until live queries are wired up."
             />
 
-            <Form
-                v-bind="SeedFakeDataController.form()"
-                #default="{ processing, wasSuccessful }"
-            >
-                <div>
-                    <Button
-                        type="submit"
-                        variant="outline"
-                        :disabled="processing"
-                        class="gap-2"
-                    >
-                        <Wand2 class="size-4" />
-                        {{
-                            processing
-                                ? 'Generating…'
-                                : 'Generate fake accounts'
-                        }}
-                    </Button>
-                    <p
-                        v-if="wasSuccessful"
-                        class="mt-1.5 text-sm text-muted-foreground"
-                    >
-                        10 fake accounts + maps created.
-                    </p>
-                </div>
-            </Form>
+            <div class="flex flex-wrap items-start gap-3">
+                <Form
+                    v-bind="SeedFakeDataController.form()"
+                    #default="{ processing, wasSuccessful }"
+                >
+                    <div>
+                        <Button
+                            type="submit"
+                            variant="outline"
+                            :disabled="processing"
+                            class="gap-2"
+                        >
+                            <Wand2 class="size-4" />
+                            {{
+                                processing
+                                    ? 'Generating…'
+                                    : 'Generate fake accounts'
+                            }}
+                        </Button>
+                        <p
+                            v-if="wasSuccessful"
+                            class="mt-1.5 text-sm text-muted-foreground"
+                        >
+                            10 fake accounts + maps created.
+                        </p>
+                    </div>
+                </Form>
+
+                <Form
+                    v-bind="CreateGeoMapsController.form()"
+                    #default="{ processing, wasSuccessful }"
+                >
+                    <div>
+                        <Button
+                            type="submit"
+                            variant="outline"
+                            :disabled="processing || allGeoMapsExist"
+                            class="gap-2"
+                        >
+                            <Globe2 class="size-4" />
+                            {{
+                                processing
+                                    ? 'Generating…'
+                                    : allGeoMapsExist
+                                      ? 'Geo maps created'
+                                      : 'Create geo maps'
+                            }}
+                        </Button>
+                        <p
+                            v-if="wasSuccessful"
+                            class="mt-1.5 text-sm text-muted-foreground"
+                        >
+                            Geo maps published.
+                        </p>
+                        <ul
+                            v-if="!allGeoMapsExist"
+                            class="mt-1.5 space-y-0.5 text-xs text-muted-foreground"
+                        >
+                            <li
+                                v-for="(exists, type) in geoMapsStatus"
+                                :key="type"
+                                class="flex items-center gap-1"
+                            >
+                                <span
+                                    class="inline-block size-1.5 rounded-full"
+                                    :class="exists ? 'bg-green-500' : 'bg-muted-foreground/40'"
+                                />
+                                {{ type === 'europe' ? 'Europe' : type === 'north_america' ? 'North America' : 'The World' }}
+                            </li>
+                        </ul>
+                    </div>
+                </Form>
+            </div>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

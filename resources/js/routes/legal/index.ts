@@ -1,4 +1,4 @@
-import { queryParams, type RouteQueryOptions, type RouteDefinition } from './../../wayfinder'
+import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \Inertia\Controller::__invoke
 * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
@@ -46,6 +46,43 @@ terms.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 /**
 * @see \Inertia\Controller::__invoke
 * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/terms'
+*/
+const termsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: terms.url(options),
+    method: 'get',
+})
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/terms'
+*/
+termsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: terms.url(options),
+    method: 'get',
+})
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/terms'
+*/
+termsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: terms.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+terms.form = termsForm
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
 * @route '/privacy'
 */
 export const privacy = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -86,6 +123,43 @@ privacy.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: privacy.url(options),
     method: 'head',
 })
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/privacy'
+*/
+const privacyForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: privacy.url(options),
+    method: 'get',
+})
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/privacy'
+*/
+privacyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: privacy.url(options),
+    method: 'get',
+})
+
+/**
+* @see \Inertia\Controller::__invoke
+* @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+* @route '/privacy'
+*/
+privacyForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: privacy.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+privacy.form = privacyForm
 
 const legal = {
     terms: Object.assign(terms, terms),

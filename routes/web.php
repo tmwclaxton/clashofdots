@@ -1,6 +1,7 @@
 <?php
 
 use App\Game\GameSpecs;
+use App\Http\Controllers\Admin\CreateGeoMapsController;
 use App\Http\Controllers\Admin\OverviewController;
 use App\Http\Controllers\Admin\SeedFakeDataController;
 use App\Http\Controllers\Games\GameController;
@@ -29,6 +30,7 @@ Route::get('profiles/{profile:profile_uuid}', [ProfileController::class, 'show']
 Route::middleware(['auth', 'admin'])->group(function (): void {
     Route::get('admin', OverviewController::class)->name('admin.overview');
     Route::post('admin/seed-fake-data', SeedFakeDataController::class)->name('admin.seed-fake-data');
+    Route::post('admin/create-geo-maps', CreateGeoMapsController::class)->name('admin.create-geo-maps');
 });
 
 Route::middleware(['guest.game'])->group(function () {

@@ -63,6 +63,7 @@ const props = defineProps<{
     maps: ExploreMapCard[] | undefined;
     pagination: ExplorePagination | undefined;
     filters: ExploreFilters;
+    pinnedMaps: ExploreMapCard[];
 }>();
 
 const page = usePage();
@@ -102,6 +103,18 @@ watch(
     (m) => {
         if (m) {
             cards.value = m.map((row) => ({ ...row }));
+        }
+    },
+    { deep: true },
+);
+
+const pinnedCards = ref<ExploreMapCard[]>(props.pinnedMaps ? [...props.pinnedMaps] : []);
+
+watch(
+    () => props.pinnedMaps,
+    (m) => {
+        if (m) {
+            pinnedCards.value = m.map((row) => ({ ...row }));
         }
     },
     { deep: true },
@@ -245,6 +258,12 @@ function mergeCard(uuid: string, next: ExploreMapCard): void {
 
     if (i !== -1) {
         cards.value[i] = next;
+    }
+
+    const j = pinnedCards.value.findIndex((c) => c.uuid === uuid);
+
+    if (j !== -1) {
+        pinnedCards.value[j] = next;
     }
 }
 
@@ -496,6 +515,133 @@ const sortOptions = [
             >{{ pagination ? pagination.total : '0' }}</span>
             published maps
         </p>
+
+        <!-- Featured geo maps — only shown when no filters are active -->
+        <section
+            v-if="pinnedCards.length > 0"
+            class="flex flex-col gap-4"
+        >
+            <div class="flex items-center gap-2">
+                <span
+                    class="inline-flex items-center gap-1.5 rounded-full border border-foreground/20 bg-muted/60 px-2.5 py-0.5 text-xs font-semibold tracking-wide uppercase"
+                >
+                    Featured
+                </span>
+                <p class="text-xs text-muted-foreground">
+                    Official real-world maps
+                </p>
+            </div>
+
+            <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                <article
+                    v-for="m in pinnedCards"
+                    :key="m.uuid"
+                    class="wod-panel flex flex-col gap-3 border-foreground/30 p-4"
+                >
+                    <Link
+                        :href="mapBuilder.url(m.uuid)"
+                        class="group block overflow-hidden rounded-md ring-offset-background transition outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        title="View in map builder (read-only)"
+                    >
+                        <MapExplorePreview
+                            class="transition group-hover:opacity-95"
+                            :data="m.data"
+                        />
+                    </Link>
+
+                    <div>
+                        <h2 class="leading-tight font-bold">
+                            <Link
+                                :href="mapBuilder.url(m.uuid)"
+                                class="rounded-sm ring-offset-background transition outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            >
+                                {{ m.name }}
+                            </Link>
+                        </h2>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            By {{ m.ownerName }}
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span
+                            class="inline-flex items-center gap-1 rounded border border-foreground/20 bg-muted/50 px-1.5 py-0.5 text-xs font-semibold"
+                        >
+                            <Flag class="size-3 shrink-0" aria-hidden="true" />
+                            {{ m.teamCount }}
+                            {{ m.teamCount === 1 ? 'team' : 'teams' }}
+                        </span>
+                        <span class="text-xs text-muted-foreground">{{ m.gamesCount }} games · {{ m.forksCount }} forks · {{ m.likesCount }} likes / {{ m.dislikesCount }} dislikes</span>
+                    </div>
+
+                    <div
+                        class="mt-auto flex flex-col gap-2 border-t border-foreground/10 pt-3 sm:flex-row sm:flex-wrap"
+                    >
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            class="w-full gap-1 sm:w-auto"
+                            as-child
+                        >
+                            <Link
+                                :href="mapBuilder.url(m.uuid)"
+                                title="View in map builder (read-only)"
+                            >
+                                View in builder
+                            </Link>
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            class="w-full gap-1 sm:w-auto"
+                            @click="copyToBuilder(m)"
+                        >
+                            <Copy class="size-3.5" />
+                            Copy to my maps
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            class="w-full gap-1 sm:w-auto"
+                            @click="startLobby(m)"
+                        >
+                            <Users class="size-3.5" />
+                            Start lobby
+                        </Button>
+                        <div
+                            class="flex items-center justify-center gap-1 sm:ml-auto sm:justify-end"
+                        >
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                class="size-8"
+                                :class="m.viewerVote === 'like' ? 'border-green-500 text-green-700 dark:text-green-400' : ''"
+                                :title="auth.user ? 'Like' : 'Sign in to like'"
+                                @click="toggleLike(m)"
+                            >
+                                <ThumbsUp class="size-4" />
+                            </Button>
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant="outline"
+                                class="size-8"
+                                :class="m.viewerVote === 'dislike' ? 'border-red-500 text-red-700 dark:text-red-400' : ''"
+                                :title="auth.user ? 'Dislike' : 'Sign in to dislike'"
+                                @click="toggleDislike(m)"
+                            >
+                                <ThumbsDown class="size-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <hr class="border-foreground/10" />
+        </section>
 
         <div
             v-if="maps === undefined"

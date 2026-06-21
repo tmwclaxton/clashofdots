@@ -58,6 +58,27 @@ class MapController extends Controller
             $query->whereRaw("(data->>'teamCount')::int = ?", [$filters['teams']]);
         }
 
+        // Pinned geo maps — only shown when no filters are active
+        $pinnedMaps = collect();
+
+        if (! $request->hasActiveFilters()) {
+            $pinnedMaps = Map::query()
+                ->where('published', true)
+                ->where('is_geo_map', true)
+                ->with([
+                    'user:id,name',
+                    'forkedFrom:id,uuid,name,user_id',
+                    'forkedFrom.user:id,name',
+                ])
+                ->orderBy('name')
+                ->get();
+
+            // Exclude pinned geo maps from the main paginated results
+            if ($pinnedMaps->isNotEmpty()) {
+                $query->whereNotIn('id', $pinnedMaps->pluck('id'));
+            }
+        }
+
         match ($filters['sort']) {
             'oldest' => $query->orderBy('published_at')->orderBy('id'),
             'name_az' => $query->orderBy('name')->orderBy('id'),
@@ -82,7 +103,22 @@ class MapController extends Controller
                 ->all();
         }
 
+        $pinnedVoteByMapId = [];
+        if ($viewerId !== null && $pinnedMaps->isNotEmpty()) {
+            $pinnedVoteByMapId = MapVote::query()
+                ->where('user_id', $viewerId)
+                ->whereIn('map_id', $pinnedMaps->pluck('id'))
+                ->get()
+                ->keyBy('map_id')
+                ->all();
+        }
+
         return Inertia::render('MapExplore', [
+            'pinnedMaps' => $pinnedMaps->map(function (Map $map) use ($pinnedVoteByMapId) {
+                $vote = $pinnedVoteByMapId[$map->id] ?? null;
+
+                return $this->exploreCard($map, $vote instanceof MapVote ? $vote : null);
+            })->values()->all(),
             'maps' => Inertia::defer(function () use ($paginator, $voteByMapId) {
                 return $paginator->getCollection()->map(function (Map $map) use ($voteByMapId) {
                     $vote = $voteByMapId[$map->id] ?? null;
