@@ -24,14 +24,35 @@ final class GameTickService
             return;
         }
 
+        /** @var array{environment: Environment, state: array<string, mixed>, replayWorldTick: int|null}|null $deferred */
+        $deferred = null;
+
         try {
-            $this->doTick($game, $manager);
+            $deferred = $this->doTick($game, $manager);
         } finally {
             $lock->release();
         }
+
+        if ($deferred === null) {
+            return;
+        }
+
+        $manager->broadcastState($game, $deferred['environment'], $deferred['state']);
+
+        if ($deferred['replayWorldTick'] !== null) {
+            $this->writeReplaySnapshot(
+                $game,
+                $deferred['replayWorldTick'],
+                $deferred['state'],
+                $manager,
+            );
+        }
     }
 
-    private function doTick(Game $game, GameManager $manager): void
+    /**
+     * @return array{environment: Environment, state: array<string, mixed>, replayWorldTick: int|null}|null
+     */
+    private function doTick(Game $game, GameManager $manager): ?array
     {
         $state = $manager->getLiveState($game);
         $manager->repairLiveStateEconomy($game, $state);
@@ -45,14 +66,16 @@ final class GameTickService
                 'Match ended - all commanders inactive for over two minutes.',
             );
 
-            return;
+            return null;
         }
 
         if ($activityDirty) {
             $manager->storeLiveState($game, $state);
         }
 
-        $environment = $manager->environmentFromState($state);
+        // Vision is rebuilt inside updateTroops(); skip an extra recompute here to
+        // keep the state lock held for the shortest time possible.
+        $environment = Environment::fromArray($state['environment']);
 
         $worldTick = (int) ($state['worldTick'] ?? 0);
 
@@ -80,17 +103,19 @@ final class GameTickService
         $state['worldTick'] = $worldTick + 1;
         $this->applyEconomyTick($state, $environment);
         $manager->storeLiveState($game, $state);
-        $manager->broadcastState($game, $environment, $state);
-
-        // Write a replay snapshot once per second (every TICK_RATE ticks).
-        if ($worldTick % GameConstants::TICK_RATE === 0) {
-            $this->writeReplaySnapshot($game, $worldTick, $state, $manager);
-        }
 
         $winnerSlot = $environment->winnerSlot();
         if ($winnerSlot !== null) {
             $manager->finish($game, $winnerSlot);
+
+            return null;
         }
+
+        return [
+            'environment' => $environment,
+            'state' => $state,
+            'replayWorldTick' => $worldTick % GameConstants::TICK_RATE === 0 ? $worldTick : null,
+        ];
     }
 
     /**

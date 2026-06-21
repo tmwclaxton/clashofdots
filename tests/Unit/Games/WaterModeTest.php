@@ -127,6 +127,7 @@ class WaterModeTest extends TestCase
     {
         $environment = Environment::create(203, 2);
         $troop = $environment->players[0]->troops[0];
+        $this->placeOnWater($environment, $troop);
         $troop->waterMode = 'embark';
         $troop->waterTicks = 10; // actively mid-embarkation
         $troop->isShip = false;
@@ -145,6 +146,7 @@ class WaterModeTest extends TestCase
     {
         $environment = Environment::create(204, 2);
         $troop = $environment->players[0]->troops[0];
+        $this->placeOnWater($environment, $troop);
         $troop->waterMode = 'embark';
         $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
         $troop->isShip = true;
@@ -160,6 +162,14 @@ class WaterModeTest extends TestCase
     {
         $environment = Environment::create(205, 2);
         $troop = $environment->players[0]->troops[0];
+
+        $cs = GameConstants::CELL_SIZE;
+        $gx = 5;
+        $gy = 5;
+        $environment->terrainMarching->grid[$gx][$gy] = 0.5;
+        $environment->forestMarching->grid[$gx][$gy] = 0.0;
+        $troop->position = [(float) ($gx * $cs), (float) ($gy * $cs)];
+
         $troop->waterMode = 'embark';
         $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
         $troop->isShip = true;
@@ -444,11 +454,13 @@ class WaterModeTest extends TestCase
         $environment->forestMarching->grid[$landGx][$landGy] = 0.0;
         $troop->position = [(float) ($landGx * $cs), (float) ($landGy * $cs)];
 
-        // Mark the target cell (and several beyond it) as deep_water so the troop
-        // cannot path through them regardless of direction.
+        // Mark the target column (and several beyond it) as deep_water so the troop
+        // cannot path through them regardless of steering detours.
         for ($gx = 4; $gx <= 10; $gx++) {
-            $environment->terrainMarching->grid[$gx][$landGy] = GameConstants::DEEP_WATER_ELEVATION;
-            $environment->forestMarching->grid[$gx][$landGy] = 0.0;
+            for ($gy = 2; $gy <= 4; $gy++) {
+                $environment->terrainMarching->grid[$gx][$gy] = GameConstants::DEEP_WATER_ELEVATION;
+                $environment->forestMarching->grid[$gx][$gy] = 0.0;
+            }
         }
 
         // Set a path pointing well into the deep_water region.
@@ -483,11 +495,11 @@ class WaterModeTest extends TestCase
         $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
 
         $cs = GameConstants::CELL_SIZE;
-        $landGx = 3;
-        $landGy = 4;
-        $environment->terrainMarching->grid[$landGx][$landGy] = 0.5;
-        $environment->forestMarching->grid[$landGx][$landGy] = 0.0;
-        $troop->position = [(float) ($landGx * $cs), (float) ($landGy * $cs)];
+        $waterGx = 3;
+        $waterGy = 4;
+        $environment->terrainMarching->grid[$waterGx][$waterGy] = GameConstants::TERRAIN_VALUES['water'] - 0.02;
+        $environment->forestMarching->grid[$waterGx][$waterGy] = 0.0;
+        $troop->position = [(float) ($waterGx * $cs), (float) ($waterGy * $cs)];
 
         $deepGx = 4;
         $deepGy = 4;
@@ -532,6 +544,31 @@ class WaterModeTest extends TestCase
         $this->assertFalse($moved, 'A troop mid-embarkation must not move.');
     }
 
+    public function test_troop_does_not_move_on_first_water_tick_before_water_ticks_increment(): void
+    {
+        $environment = Environment::create(903, 2);
+        $player = $environment->players[0];
+        $troop = $player->troops[0];
+        $environment->players[1]->troops = [];
+
+        $this->placeOnWater($environment, $troop);
+        $troop->waterMode = 'embark';
+        $troop->waterTicks = 0;
+        $troop->isShip = false;
+
+        $cs = GameConstants::CELL_SIZE;
+        $troop->path = [[(float) ($cs * 8), (float) ($cs * 1)]];
+        $positionBefore = $troop->position;
+
+        $environment->updateTroops([], 1);
+
+        $moved = abs($troop->position[0] - $positionBefore[0]) > 0.1
+            || abs($troop->position[1] - $positionBefore[1]) > 0.1;
+
+        $this->assertFalse($moved, 'A troop on water in embark mode must freeze before ship conversion completes.');
+        $this->assertSame(1, $troop->waterTicks, 'First water tick should still advance embark progress.');
+    }
+
     public function test_troop_does_not_move_while_disembarking(): void
     {
         $environment = Environment::create(901, 2);
@@ -550,7 +587,6 @@ class WaterModeTest extends TestCase
         $troop->isShip = true;
         $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
         $troop->landTicks = 10; // mid-disembarkation
-
         $troop->path = [[(float) ($cs * 10), (float) ($cs * 5)]];
         $positionBefore = $troop->position;
 
@@ -560,6 +596,36 @@ class WaterModeTest extends TestCase
             || abs($troop->position[1] - $positionBefore[1]) > 0.1;
 
         $this->assertFalse($moved, 'A ship mid-disembarkation must not move.');
+    }
+
+    public function test_ship_does_not_move_on_first_land_tick_before_land_ticks_increment(): void
+    {
+        $environment = Environment::create(904, 2);
+        $player = $environment->players[0];
+        $troop = $player->troops[0];
+        $environment->players[1]->troops = [];
+
+        $cs = GameConstants::CELL_SIZE;
+        $gx = 5;
+        $gy = 5;
+        $environment->terrainMarching->grid[$gx][$gy] = 0.5;
+        $environment->forestMarching->grid[$gx][$gy] = 0.0;
+        $troop->position = [(float) ($gx * $cs), (float) ($gy * $cs)];
+
+        $troop->waterMode = 'embark';
+        $troop->isShip = true;
+        $troop->waterTicks = GameConstants::SHIP_CONVERSION_TICKS;
+        $troop->landTicks = 0;
+        $troop->path = [[(float) ($cs * 10), (float) ($cs * 5)]];
+        $positionBefore = $troop->position;
+
+        $environment->updateTroops([], 1);
+
+        $moved = abs($troop->position[0] - $positionBefore[0]) > 0.1
+            || abs($troop->position[1] - $positionBefore[1]) > 0.1;
+
+        $this->assertFalse($moved, 'A ship on shore must freeze before disembarkation completes.');
+        $this->assertSame(1, $troop->landTicks, 'First land tick should still advance disembark progress.');
     }
 
     public function test_troop_moves_normally_once_fully_converted_to_ship(): void
@@ -585,5 +651,53 @@ class WaterModeTest extends TestCase
             || abs($troop->position[1] - $positionBefore[1]) > 0.1;
 
         $this->assertTrue($moved, 'A fully converted ship must move normally.');
+    }
+
+    public function test_embark_mode_does_not_traverse_water_as_infantry(): void
+    {
+        $environment = Environment::create(905, 2);
+        $player = $environment->players[0];
+        $troop = $player->troops[0];
+        $environment->players[1]->troops = [];
+
+        $cs = GameConstants::CELL_SIZE;
+
+        for ($gy = 1; $gy <= 3; $gy++) {
+            $environment->terrainMarching->grid[0][$gy] = 0.5;
+            $environment->forestMarching->grid[0][$gy] = 0.0;
+
+            for ($gx = 1; $gx <= 3; $gx++) {
+                $environment->terrainMarching->grid[$gx][$gy] = -0.15;
+                $environment->forestMarching->grid[$gx][$gy] = 0.0;
+            }
+
+            $environment->terrainMarching->grid[4][$gy] = 0.5;
+            $environment->forestMarching->grid[4][$gy] = 0.0;
+        }
+
+        $troop->position = [(float) ($cs * 0 + $cs / 2), (float) ($cs * 2 + $cs / 2)];
+        $troop->waterMode = 'embark';
+        $troop->isShip = false;
+        $troop->health = 10_000;
+        $troop->path = [[(float) ($cs * 4), (float) ($cs * 2)]];
+
+        for ($tick = 1; $tick <= 200; $tick++) {
+            $troop->health = max($troop->health, 100);
+            $environment->updateTroops([], $tick);
+
+            if ($troop->isShip) {
+                break;
+            }
+
+            $gx = (int) floor($troop->position[0] / $cs);
+
+            $this->assertLessThanOrEqual(
+                1,
+                $gx,
+                'Embark infantry must not move past the first water column before ship conversion.',
+            );
+        }
+
+        $this->assertTrue($troop->isShip, 'Troop should eventually convert to a ship while blocked at the shore.');
     }
 }

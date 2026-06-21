@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import LineOrderToolbar from '@/components/game/LineOrderToolbar.vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import WaterModeModal from '@/components/game/WaterModeModal.vue';
 import { useIsDark } from '@/composables/useIsDark';
 import {
@@ -64,7 +63,7 @@ let lastRafTimeMs = 0;
  * Chosen to be slightly faster than the max game speed so troops always catch up
  * before the next snapshot, giving fluid motion at any update frequency.
  */
-const SMOOTH_SPEED_WU_MS = 0.14; // ~140 wu/sec display speed (game plains = 112.5 wu/sec at 5× scale)
+const SMOOTH_SPEED_WU_MS = 0.07; // ~70 wu/sec display speed (game plains = 56.25 wu/sec at 2.5× scale)
 const troopDisplayPositions = new Map<number, [number, number]>();
 const troopTargetPositions = new Map<number, [number, number]>();
 
@@ -72,7 +71,7 @@ const troopTargetPositions = new Map<number, [number, number]>();
 let lassoStart: [number, number] | null = null;
 let lassoCurrent: [number, number] | null = null;
 
-/** Line-order drawing state (advance / defend). */
+/** Line-order drawing state (multi-select advance along a line). */
 let lineDrawing = false;
 let lineStart: [number, number] | null = null;
 let lineCurrent: [number, number] | null = null;
@@ -113,6 +112,115 @@ function pathCrossesWater(points: [number, number][]): boolean {
     }
 
     return false;
+}
+
+function terrainIdAtWorldPosition(wx: number, wy: number): string | null {
+    const cells = store.terrainCells;
+
+    if (cells) {
+        const { cellSize } = store.world;
+        const gx = Math.min(cells.length - 1, Math.floor(wx / cellSize));
+        const gy = Math.min((cells[0]?.length ?? 1) - 1, Math.floor(wy / cellSize));
+
+        return cells[gx]?.[gy] ?? null;
+    }
+
+    if (!store.terrain || !store.forest) {
+        return null;
+    }
+
+    const { cellSize } = store.world;
+    const waterThreshold = ENGINE_TERRAIN_VALUES.water ?? -0.1;
+    const gx = Math.min(store.terrain.length - 1, Math.floor(wx / cellSize));
+    const gy = Math.min(
+        (store.terrain[0]?.length ?? 1) - 1,
+        Math.floor(wy / cellSize),
+    );
+    const tv = store.terrain[gx]?.[gy] ?? 0;
+    const fv = store.forest[gx]?.[gy] ?? 0;
+
+    if (tv <= waterThreshold && fv <= ENGINE_FOREST_THRESHOLD) {
+        return 'water';
+    }
+
+    return 'land';
+}
+
+function isWaterTerrainId(terrainId: string | null): boolean {
+    return terrainId === 'water' || terrainId === 'deep_water' || terrainId === 'river';
+}
+
+/** Matches server freeze rules in Environment::updateTroops(). */
+function troopIsFrozenForConversion(troop: {
+    isShip?: boolean;
+    waterMode?: 'wade' | 'embark';
+    position: [number, number];
+}): boolean {
+    const terrainId = terrainIdAtWorldPosition(
+        troop.position[0],
+        troop.position[1],
+    );
+    const onWater = isWaterTerrainId(terrainId);
+
+    if (troop.isShip) {
+        return ! onWater;
+    }
+
+    if ((troop.waterMode ?? 'embark') !== 'embark') {
+        return false;
+    }
+
+    return onWater;
+}
+
+function segmentCrossesWaterTerrain(
+    from: [number, number],
+    to: [number, number],
+): boolean {
+    const dist = Math.hypot(to[0] - from[0], to[1] - from[1]);
+    const step = Math.max(2, store.world.cellSize / 4);
+    const samples = Math.max(1, Math.ceil(dist / step));
+
+    for (let i = 0; i <= samples; i++) {
+        const t = i / samples;
+        const wx = from[0] + (to[0] - from[0]) * t;
+        const wy = from[1] + (to[1] - from[1]) * t;
+
+        if (isWaterTerrainId(terrainIdAtWorldPosition(wx, wy))) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function troopCanUsePathPrediction(
+    troop: {
+        id: number;
+        isShip?: boolean;
+        waterMode?: 'wade' | 'embark';
+        ownerSlot: number;
+        path: [number, number][];
+        position: [number, number];
+    },
+    display: [number, number],
+): boolean {
+    if (troop.ownerSlot !== store.slot || troop.path.length === 0) {
+        return false;
+    }
+
+    if (troop.isShip || (troop.waterMode ?? 'embark') === 'wade') {
+        return true;
+    }
+
+    if (
+        troopIsFrozenForConversion(troop) ||
+        troopIsFrozenForConversion({ ...troop, position: display })
+    ) {
+        return false;
+    }
+
+    return ! segmentCrossesWaterTerrain(display, troop.path[0]);
 }
 
 function onWaterModeChosen(mode: 'wade' | 'embark') {
@@ -301,18 +409,41 @@ function rafLoop(nowMs: number): void {
     lastRafTimeMs = nowMs;
 
     // Advance each troop's display position toward its server target.
+    // Own troops with active paths chase their first waypoint so group orders
+    // feel responsive before the next simulation tick arrives.
     let anyMoving = false;
+    const troopsById = new Map(
+        (store.latestState?.troops ?? []).map((troop) => [troop.id, troop]),
+    );
 
     for (const [id, target] of troopTargetPositions) {
-        const display = troopDisplayPositions.get(id);
+        const troop = troopsById.get(id);
+
+        if (troop && troopIsFrozenForConversion(troop)) {
+            const display = troopDisplayPositions.get(id) ?? [
+                target[0],
+                target[1],
+            ];
+            display[0] = target[0];
+            display[1] = target[1];
+            troopDisplayPositions.set(id, display);
+            continue;
+        }
+
+        let display = troopDisplayPositions.get(id);
 
         if (!display) {
             troopDisplayPositions.set(id, [target[0], target[1]]);
             continue;
         }
 
-        const dx = target[0] - display[0];
-        const dy = target[1] - display[1];
+        const effectiveTarget =
+            troop && troopCanUsePathPrediction(troop, display)
+                ? troop.path[0]
+                : target;
+
+        const dx = effectiveTarget[0] - display[0];
+        const dy = effectiveTarget[1] - display[1];
         const dist = Math.hypot(dx, dy);
 
         if (dist > 0.5) {
@@ -323,15 +454,11 @@ function rafLoop(nowMs: number): void {
         }
     }
 
-    // Also redraw when any unit is actively embarking or disembarking so the pulsing ring animates.
-    const anyEmbarking = (store.latestState?.troops ?? []).some(
-        (t) => !t.isShip && t.waterMode === 'embark' && (t.waterTicks ?? 0) > 0,
-    );
-    const anyDisembarking = (store.latestState?.troops ?? []).some(
-        (t) => t.isShip && (t.landTicks ?? 0) > 0,
+    const anyConverting = (store.latestState?.troops ?? []).some((t) =>
+        troopIsFrozenForConversion(t),
     );
 
-    if (needsRedraw || anyMoving || anyEmbarking || anyDisembarking) {
+    if (needsRedraw || anyMoving || anyConverting) {
         needsRedraw = false;
         draw();
     }
@@ -436,6 +563,8 @@ function separateTroopPositions(
  * troops and commit them as 2-point draft paths in the store.
  * Troops are sorted by their projection along the line so the assignment is
  * spatially coherent (leftmost troop → leftmost target, etc.).
+ *
+ * Default multi-select line order: drag on empty map with 2+ troops selected.
  */
 function distributeAlongLine(
     start: [number, number],
@@ -469,46 +598,6 @@ function distributeAlongLine(
         drafts.draftPaths.push({ entityId: id, points: [troopPos, target] });
     });
 }
-
-/**
- * Screen-space centroid of currently selected troops, used to position the
- * line-order toolbar above the selection. Reads from reactive store state so
- * Vue tracks the dependency and recomputes on troop movement.
- */
-const lineToolbarPos = computed<{ x: number; y: number } | null>(() => {
-    if (drafts.selectedTroopIds.length === 0) {
-        return null;
-    }
-
-    const troops = store.latestState?.troops ?? [];
-    const idSet = new Set(drafts.selectedTroopIds);
-
-    let sumX = 0;
-    let sumY = 0;
-    let count = 0;
-
-    // Also depend on camera so the overlay repositions when panning/zooming.
-    const _z = camera.zoom;
-    const _cx = camera.camX;
-    const _cy = camera.camY;
-
-    for (const troop of troops) {
-        if (!idSet.has(troop.id)) {
-            continue;
-        }
-
-        const [sx, sy] = worldToScreen(troop.position[0], troop.position[1]);
-        sumX += sx;
-        sumY += sy;
-        count++;
-    }
-
-    if (count === 0) {
-        return null;
-    }
-
-    return { x: sumX / count, y: sumY / count };
-});
 
 function draw() {
     const canvas = canvasRef.value;
@@ -654,8 +743,7 @@ function draw() {
 
     // Line-order preview (screen-space, drawn during drag).
     if (lineDrawing && lineStart && lineCurrent) {
-        const isAdvance = drafts.lineOrderMode === 'advance';
-        const lineColor = isAdvance ? 'rgba(250,204,21,0.9)' : 'rgba(147,197,253,0.9)';
+        const lineColor = 'rgba(250,204,21,0.9)';
         const n = drafts.selectedTroopIds.length;
 
         // Convert world coords to screen for the preview.
@@ -666,15 +754,13 @@ function draw() {
 
         // Main line.
         ctx.strokeStyle = lineColor;
-        ctx.lineWidth = isAdvance ? 2.5 : 2;
-        ctx.setLineDash(isAdvance ? [] : [8, 4]);
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(sx1, sy1);
         ctx.lineTo(sx2, sy2);
         ctx.stroke();
-        ctx.setLineDash([]);
 
-        // Draw evenly-spaced target dots along the line.
+        // Draw evenly-spaced target arrowheads along the line.
         for (let i = 0; i < n; i++) {
             const t = n === 1 ? 0.5 : i / (n - 1);
             const px = sx1 + t * (sx2 - sx1);
@@ -683,25 +769,18 @@ function draw() {
             ctx.fillStyle = lineColor;
             ctx.beginPath();
 
-            if (isAdvance) {
-                // Arrowhead pointing along the line direction.
-                const angle = Math.atan2(sy2 - sy1, sx2 - sx1);
-                ctx.moveTo(px + Math.cos(angle) * 7, py + Math.sin(angle) * 7);
-                ctx.lineTo(
-                    px + Math.cos(angle + 2.4) * 7,
-                    py + Math.sin(angle + 2.4) * 7,
-                );
-                ctx.lineTo(
-                    px + Math.cos(angle - 2.4) * 7,
-                    py + Math.sin(angle - 2.4) * 7,
-                );
-                ctx.closePath();
-                ctx.fill();
-            } else {
-                // Circle dot for defend positions.
-                ctx.arc(px, py, 5, 0, Math.PI * 2);
-                ctx.fill();
-            }
+            const angle = Math.atan2(sy2 - sy1, sx2 - sx1);
+            ctx.moveTo(px + Math.cos(angle) * 7, py + Math.sin(angle) * 7);
+            ctx.lineTo(
+                px + Math.cos(angle + 2.4) * 7,
+                py + Math.sin(angle + 2.4) * 7,
+            );
+            ctx.lineTo(
+                px + Math.cos(angle - 2.4) * 7,
+                py + Math.sin(angle - 2.4) * 7,
+            );
+            ctx.closePath();
+            ctx.fill();
         }
 
         // End-cap circles at both endpoints of the line.
@@ -1130,9 +1209,8 @@ type TroopDraw = {
     isHealing?: boolean;
 };
 
-/** Radii that match the shared mapMarkers pixel-centre functions. */
-const TROOP_R_INFANTRY = 9;
-const TROOP_R_TANK = 12;
+/** Shared land-unit radius (infantry and tanks use the same footprint). */
+const TROOP_R_UNIT = 12;
 const TROOP_R_SHIP = 11;
 
 function drawTroop(
@@ -1145,18 +1223,13 @@ function drawTroop(
     const isTank = troop.type === 'tank';
     const isShip = troop.isShip === true;
     const waterMode = troop.waterMode ?? 'embark';
-    const waterTicks = troop.waterTicks ?? 0;
-    const landTicks = troop.landTicks ?? 0;
-    const isEmbarking = !isShip && waterMode === 'embark' && waterTicks > 0;
-    const isDisembarking = isShip && landTicks > 0;
+    const onWater = isWaterTerrainId(terrainIdAtWorldPosition(x, y));
+    const isEmbarking = !isShip && waterMode === 'embark' && onWater;
+    const isDisembarking = isShip && !onWater;
     const maxHp = troop.maxHealth ?? (isTank ? 200 : 100);
     const ink = canvasInk();
     const fillColor = rgb(troop.color);
-    const unitR = isTank
-        ? TROOP_R_TANK
-        : isShip
-          ? TROOP_R_SHIP
-          : TROOP_R_INFANTRY;
+    const unitR = isShip ? TROOP_R_SHIP : TROOP_R_UNIT;
 
     if (isShip) {
         ctx.fillStyle = fillColor;
@@ -1188,9 +1261,9 @@ function drawTroop(
         ctx.fill();
         ctx.globalAlpha = 1;
     } else if (isTank) {
-        drawTankAtPixel(ctx, x, y, fillColor, TROOP_R_TANK);
+        drawTankAtPixel(ctx, x, y, fillColor, TROOP_R_UNIT);
     } else {
-        drawInfantryAtPixel(ctx, x, y, fillColor, TROOP_R_INFANTRY);
+        drawInfantryAtPixel(ctx, x, y, fillColor, TROOP_R_UNIT);
     }
 
     // Damage cracks — drawn on top of the shape, clipped to the unit circle.
@@ -1386,15 +1459,6 @@ function onMouseDown(e: MouseEvent) {
 
     const world = screenToWorld(sx, sy);
 
-    // If a line-order mode is active, start drawing the line instead of a troop path.
-    if (drafts.lineOrderMode !== null && drafts.selectedTroopIds.length > 1) {
-        lineDrawing = true;
-        lineStart = world;
-        lineCurrent = world;
-
-        return;
-    }
-
     const entity = findEntity(world);
 
     if (entity) {
@@ -1437,8 +1501,13 @@ function onMouseDown(e: MouseEvent) {
             const troopPos = troopTargetPositions.get(entity.id) ?? world;
             drafts.beginPath(entity.id, [troopPos[0], troopPos[1]]);
         }
+    } else if (drafts.selectedTroopIds.length > 1) {
+        // Multi-select + empty map: draw an advance line (evenly spaced targets).
+        lineDrawing = true;
+        lineStart = world;
+        lineCurrent = world;
     } else {
-        // No entity hit - start lasso selection (clears existing selection first).
+        // No entity hit - start lasso selection.
         drafts.clearSelection();
         lassoStart = [sx, sy];
         lassoCurrent = [sx, sy];
@@ -1516,7 +1585,6 @@ function onMouseUp() {
 
         lineStart = null;
         lineCurrent = null;
-        drafts.clearLineOrderMode();
         scheduleRedraw();
     }
 
@@ -1655,23 +1723,16 @@ function onKeyDown(e: KeyboardEvent) {
         );
     }
 
-    // Line-order shortcuts (only when multiple troops are selected).
-    if (e.key.toLowerCase() === 'a' && drafts.selectedTroopIds.length > 1) {
-        e.preventDefault();
-        drafts.setLineOrderMode('advance');
-    }
-
-    if (e.key.toLowerCase() === 'd' && drafts.selectedTroopIds.length > 1) {
-        e.preventDefault();
-        drafts.setLineOrderMode('defend');
-    }
-
     if (e.code === 'Escape') {
-        if (drafts.lineOrderMode !== null) {
-            drafts.clearLineOrderMode();
+        if (lineDrawing) {
             lineDrawing = false;
             lineStart = null;
             lineCurrent = null;
+            scheduleRedraw();
+        }
+
+        if (drafts.selectedTroopIds.length > 0) {
+            drafts.clearSelection();
             scheduleRedraw();
         }
     }
@@ -1879,8 +1940,7 @@ watch(isDark, () => {
     <div class="relative h-full w-full">
         <canvas
             ref="canvasRef"
-            class="h-full w-full"
-            :class="drafts.lineOrderMode !== null ? 'cursor-crosshair' : 'cursor-crosshair'"
+            class="h-full w-full cursor-crosshair"
             @contextmenu.prevent
             @mousedown="onMouseDown"
             @mousemove="onMouseMove"
@@ -1896,13 +1956,6 @@ watch(isDark, () => {
             :visible="waterModalVisible"
             @choose="onWaterModeChosen"
             @dismiss="onWaterModalDismiss"
-        />
-        <LineOrderToolbar
-            v-if="drafts.selectedTroopIds.length > 1 && lineToolbarPos"
-            :position="lineToolbarPos"
-            :active-mode="drafts.lineOrderMode"
-            @set-mode="drafts.setLineOrderMode"
-            @cancel="drafts.clearSelection()"
         />
     </div>
 </template>

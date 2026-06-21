@@ -690,16 +690,56 @@ final class Environment
     }
 
     /**
+     * Gameplay terrain at the grid cell containing a world position.
+     *
+     * Uses discrete cell lookup (not marching-squares interpolation) so embark /
+     * water checks stay aligned with the editor cell the troop is standing in.
+     *
      * @param  array{0: float, 1: float}  $position
      */
     public function terrainNameAtWorldPosition(array $position): string
     {
-        $gx = max(0, min($this->gridMaxX, $position[0] / GameConstants::CELL_SIZE));
-        $gy = max(0, min($this->gridMaxY, $position[1] / GameConstants::CELL_SIZE));
-        $terrain = $this->terrainMarching->getGridValue($gx, $gy);
-        $forest = $this->forestMarching->getGridValue($gx, $gy);
+        $cs = GameConstants::CELL_SIZE;
+        $gx = max(0, min($this->gridMaxX, (int) floor($position[0] / $cs)));
+        $gy = max(0, min($this->gridMaxY, (int) floor($position[1] / $cs)));
 
-        return $this->getTerrainName($terrain, $forest);
+        return $this->getTerrainName(
+            $this->terrainMarching->grid[$gx][$gy],
+            $this->forestMarching->grid[$gx][$gy],
+        );
+    }
+
+    /**
+     * @param  array{0: float, 1: float}  $position
+     */
+    public function isWaterAtWorldPosition(array $position): bool
+    {
+        return $this->isWaterTerrainName($this->terrainNameAtWorldPosition($position));
+    }
+
+    private function isWaterTerrainName(string $terrainName): bool
+    {
+        return in_array($terrainName, ['water', 'deep_water', 'river'], true);
+    }
+
+    private function isTroopFrozenForConversion(Troop $troop, string $onTerrain): bool
+    {
+        return self::shouldFreezeTroopForConversion($troop->isShip, $troop->waterMode, $onTerrain);
+    }
+
+    public static function shouldFreezeTroopForConversion(bool $isShip, string $waterMode, string $onTerrain): bool
+    {
+        $isWater = in_array($onTerrain, ['water', 'deep_water', 'river'], true);
+
+        if ($isShip) {
+            return ! $isWater;
+        }
+
+        if ($waterMode !== 'embark') {
+            return false;
+        }
+
+        return $isWater;
     }
 
     public function takeNextTroopId(): int
@@ -918,10 +958,7 @@ final class Environment
             foreach ($player->troops as $troop) {
                 if (array_key_exists($troop->id, $orderByTroopId)) {
                     // Ignore orders during embarkation (converting to ship) or disembarkation (reverting to troop).
-                    if (! $troop->isShip && $troop->waterMode === 'embark' && $troop->waterTicks > 0) {
-                        continue;
-                    }
-                    if ($troop->isShip && $troop->landTicks > 0) {
+                    if ($this->isTroopFrozenForConversion($troop, $this->terrainNameAtWorldPosition($troop->position))) {
                         continue;
                     }
 
@@ -1021,16 +1058,21 @@ final class Environment
 
                 $enemiesInRange = [];
 
-                $gx = $oldPos[0] / GameConstants::CELL_SIZE;
-                $gy = $oldPos[1] / GameConstants::CELL_SIZE;
-                $terrain = $this->terrainMarching->getGridValue($gx, $gy);
-                $forest = $this->forestMarching->getGridValue($gx, $gy);
-                $onTerrain = $this->getTerrainName($terrain, $forest);
+                $onTerrain = $this->terrainNameAtWorldPosition($oldPos);
+                $isWaterTerrain = in_array($onTerrain, ['water', 'deep_water', 'river'], true);
 
-                $isConverting = (! $troop->isShip && $troop->waterMode === 'embark' && $troop->waterTicks > 0)
-                    || ($troop->isShip && $troop->landTicks > 0);
+                // Foot units in embark mode freeze on water; ships freeze on land while disembarking.
+                $isConverting = $this->isTroopFrozenForConversion($troop, $onTerrain);
 
-                if (! $isConverting && $troop->path !== []) {
+                if ($isConverting) {
+                    [$hitEnemy, $enemiesInRange, $onTerrain] = $this->resolveTroopMove(
+                        $player,
+                        $troop,
+                        $oldPos,
+                        $enemiesInRange,
+                        $onTerrain,
+                    );
+                } elseif ($troop->path !== []) {
                     $isWater = in_array($onTerrain, ['water', 'deep_water', 'river']);
                     if ($troop->isShip && $isWater) {
                         $terrainSpeed = GameConstants::TERRAIN_SPEEDS[$onTerrain] * GameConstants::SHIP_WATER_SPEED_MULT;
@@ -1099,12 +1141,7 @@ final class Environment
                             [$tryX, $tryY] = GameMath::dirDisToXy($tryDir, $distance);
                             $candidate = [$oldPos[0] + $tryX, $oldPos[1] + $tryY];
 
-                            $cgx = $candidate[0] / GameConstants::CELL_SIZE;
-                            $cgy = $candidate[1] / GameConstants::CELL_SIZE;
-                            $cTerrain = $this->getTerrainName(
-                                $this->terrainMarching->getGridValue($cgx, $cgy),
-                                $this->forestMarching->getGridValue($cgx, $cgy),
-                            );
+                            $cTerrain = $this->terrainNameAtWorldPosition($candidate);
 
                             $outOfWorld = $candidate[0] > $worldW || $candidate[0] < 0
                                 || $candidate[1] > $worldH || $candidate[1] < 0;
@@ -1167,7 +1204,7 @@ final class Environment
                 $inCombat = $enemiesInRange !== [];
 
                 // Determine water terrain once (after move resolution updates $onTerrain).
-                $isWaterTerrain = in_array($onTerrain, ['water', 'deep_water', 'river']);
+                $isWaterTerrain = in_array($onTerrain, ['water', 'deep_water', 'river'], true);
 
                 // Morale: supply-line connectivity determines recovery vs drain.
                 // A troop must have an unbroken own-territory path to an owned city to be in supply.
@@ -1463,11 +1500,7 @@ final class Environment
             }
         }
 
-        $gx = $newPos[0] / GameConstants::CELL_SIZE;
-        $gy = $newPos[1] / GameConstants::CELL_SIZE;
-        $terrain = $this->terrainMarching->getGridValue($gx, $gy);
-        $forest = $this->forestMarching->getGridValue($gx, $gy);
-        $newTerrain = $this->getTerrainName($terrain, $forest);
+        $newTerrain = $this->terrainNameAtWorldPosition($newPos);
 
         $worldW = ($this->gridMaxX + 1) * GameConstants::CELL_SIZE;
         $worldH = ($this->gridMaxY + 1) * GameConstants::CELL_SIZE;

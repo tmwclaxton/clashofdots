@@ -8,6 +8,7 @@ use App\Events\GameInitialized;
 use App\Events\GameStateUpdated;
 use App\Games\Engine\City;
 use App\Games\Engine\Environment;
+use App\Games\Engine\PathOrderSimplifier;
 use App\Games\Engine\Player;
 use App\Games\GameConstants;
 use App\Games\Logging\GameSimLog;
@@ -19,6 +20,7 @@ use App\Models\GamePlayer;
 use App\Models\Map;
 use App\Models\QuickStartEntry;
 use App\Models\User;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -611,19 +613,31 @@ final class GameManager
         $slot = $player->slot;
         [$troopOrders] = $orders;
         $cityOrders = $orders[1] ?? [];
+        $troopOrders = PathOrderSimplifier::simplifyOrderRows($troopOrders);
 
         // Acquire the same lock the tick daemon holds so orders are never
         // interleaved with a tick write, which would cause orders to be lost.
-        $lock = Cache::lock('game-state:'.$game->uuid, 5);
-        $lock->block(5);
+        $lock = Cache::lock('game-state:'.$game->uuid, 10);
+        if (! $this->acquireGameStateLock($lock, 10)) {
+            abort(503, 'The game server is busy. Wait a moment and try again.');
+        }
+
+        $state = null;
 
         try {
             $state = $this->getLiveState($game);
-            $state['playerInputs'][$slot] = $this->mergeOrdersById($state['playerInputs'][$slot] ?? [], $troopOrders);
+            $mergedOrders = $this->mergeOrdersById($state['playerInputs'][$slot] ?? [], $troopOrders);
+            $state['playerInputs'][$slot] = $mergedOrders;
             $this->touchPlayerActivityInState($state, $slot);
+            $this->applyOrderPathsToState($state, $mergedOrders);
             $this->storeLiveState($game, $state);
         } finally {
             $lock->release();
+        }
+
+        if ($state !== null) {
+            $environment = $this->environmentFromState($state);
+            $this->broadcastState($game, $environment, $state);
         }
 
         GameSimLog::info('game.orders.accepted', [
@@ -646,9 +660,8 @@ final class GameManager
             }, $troopOrders),
         ]);
 
-        // The tick daemon applies and broadcasts orders within ~33 ms (30 Hz loop).
-        // Running simulation synchronously in the HTTP path was removed to avoid blocking
-        // the web worker and double-applying path assignments.
+        // Paths are applied immediately above and broadcast via Reverb; the tick
+        // daemon still consumes playerInputs on the next frame for movement.
     }
 
     /**
@@ -675,6 +688,103 @@ final class GameManager
         }
 
         return array_values($byId);
+    }
+
+    /**
+     * Wait briefly for the per-game state lock without throwing LockTimeoutException.
+     */
+    private function acquireGameStateLock(Lock $lock, int $seconds): bool
+    {
+        $deadline = microtime(true) + $seconds;
+
+        while (microtime(true) < $deadline) {
+            if ($lock->get()) {
+                return true;
+            }
+
+            usleep(20_000);
+        }
+
+        return false;
+    }
+
+    /**
+     * Writes move-order paths directly into persisted state without hydrating Environment.
+     *
+     * @param  array<string, mixed>  $state
+     * @param  list<array{0: mixed, 1: mixed, 2?: mixed}>  $mergedOrders
+     */
+    private function applyOrderPathsToState(array &$state, array $mergedOrders): void
+    {
+        /** @var array<int, array{0: mixed, 1: mixed, 2?: mixed}> $ordersById */
+        $ordersById = [];
+
+        foreach ($mergedOrders as $order) {
+            if (! is_array($order) || ! isset($order[0], $order[1]) || ! is_array($order[1])) {
+                continue;
+            }
+
+            $ordersById[(int) $order[0]] = $order;
+        }
+
+        if ($ordersById === []) {
+            return;
+        }
+
+        $players = $state['environment']['players'] ?? null;
+
+        if (! is_array($players)) {
+            return;
+        }
+
+        if (! isset($state['environment']) || ! is_array($state['environment'])) {
+            return;
+        }
+
+        $environment = Environment::fromArray($state['environment']);
+
+        foreach ($players as $playerIndex => $playerData) {
+            if (! is_array($playerData)) {
+                continue;
+            }
+
+            $troops = $playerData['troops'] ?? null;
+
+            if (! is_array($troops)) {
+                continue;
+            }
+
+            foreach ($troops as $troopIndex => $troopData) {
+                if (! is_array($troopData) || ! isset($troopData['id'])) {
+                    continue;
+                }
+
+                $order = $ordersById[(int) $troopData['id']] ?? null;
+
+                if ($order === null) {
+                    continue;
+                }
+
+                $position = $troopData['position'] ?? null;
+
+                if (is_array($position) && count($position) >= 2) {
+                    $onTerrain = $environment->terrainNameAtWorldPosition([
+                        (float) $position[0],
+                        (float) $position[1],
+                    ]);
+                    $isShip = (bool) ($troopData['isShip'] ?? false);
+                    $waterMode = isset($troopData['waterMode']) && $troopData['waterMode'] === 'wade' ? 'wade' : 'embark';
+
+                    if (Environment::shouldFreezeTroopForConversion($isShip, $waterMode, $onTerrain)) {
+                        continue;
+                    }
+                }
+
+                $state['environment']['players'][$playerIndex]['troops'][$troopIndex]['path'] = $order[1];
+                $state['environment']['players'][$playerIndex]['troops'][$troopIndex]['waterMode'] =
+                    isset($order[2]) && $order[2] === 'wade' ? 'wade' : 'embark';
+            }
+        }
     }
 
     /**

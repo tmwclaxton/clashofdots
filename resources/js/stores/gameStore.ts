@@ -8,6 +8,7 @@ import {
     surrender as surrenderRoute,
 } from '@/routes/games';
 import { useCameraStore } from '@/stores/cameraStore';
+import { simplifyOrderPath } from '@/lib/pathOrderSimplifier';
 import { useDraftStore } from '@/stores/draftStore';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -476,13 +477,16 @@ export const useGameStore = defineStore('game', {
 
             const troopOrders = drafts.draftPaths.map(
                 (p) =>
-                    [p.entityId, p.points, p.waterMode ?? 'embark'] as [
-                        number,
-                        Point[],
-                        string,
-                    ],
+                    [
+                        p.entityId,
+                        simplifyOrderPath(p.points),
+                        p.waterMode ?? 'embark',
+                    ] as [number, Point[], string],
             );
 
+            const optimisticPaths = new Map(
+                troopOrders.map(([id, points]) => [id, points] as const),
+            );
 
             try {
                 const res = await fetch(orders(gameUuid).url, {
@@ -512,12 +516,22 @@ export const useGameStore = defineStore('game', {
                     return;
                 }
 
+                if (this.latestState) {
+                    for (const troop of this.latestState.troops) {
+                        const path = optimisticPaths.get(troop.id);
+
+                        if (path !== undefined) {
+                            troop.path = path;
+                        }
+                    }
+                }
+
                 drafts.clearDrafts();
 
                 const snapshotUrl = options?.snapshotFetchUrl;
 
                 if (snapshotUrl !== undefined && snapshotUrl.length > 0) {
-                    await this.pullSnapshot(snapshotUrl);
+                    void this.pullSnapshot(snapshotUrl);
                 }
             } catch {
                 toast.error('Network error - orders not submitted.');
