@@ -8,6 +8,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { DISCORD_SERVER_URL, GITHUB_REPOSITORY_URL } from '@/lib/site';
 import { cn } from '@/lib/utils';
 import { login, wiki } from '@/routes';
+import { privacy, terms } from '@/routes/legal';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 import { index as lobbiesIndex } from '@/routes/lobbies';
 
@@ -364,6 +365,10 @@ const steps = [
                     class="wod-link break-words"
                     >Open source on GitHub</a
                 >
+                <span class="text-muted-foreground"> · </span>
+                <Link :href="terms().url" class="wod-link">Terms</Link>
+                <span class="text-muted-foreground"> · </span>
+                <Link :href="privacy().url" class="wod-link">Privacy</Link>
                 <span class="text-muted-foreground"> · </span>
                 <span class="whitespace-nowrap">Built with Irish Love ☘️</span>
             </p>

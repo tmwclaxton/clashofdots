@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { Github } from 'lucide-vue-next';
 import { computed } from 'vue';
 import FactionSwatches from '@/components/FactionSwatches.vue';
 import { GITHUB_REPOSITORY_URL } from '@/lib/site';
+import { privacy, terms } from '@/routes/legal';
 
 const page = usePage();
 
@@ -29,6 +30,8 @@ const user = computed(() => page.props.auth.user);
             <div
                 class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs font-semibold md:justify-end"
             >
+                <Link :href="terms().url" class="wod-link"> Terms </Link>
+                <Link :href="privacy().url" class="wod-link"> Privacy </Link>
                 <a
                     :href="GITHUB_REPOSITORY_URL"
                     target="_blank"

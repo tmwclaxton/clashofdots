@@ -15,6 +15,9 @@ Route::inertia('/', 'Welcome')->name('home');
 
 Route::get('/wiki', fn () => Inertia::render('Wiki', GameSpecs::forWiki()))->name('wiki');
 
+Route::inertia('/terms', 'legal/Terms')->name('legal.terms');
+Route::inertia('/privacy', 'legal/Privacy')->name('legal.privacy');
+
 Route::get('maps/explore', [MapController::class, 'explore'])->name('maps.explore');
 
 // Published maps are viewable in the builder without auth (see MapPolicy::view). Bare /map-builder requires login.
