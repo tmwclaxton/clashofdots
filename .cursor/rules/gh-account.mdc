@@ -1,0 +1,14 @@
+---
+description: Use tmwclaxton GitHub account for gh CLI in this repo
+alwaysApply: true
+---
+
+# GitHub CLI account
+
+Before any `gh` command in this repository (PRs, issues, checks, releases, etc.), ensure the active account is `tmwclaxton`:
+
+```bash
+gh auth switch -u tmwclaxton
+```
+
+Verify with `gh auth status` if unsure. Do not use the default `tobyclaxton` account for GitHub operations here.
