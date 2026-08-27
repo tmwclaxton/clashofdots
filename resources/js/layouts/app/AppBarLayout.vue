@@ -173,7 +173,7 @@ const showBanner = computed(() => {
                 v-if="showBanner && activeGameHref"
                 class="sticky top-0 z-40 border-b border-foreground/15 bg-wod-cream px-4 py-2 sm:px-6"
             >
-                <div class="mx-auto flex max-w-6xl items-center justify-between gap-3">
+                <div class="mx-auto flex min-w-0 max-w-6xl flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-2 text-sm font-semibold">
                         <component
                             :is="page.props.activeGame?.status === 'playing' ? Swords : Users"

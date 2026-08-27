@@ -195,7 +195,7 @@
     }
 
     html {
-        @apply font-sans;
+        @apply overflow-x-hidden font-sans;
         color-scheme: light;
     }
 
@@ -204,7 +204,7 @@
     }
 
     body {
-        @apply bg-background font-sans text-foreground;
+        @apply min-w-0 overflow-x-hidden bg-background font-sans text-foreground;
     }
 }
 
@@ -397,6 +397,53 @@
     }
 
     .dark .wod-bar-top::before {
+        background-image: radial-gradient(
+            circle,
+            #c8b89a 1px,
+            transparent 1px
+        );
+    }
+
+    .wod-nav-drawer {
+        border-bottom: none;
+        background-color: #c8d68a;
+        background-image: linear-gradient(
+            180deg,
+            #dce8a8 0%,
+            #c8d68a 60%,
+            #b5c97a 100%
+        );
+        color: #1a1a1a;
+        box-shadow: 4px 0 0 #3a2a1a;
+    }
+
+    .wod-nav-drawer::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        opacity: 0.07;
+        background-image: radial-gradient(
+            circle,
+            #3d6b45 1px,
+            transparent 1px
+        );
+        background-size: 14px 14px;
+        pointer-events: none;
+    }
+
+    .dark .wod-nav-drawer {
+        background-color: #2f4228;
+        background-image: linear-gradient(
+            180deg,
+            #3a4f32 0%,
+            #2f4228 60%,
+            #243520 100%
+        );
+        color: #f5e8c8;
+        box-shadow: 4px 0 0 #c8b89a;
+    }
+
+    .dark .wod-nav-drawer::before {
         background-image: radial-gradient(
             circle,
             #c8b89a 1px,

@@ -12,6 +12,7 @@ import {
     Users,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
+import AppNavDrawer from '@/components/AppNavDrawer.vue';
 import FactionSwatches from '@/components/FactionSwatches.vue';
 import DiscordIcon from '@/components/DiscordIcon.vue';
 import GameLogoMark from '@/components/GameLogoMark.vue';
@@ -57,33 +58,47 @@ const navItems = computed<NavItem[]>(() => {
 
     return items;
 });
+
+const externalLinks: NavItem[] = [
+    { title: 'Discord', href: DISCORD_SERVER_URL, icon: DiscordIcon },
+    { title: 'GitHub', href: GITHUB_REPOSITORY_URL, icon: Github },
+];
 </script>
 
 <template>
-    <header class="wod-bar-top relative">
+    <header class="wod-bar-top relative min-w-0">
         <div
-            class="relative flex w-full flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:gap-4 sm:px-6 sm:py-3"
+            class="relative flex w-full min-w-0 items-center justify-between gap-2 px-3 py-2.5 lg:gap-4 lg:px-6 lg:py-3"
         >
-            <div class="flex min-w-0 flex-1 items-center gap-3 sm:gap-5">
+            <div class="flex min-w-0 flex-1 items-center gap-2 lg:gap-5">
+                <div class="shrink-0 lg:hidden">
+                    <AppNavDrawer
+                        :nav-items="navItems"
+                        :external-links="externalLinks"
+                    />
+                </div>
+
                 <Link
                     :href="home().url"
-                    class="flex shrink-0 items-center gap-2.5"
+                    class="flex min-w-0 shrink-0 items-center gap-2.5"
                 >
                     <GameLogoMark />
-                    <div class="hidden sm:block">
+                    <div class="hidden min-w-0 sm:block">
                         <p
                             class="font-display text-base leading-tight font-bold"
                         >
                             Clash of Dots
                         </p>
-                        <p class="wod-tagline">Plan first, fight second</p>
+                        <p class="wod-tagline truncate">
+                            Plan first, fight second
+                        </p>
                     </div>
                 </Link>
 
-                <FactionSwatches class="hidden shrink-0 sm:grid" />
+                <FactionSwatches class="hidden shrink-0 lg:grid" />
 
                 <nav
-                    class="hidden min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:flex sm:[&::-webkit-scrollbar]:hidden"
+                    class="hidden min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] lg:flex lg:[&::-webkit-scrollbar]:hidden"
                     aria-label="Main"
                 >
                     <div class="flex w-max items-center gap-1 pr-1">
@@ -109,13 +124,13 @@ const navItems = computed<NavItem[]>(() => {
                 </nav>
             </div>
 
-            <div class="flex shrink-0 items-center gap-2">
+            <div class="flex shrink-0 items-center gap-1.5 lg:gap-2">
                 <ThemeToggle />
                 <Button
                     variant="outline"
                     size="sm"
                     as-child
-                    class="rounded-none"
+                    class="hidden rounded-none lg:inline-flex"
                 >
                     <a
                         :href="DISCORD_SERVER_URL"
@@ -130,7 +145,7 @@ const navItems = computed<NavItem[]>(() => {
                     variant="outline"
                     size="sm"
                     as-child
-                    class="rounded-none"
+                    class="hidden rounded-none lg:inline-flex"
                 >
                     <a
                         :href="GITHUB_REPOSITORY_URL"
@@ -183,36 +198,29 @@ const navItems = computed<NavItem[]>(() => {
                     </DropdownMenu>
                 </template>
                 <template v-else>
-                    <Button variant="default" size="sm" as-child>
+                    <Button
+                        variant="default"
+                        size="sm"
+                        as-child
+                        class="hidden lg:inline-flex"
+                    >
                         <Link :href="loginHref">
                             <LogIn class="size-4" />
                             Sign in
                         </Link>
                     </Button>
+                    <Button
+                        variant="default"
+                        size="icon"
+                        as-child
+                        class="size-9 lg:hidden"
+                    >
+                        <Link :href="loginHref" aria-label="Sign in">
+                            <LogIn class="size-4" />
+                        </Link>
+                    </Button>
                 </template>
             </div>
         </div>
-
-        <nav
-            class="flex w-full gap-1 overflow-x-auto border-t border-foreground/25 px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] sm:hidden [&::-webkit-scrollbar]:hidden"
-            aria-label="Main"
-        >
-            <Button
-                v-for="item in navItems"
-                :key="`mobile-${item.title}`"
-                variant="outline"
-                size="sm"
-                as-child
-                :class="[
-                    'shrink-0 gap-2',
-                    isCurrentOrParentUrl(item.href) ? 'wod-nav-active' : '',
-                ]"
-            >
-                <Link :href="item.href">
-                    <component :is="item.icon" class="size-4" />
-                    {{ item.title }}
-                </Link>
-            </Button>
-        </nav>
     </header>
 </template>

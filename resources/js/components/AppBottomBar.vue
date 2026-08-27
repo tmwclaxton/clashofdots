@@ -37,9 +37,11 @@ const user = computed(() => page.props.auth.user);
                     target="_blank"
                     rel="noopener noreferrer"
                     class="wod-link inline-flex items-center gap-1.5"
+                    aria-label="Open source on GitHub"
                 >
                     <Github class="size-3.5" />
-                    Open source on GitHub
+                    <span class="hidden sm:inline">Open source on GitHub</span>
+                    <span class="sm:hidden">GitHub</span>
                 </a>
                 <p class="hidden text-wod-green-dk md:block">
                     Draw the plan. Win the war.

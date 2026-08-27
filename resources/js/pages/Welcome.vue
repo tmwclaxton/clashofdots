@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Github, Swords, Trophy, Users } from 'lucide-vue-next';
+import { BookOpen, Github, LogIn, Swords, Trophy, Users } from 'lucide-vue-next';
+import { computed } from 'vue';
+import AppNavDrawer from '@/components/AppNavDrawer.vue';
 import DiscordIcon from '@/components/DiscordIcon.vue';
 import GameLogoMark from '@/components/GameLogoMark.vue';
 import ThemeToggle from '@/components/ThemeToggle.vue';
@@ -11,6 +13,7 @@ import { login, wiki } from '@/routes';
 import { privacy, terms } from '@/routes/legal';
 import { index as leaderboardIndex } from '@/routes/leaderboard';
 import { index as lobbiesIndex } from '@/routes/lobbies';
+import type { NavItem } from '@/types';
 
 withDefaults(
     defineProps<{
@@ -22,6 +25,17 @@ withDefaults(
 );
 
 const page = usePage();
+
+const welcomeNavItems = computed<NavItem[]>(() => [
+    { title: 'Play Now', href: lobbiesIndex().url, icon: Users },
+    { title: 'Wiki', href: wiki().url, icon: BookOpen },
+    { title: 'Leaderboard', href: leaderboardIndex().url, icon: Trophy },
+]);
+
+const welcomeExternalLinks: NavItem[] = [
+    { title: 'Discord', href: DISCORD_SERVER_URL, icon: DiscordIcon },
+    { title: 'GitHub', href: GITHUB_REPOSITORY_URL, icon: Github },
+];
 
 const features = [
     {
@@ -79,30 +93,66 @@ const steps = [
         <div class="relative flex min-h-svh min-w-0 flex-col">
             <header class="wod-bar-top relative shrink-0">
                 <div
-                    class="relative mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-4 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-4"
+                    class="relative mx-auto flex w-full max-w-6xl min-w-0 items-center justify-between gap-2 px-3 py-2.5 sm:px-6 sm:py-3 lg:py-4"
                 >
-                    <div class="flex min-w-0 items-center gap-2.5 sm:gap-3">
-                        <GameLogoMark class="size-8 sm:size-9" />
+                    <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                        <div class="shrink-0 lg:hidden">
+                            <AppNavDrawer
+                                :nav-items="welcomeNavItems"
+                                :external-links="welcomeExternalLinks"
+                            >
+                                <template #footer="{ close }">
+                                    <div class="space-y-2">
+                                        <div
+                                            class="flex items-center justify-between gap-2"
+                                        >
+                                            <span
+                                                class="text-xs font-semibold text-foreground/70"
+                                            >
+                                                Appearance
+                                            </span>
+                                            <ThemeToggle />
+                                        </div>
+                                        <Button
+                                            v-if="!page.props.auth.user"
+                                            size="sm"
+                                            as-child
+                                            class="w-full"
+                                        >
+                                            <Link
+                                                :href="login().url"
+                                                @click="close"
+                                            >
+                                                <LogIn class="size-4" />
+                                                Sign in
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                </template>
+                            </AppNavDrawer>
+                        </div>
+                        <GameLogoMark class="size-8 shrink-0 sm:size-9" />
                         <div class="min-w-0">
                             <p
                                 class="font-display text-base leading-tight font-bold sm:text-lg"
                             >
                                 Clash of Dots
                             </p>
-                            <p class="wod-tagline text-xs sm:text-sm">
+                            <p class="wod-tagline truncate text-xs sm:text-sm">
                                 Plan first, fight second
                             </p>
                         </div>
                     </div>
+
                     <nav
-                        class="flex w-full min-w-0 flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2"
+                        class="hidden min-w-0 flex-wrap items-center justify-end gap-2 lg:flex"
                     >
                         <ThemeToggle />
                         <Button
                             variant="outline"
                             size="sm"
                             as-child
-                            class="shrink-0 px-2 sm:px-3"
+                            class="shrink-0"
                         >
                             <a
                                 :href="DISCORD_SERVER_URL"
@@ -111,14 +161,14 @@ const steps = [
                                 aria-label="Join the Discord server"
                             >
                                 <DiscordIcon class="size-4" />
-                                <span class="hidden sm:inline">Discord</span>
+                                Discord
                             </a>
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
                             as-child
-                            class="shrink-0 px-2 sm:px-3"
+                            class="shrink-0"
                         >
                             <a
                                 :href="GITHUB_REPOSITORY_URL"
@@ -126,14 +176,14 @@ const steps = [
                                 rel="noopener noreferrer"
                             >
                                 <Github class="size-4" />
-                                <span class="hidden sm:inline">GitHub</span>
+                                GitHub
                             </a>
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
                             as-child
-                            class="shrink-0 px-2 sm:px-3"
+                            class="shrink-0"
                         >
                             <Link :href="wiki().url">
                                 <BookOpen class="size-4" />
@@ -144,18 +194,14 @@ const steps = [
                             variant="outline"
                             size="sm"
                             as-child
-                            class="shrink-0 px-2 sm:px-3"
+                            class="shrink-0"
                         >
                             <Link :href="leaderboardIndex().url">
                                 <Trophy class="size-4" />
                                 Leaderboard
                             </Link>
                         </Button>
-                        <Button
-                            size="sm"
-                            as-child
-                            class="shrink-0"
-                        >
+                        <Button size="sm" as-child class="shrink-0">
                             <Link :href="lobbiesIndex().url">
                                 <Users class="size-4" />
                                 Play Now
@@ -175,12 +221,18 @@ const steps = [
                             "
                         >
                             <GameLogoMark class="size-4 rounded-none" />
-                            <span class="hidden min-[380px]:inline"
-                                >Sign in</span
-                            >
-                            <span class="min-[380px]:hidden">Login</span>
+                            Sign in
                         </Link>
                     </nav>
+
+                    <div class="flex shrink-0 items-center lg:hidden">
+                        <Button size="sm" as-child>
+                            <Link :href="lobbiesIndex().url">
+                                <Swords class="size-4" />
+                                Play
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
             </header>
 

@@ -339,14 +339,16 @@ const sortOptions = [
 <template>
     <Head title="Explore maps" />
 
-    <div class="flex flex-col gap-8">
-        <div class="flex items-center gap-4">
+    <div class="flex min-w-0 flex-col gap-8">
+        <div
+            class="flex min-w-0 flex-wrap items-center justify-between gap-3 gap-y-2"
+        >
             <h1
-                class="font-display text-xl font-bold tracking-tight sm:text-2xl md:text-3xl"
+                class="min-w-0 font-display text-xl font-bold tracking-tight sm:text-2xl md:text-3xl"
             >
                 Explore maps
             </h1>
-            <Button size="sm" as-child>
+            <Button size="sm" as-child class="shrink-0">
                 <Link :href="mapBuilder().url">Map Builder</Link>
             </Button>
         </div>
