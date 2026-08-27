@@ -13,7 +13,7 @@
     ],
     "license": "PolyForm-Noncommercial-1.0.0",
     "require": {
-        "php": "^8.3",
+        "php": "^8.5",
         "inertiajs/inertia-laravel": "^3.0",
         "jorenvanhocht/laravel-share": "^4.2",
         "laravel/framework": "^13.7",

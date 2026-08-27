@@ -5,7 +5,6 @@
 Cleaner cache-aside pattern that removes boilerplate. use `Cache::lock()` for race conditions.
 
 Incorrect:
-
 ```php
 $val = Cache::get('stats');
 if (! $val) {
@@ -15,7 +14,6 @@ if (! $val) {
 ```
 
 Correct:
-
 ```php
 $val = Cache::remember('stats', 60, fn () => $this->computeStats());
 ```
@@ -36,7 +34,7 @@ If the same cache key is read multiple times per request (e.g., a service called
 
 ## Use Cache Tags to Invalidate Related Groups
 
-Without tags, invalidating a group of entries requires tracking every key. Tags let you flush atomically. Only works with `redis`, `memcached`, `dynamodb` — not `file` or `database`.
+Without tags, invalidating a group of entries requires tracking every key. Tags let you flush atomically. Not supported by the `file`, `dynamodb`, `database` or `storage` drivers.
 
 ```php
 Cache::tags(['user-1'])->flush();

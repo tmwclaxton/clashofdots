@@ -1,12 +1,12 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ class?: string }>(), {
+const props = withDefaults(defineProps<{ class?: string }>(), {
     class: 'size-4',
 });
 </script>
 
 <template>
     <svg
-        :class="class"
+        :class="props.class"
         viewBox="0 0 24 24"
         fill="currentColor"
         aria-hidden="true"

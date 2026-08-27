@@ -74,7 +74,8 @@ RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y postgresql-client-$POSTGRES_VERSION \
     && apt-get -y autoremove \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && php -r 'if (version_compare(PHP_VERSION, "8.5.9", "<")) { fwrite(STDERR, "Need PHP >= 8.5.9 (CVE-2026-17543), got ".PHP_VERSION."\n"); exit(1); }'
 
 RUN setcap "cap_net_bind_service=+ep" /usr/bin/php8.5
 
