@@ -1,6 +1,6 @@
 # Local Sail-compatible image: official PHP image (no Ubuntu/ondrej PPA).
-# Pin 8.5.9: CVE-2026-17543 (pgsql SQLi), CVE-2026-17544, CVE-2026-7260, CVE-2026-9672.
-FROM php:8.5.9-cli-bookworm
+# Pin 8.5.12: CVE-2026-109618, CVE-2026-109619 (RCE). Earlier: CVE-2026-17543 (pgsql SQLi), CVE-2026-17544, CVE-2026-7260, CVE-2026-9672.
+FROM php:8.5.12-cli-bookworm
 
 LABEL maintainer="baseProject"
 

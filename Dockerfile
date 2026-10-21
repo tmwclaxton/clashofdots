@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# Pin 8.5.9: CVE-2026-17543 (pgsql SQLi), CVE-2026-17544, CVE-2026-7260, CVE-2026-9672.
-FROM php:8.5.9-cli-bookworm AS php_build
+# Pin 8.5.12: CVE-2026-109618, CVE-2026-109619 (RCE). Earlier: CVE-2026-17543 (pgsql SQLi), CVE-2026-17544, CVE-2026-7260, CVE-2026-9672.
+FROM php:8.5.12-cli-bookworm AS php_build
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -72,7 +72,7 @@ RUN npm run build \
     && npm run build:map-generator \
     && npm prune --omit=dev
 
-FROM php:8.5.9-cli-bookworm AS production
+FROM php:8.5.12-cli-bookworm AS production
 
 LABEL maintainer="baseProject"
 
